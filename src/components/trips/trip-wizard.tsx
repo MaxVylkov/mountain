@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ArrowRight, Check, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, X, Package } from 'lucide-react'
 
 interface MountainData {
   id: string
@@ -116,10 +116,11 @@ export function TripWizard({ mountains }: { mountains: MountainData[] }) {
       .single()
 
     if (trip && packingSet) {
-      // Add template gear to packing set (only items user has)
-      const gearToAdd = templateGear
-        .filter(g => userGearIds.has(g.id))
-        .map(g => ({ packing_set_id: packingSet.id, gear_id: g.id }))
+      // Add ALL template gear to packing set (regardless of what's in user's closet)
+      const gearToAdd = templateGear.map(g => ({
+        packing_set_id: packingSet.id,
+        gear_id: g.id,
+      }))
 
       if (gearToAdd.length > 0) {
         await supabase.from('packing_items').insert(gearToAdd)
@@ -222,12 +223,14 @@ export function TripWizard({ mountains }: { mountains: MountainData[] }) {
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <button onClick={() => setStep(2)} className="text-mountain-muted hover:text-mountain-text"><ArrowLeft size={20} /></button>
-            <h2 className="text-2xl font-bold">Проверка снаряжения</h2>
+            <h2 className="text-2xl font-bold">Набор снаряжения</h2>
           </div>
+          <p className="text-sm text-mountain-muted">Это снаряжение будет добавлено в твои сборы. Перед выходом на маршрут распределишь по рюкзакам.</p>
 
           <div className="flex gap-4 text-sm">
             <span className="text-mountain-success">&#10003; Есть в кладовке: {templateGear.filter(g => userGearIds.has(g.id)).length}</span>
-            <span className="text-mountain-danger">&#10007; Нет: {templateGear.filter(g => !userGearIds.has(g.id)).length}</span>
+            <span className="text-mountain-accent">&#9888; Нужно найти: {templateGear.filter(g => !userGearIds.has(g.id)).length}</span>
+            <span className="font-mono text-mountain-muted">&#8721; {(templateGear.reduce((s, g) => s + (g.weight || 0), 0) / 1000).toFixed(1)} кг</span>
           </div>
 
           {Object.entries(CATEGORY_LABELS).map(([cat, label]) => {
@@ -239,9 +242,9 @@ export function TripWizard({ mountains }: { mountains: MountainData[] }) {
                 {catItems.map(g => {
                   const has = userGearIds.has(g.id)
                   return (
-                    <div key={g.id} className={`flex items-center justify-between px-3 py-2 rounded-lg ${has ? 'bg-mountain-success/5' : 'bg-mountain-danger/5'}`}>
+                    <div key={g.id} className={`flex items-center justify-between px-3 py-2 rounded-lg ${has ? 'bg-mountain-success/5' : 'bg-mountain-accent/5'}`}>
                       <div className="flex items-center gap-2">
-                        {has ? <Check size={16} className="text-mountain-success" /> : <X size={16} className="text-mountain-danger" />}
+                        {has ? <Check size={16} className="text-mountain-success" /> : <Package size={16} className="text-mountain-accent" />}
                         <span className="text-sm">{g.name}</span>
                       </div>
                       <span className="text-xs text-mountain-muted">{g.weight}г</span>
@@ -255,13 +258,14 @@ export function TripWizard({ mountains }: { mountains: MountainData[] }) {
           {templateGear.filter(g => !userGearIds.has(g.id)).length > 0 && (
             <Card className="p-4 border-mountain-accent/30 bg-mountain-accent/5">
               <p className="text-sm text-mountain-accent">
-                Часть снаряжения отсутствует в кладовке. Вы можете одолжить его у друзей или взять в турклубе.
+                Снаряжение с иконкой <Package size={14} className="inline" /> отсутствует в кладовке — одолжи у друзей, возьми в турклубе или купи.
+                Всё снаряжение из набора будет добавлено в сборы.
               </p>
             </Card>
           )}
 
           <Button onClick={() => setStep(4)} className="w-full">
-            Далее &rarr; Выбор маршрутов <ArrowRight size={16} className="ml-2" />
+            Далее → Выбор маршрутов <ArrowRight size={16} className="ml-2" />
           </Button>
         </div>
       )}
