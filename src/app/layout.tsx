@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import { Navbar } from "@/components/nav/navbar";
 import "./globals.css";
 
 const inter = Inter({
@@ -25,7 +26,10 @@ export default function RootLayout({
   return (
     <html lang="ru" className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <body className="font-sans min-h-screen">
-        {children}
+        <Navbar />
+        <main className="mx-auto max-w-7xl px-4 py-8">
+          {children}
+        </main>
       </body>
     </html>
   );
