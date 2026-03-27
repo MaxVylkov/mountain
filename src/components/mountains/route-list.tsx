@@ -38,8 +38,11 @@ const DIFFICULTY_COLORS: Record<number, string> = {
   5: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
 }
 
+type Tab = 'all' | 'favorites' | 'want_to_do' | 'completed'
+
 export function RouteList({ routes, mountainId }: { routes: Route[]; mountainId: string }) {
   const [filter, setFilter] = useState<number | null>(null)
+  const [tab, setTab] = useState<Tab>('all')
   const [statuses, setStatuses] = useState<Record<string, RouteStatus>>({})
   const [userId, setUserId] = useState<string | null>(null)
   const [expandedRoute, setExpandedRoute] = useState<string | null>(null)
@@ -92,8 +95,25 @@ export function RouteList({ routes, mountainId }: { routes: Route[]; mountainId:
     }
   }
 
-  const filtered = filter !== null ? routes.filter(r => r.difficulty === filter) : routes
+  // Apply tab filter first, then difficulty filter
+  const tabFiltered = tab === 'all'
+    ? routes
+    : routes.filter(r => {
+        const s = statuses[r.id]
+        if (!s) return false
+        if (tab === 'favorites') return s.favorite
+        if (tab === 'want_to_do') return s.want_to_do
+        if (tab === 'completed') return s.completed
+        return true
+      })
+  const filtered = filter !== null ? tabFiltered.filter(r => r.difficulty === filter) : tabFiltered
   const difficulties = [...new Set(routes.map(r => r.difficulty))].sort()
+
+  const tabCounts = {
+    favorites: Object.values(statuses).filter(s => s.favorite).length,
+    want_to_do: Object.values(statuses).filter(s => s.want_to_do).length,
+    completed: Object.values(statuses).filter(s => s.completed).length,
+  }
 
   // Extract grade from description (e.g., "Категория: 2А" -> "2А")
   function extractGrade(description: string): string | null {
@@ -114,6 +134,34 @@ export function RouteList({ routes, mountainId }: { routes: Route[]; mountainId:
           Маршруты <span className="text-mountain-muted font-normal text-lg">({filtered.length})</span>
         </h2>
       </div>
+
+      {/* Tabs */}
+      {userId && (
+        <div className="flex border-b border-mountain-border">
+          {([
+            { key: 'all' as Tab, label: 'Все маршруты', icon: null, count: routes.length },
+            { key: 'favorites' as Tab, label: 'Избранное', icon: Heart, count: tabCounts.favorites },
+            { key: 'want_to_do' as Tab, label: 'Хочу пройти', icon: Target, count: tabCounts.want_to_do },
+            { key: 'completed' as Tab, label: 'Пройденные', icon: Check, count: tabCounts.completed },
+          ]).map(({ key, label, icon: Icon, count }) => (
+            <button
+              key={key}
+              onClick={() => { setTab(key); setFilter(null) }}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                tab === key
+                  ? 'border-mountain-primary text-mountain-primary'
+                  : 'border-transparent text-mountain-muted hover:text-mountain-text'
+              }`}
+            >
+              {Icon && <Icon size={16} />}
+              <span className="hidden sm:inline">{label}</span>
+              {count > 0 && key !== 'all' && (
+                <span className="text-xs bg-mountain-surface px-1.5 py-0.5 rounded-full">{count}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Difficulty filter */}
       <div className="flex flex-wrap gap-2">
@@ -231,7 +279,12 @@ export function RouteList({ routes, mountainId }: { routes: Route[]; mountainId:
 
       {filtered.length === 0 && (
         <Card>
-          <p className="text-mountain-muted text-center">Маршрутов с такой сложностью нет.</p>
+          <p className="text-mountain-muted text-center">
+            {tab === 'favorites' && 'Нет избранных маршрутов. Нажми ❤ чтобы добавить.'}
+            {tab === 'want_to_do' && 'Нет запланированных маршрутов. Нажми 🎯 чтобы добавить.'}
+            {tab === 'completed' && 'Нет пройденных маршрутов. Нажми ✓ после восхождения.'}
+            {tab === 'all' && 'Маршрутов с такой сложностью нет.'}
+          </p>
         </Card>
       )}
 
