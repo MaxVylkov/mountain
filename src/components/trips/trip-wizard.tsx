@@ -35,8 +35,11 @@ export function TripWizard({ mountains }: { mountains: MountainData[] }) {
   // Wizard state
   const [selectedMountain, setSelectedMountain] = useState<string | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
+  const [selectedPackingSet, setSelectedPackingSet] = useState<string | null>(null)
   const [templateGear, setTemplateGear] = useState<any[]>([])
   const [userGearIds, setUserGearIds] = useState<Set<string>>(new Set())
+  const [userGearItems, setUserGearItems] = useState<any[]>([])
+  const [userPackingSets, setUserPackingSets] = useState<any[]>([])
   const [routes, setRoutes] = useState<any[]>([])
   const [selectedRoutes, setSelectedRoutes] = useState<Set<string>>(new Set())
   const [creating, setCreating] = useState(false)
@@ -46,30 +49,59 @@ export function TripWizard({ mountains }: { mountains: MountainData[] }) {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
         setUserId(data.user.id)
-        // Load user's gear IDs
+        // Load user's gear
         supabase
           .from('user_gear')
-          .select('gear_id')
+          .select('gear_id, gear(id, name, category, weight)')
           .eq('user_id', data.user.id)
           .then(({ data: gearData }) => {
-            if (gearData) setUserGearIds(new Set(gearData.map((g: any) => g.gear_id)))
+            if (gearData) {
+              setUserGearIds(new Set(gearData.map((g: any) => g.gear_id)))
+              setUserGearItems(gearData.map((g: any) => g.gear))
+            }
+          })
+        // Load user's packing sets
+        supabase
+          .from('packing_sets')
+          .select('id, name, packing_items(gear_id, gear(id, name, category, weight))')
+          .eq('user_id', data.user.id)
+          .then(({ data: setsData }) => {
+            if (setsData) setUserPackingSets(setsData)
           })
       }
     })
   }, [])
 
-  // Load template gear when template selected
+  // Load gear based on selection
   useEffect(() => {
-    if (!selectedTemplate) return
-    const supabase = createClient()
-    supabase
-      .from('gear_templates')
-      .select('gear_id, gear(id, name, category, weight)')
-      .eq('template', selectedTemplate)
-      .then(({ data }) => {
-        if (data) setTemplateGear(data.map((d: any) => d.gear))
-      })
-  }, [selectedTemplate])
+    if (!selectedTemplate && !selectedPackingSet) return
+
+    if (selectedTemplate === 'my_closet') {
+      // Use all gear from user's closet
+      setTemplateGear(userGearItems)
+      return
+    }
+
+    if (selectedPackingSet) {
+      // Use gear from a specific packing set
+      const set = userPackingSets.find((s: any) => s.id === selectedPackingSet)
+      if (set?.packing_items) {
+        setTemplateGear(set.packing_items.map((pi: any) => pi.gear).filter(Boolean))
+      }
+      return
+    }
+
+    if (selectedTemplate) {
+      const supabase = createClient()
+      supabase
+        .from('gear_templates')
+        .select('gear_id, gear(id, name, category, weight)')
+        .eq('template', selectedTemplate)
+        .then(({ data }) => {
+          if (data) setTemplateGear(data.map((d: any) => d.gear))
+        })
+    }
+  }, [selectedTemplate, selectedPackingSet, userGearItems, userPackingSets])
 
   // Load routes when mountain selected
   useEffect(() => {
@@ -196,13 +228,58 @@ export function TripWizard({ mountains }: { mountains: MountainData[] }) {
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <button onClick={() => setStep(1)} className="text-mountain-muted hover:text-mountain-text"><ArrowLeft size={20} /></button>
-            <h2 className="text-2xl font-bold">Уровень подготовки</h2>
+            <h2 className="text-2xl font-bold">Набор снаряжения</h2>
           </div>
-          <div className="space-y-3">
+
+          {/* User's own sets */}
+          {(userGearItems.length > 0 || userPackingSets.length > 0) && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-mountain-muted">Мои сборки</h3>
+
+              {userGearItems.length > 0 && (
+                <button
+                  onClick={() => { setSelectedTemplate('my_closet'); setSelectedPackingSet(null); setStep(3) }}
+                  className="w-full text-left"
+                >
+                  <Card hover className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-bold">Вся моя кладовка</h3>
+                      <span className="text-sm font-mono text-mountain-accent">
+                        ~{(userGearItems.reduce((s: number, g: any) => s + (g?.weight || 0), 0) / 1000).toFixed(1)} кг
+                      </span>
+                    </div>
+                    <p className="text-sm text-mountain-muted">Всё снаряжение из кладовки ({userGearItems.length} предметов)</p>
+                  </Card>
+                </button>
+              )}
+
+              {userPackingSets.filter((s: any) => s.packing_items?.length > 0).map((s: any) => (
+                <button
+                  key={s.id}
+                  onClick={() => { setSelectedPackingSet(s.id); setSelectedTemplate(null); setStep(3) }}
+                  className="w-full text-left"
+                >
+                  <Card hover className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-bold">{s.name}</h3>
+                      <span className="text-sm font-mono text-mountain-accent">
+                        {s.packing_items.length} предметов
+                      </span>
+                    </div>
+                    <p className="text-sm text-mountain-muted">Набор из кладовки</p>
+                  </Card>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Standard templates */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-mountain-muted">Шаблоны по уровню</h3>
             {TEMPLATES.map(t => (
               <button
                 key={t.key}
-                onClick={() => { setSelectedTemplate(t.key); setStep(3) }}
+                onClick={() => { setSelectedTemplate(t.key); setSelectedPackingSet(null); setStep(3) }}
                 className="w-full text-left"
               >
                 <Card hover className="space-y-1">
