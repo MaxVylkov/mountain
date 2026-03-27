@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Mountain, Backpack, BookOpen, Grip, Dumbbell } from 'lucide-react'
+import { Mountain, Backpack, BookOpen, Grip, Dumbbell, Navigation } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
@@ -34,6 +34,12 @@ const modules = [
     title: 'Тренировки',
     description: 'Упражнения и рекомендации для подготовки к восхождениям',
   },
+  {
+    href: '/trips',
+    icon: Navigation,
+    title: 'Поездки',
+    description: 'Планируй восхождение, собирай снаряжение и выходи на маршрут',
+  },
 ]
 
 export default function HomePage() {
@@ -49,11 +55,11 @@ export default function HomePage() {
           Всё, что нужно альпинисту — в одном месте.
         </p>
         <div className="flex gap-4">
-          <Link href="/register">
-            <Button>Начать бесплатно</Button>
+          <Link href="/trips/new">
+            <Button>Собираюсь в горы</Button>
           </Link>
-          <Link href="/mountains">
-            <Button variant="outline">Смотреть горы</Button>
+          <Link href="/register">
+            <Button variant="outline">Начать бесплатно</Button>
           </Link>
         </div>
       </section>
