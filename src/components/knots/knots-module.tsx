@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -146,6 +146,12 @@ export function KnotsModule({ knots }: { knots: Knot[] }) {
 
   const totalKnots = knots.length
   const masteredKnots = knots.filter(k => progress[k.id]?.status === 'mastered').length
+
+  // Shuffled steps for test mode (must be top-level hook)
+  const shuffledSteps = useMemo(() => {
+    if (!selectedKnot?.steps_json) return []
+    return [...selectedKnot.steps_json].sort(() => Math.random() - 0.5)
+  }, [selectedKnot?.id, mode])
 
   // LEVEL MAP VIEW
   if (mode === 'map') {
@@ -364,10 +370,6 @@ export function KnotsModule({ knots }: { knots: Knot[] }) {
   // TEST MODE: reorder steps correctly
   if (mode === 'test' && selectedKnot) {
     const steps = selectedKnot.steps_json || []
-    // Shuffle steps for the test
-    const [shuffledSteps] = useState(() =>
-      [...steps].sort(() => Math.random() - 0.5)
-    )
 
     return (
       <div className="max-w-2xl mx-auto space-y-6">
