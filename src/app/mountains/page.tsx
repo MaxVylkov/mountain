@@ -15,7 +15,7 @@ export default async function MountainsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold flex items-center gap-3">
           <Mountain className="text-mountain-primary" />
-          База гор
+          База маршрутов
         </h1>
       </div>
 

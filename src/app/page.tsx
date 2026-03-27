@@ -7,8 +7,8 @@ const modules = [
   {
     href: '/mountains',
     icon: Mountain,
-    title: 'База гор',
-    description: 'Каталог гор и маршрутов с описанием сложности и сезонности',
+    title: 'База маршрутов',
+    description: 'Каталог маршрутов с описанием сложности и сезонности',
   },
   {
     href: '/gear',

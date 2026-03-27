@@ -9,7 +9,7 @@ import { MobileMenu } from './mobile-menu'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 const navLinks = [
-  { href: '/mountains', label: 'Горы', icon: Mountain },
+  { href: '/mountains', label: 'Маршруты', icon: Mountain },
   { href: '/gear', label: 'Кладовка', icon: Backpack },
   { href: '/knowledge', label: 'Знания', icon: BookOpen },
   { href: '/knots', label: 'Узлы', icon: Grip },
