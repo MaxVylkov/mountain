@@ -1,65 +1,77 @@
-import Image from "next/image";
+import Link from 'next/link'
+import { Mountain, Backpack, BookOpen, Grip, Dumbbell } from 'lucide-react'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
-export default function Home() {
+const modules = [
+  {
+    href: '/mountains',
+    icon: Mountain,
+    title: 'База гор',
+    description: 'Каталог гор и маршрутов с описанием сложности и сезонности',
+  },
+  {
+    href: '/gear',
+    icon: Backpack,
+    title: 'Кладовка',
+    description: 'Учёт снаряжения, режим сборов с распределением по рюкзакам',
+  },
+  {
+    href: '/knowledge',
+    icon: BookOpen,
+    title: 'Граф знаний',
+    description: 'Интерактивная карта знаний альпиниста из учебника',
+  },
+  {
+    href: '/knots',
+    icon: Grip,
+    title: 'Узлы',
+    description: 'Изучай узлы пошагово — от простых к сложным, как в Duolingo',
+  },
+  {
+    href: '/training',
+    icon: Dumbbell,
+    title: 'Тренировки',
+    description: 'Упражнения и рекомендации для подготовки к восхождениям',
+  },
+]
+
+export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="space-y-16">
+      {/* Hero */}
+      <section className="flex flex-col items-center text-center py-16 space-y-6">
+        <h1 className="text-5xl font-bold tracking-tight sm:text-6xl">
+          <span className="text-mountain-primary">Mount</span>aine
+        </h1>
+        <p className="max-w-2xl text-lg text-mountain-muted">
+          Готовься к восхождениям, тренируйся и учись.
+          Всё, что нужно альпинисту — в одном месте.
+        </p>
+        <div className="flex gap-4">
+          <Link href="/register">
+            <Button>Начать бесплатно</Button>
+          </Link>
+          <Link href="/mountains">
+            <Button variant="outline">Смотреть горы</Button>
+          </Link>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </section>
+
+      {/* Modules */}
+      <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {modules.map(({ href, icon: Icon, title, description }) => (
+          <Link key={href} href={href}>
+            <Card hover className="h-full space-y-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-mountain-primary/10">
+                <Icon size={24} className="text-mountain-primary" />
+              </div>
+              <h2 className="text-lg font-semibold">{title}</h2>
+              <p className="text-sm text-mountain-muted">{description}</p>
+            </Card>
+          </Link>
+        ))}
+      </section>
     </div>
-  );
+  )
 }
