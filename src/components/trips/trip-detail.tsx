@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { ArrowLeft, Map, Package, CheckSquare, Phone, Navigation } from 'lucide-react'
+import { ArrowLeft, Map, Package, CheckSquare, Phone, Navigation, Plus, Check, X } from 'lucide-react'
 
 const TEMPLATE_LABELS: Record<string, string> = {
   light_trek: 'Лёгкий треккинг', np: 'НП', sp3: 'СП-3', sp2: 'СП-2 и выше',
@@ -19,6 +19,8 @@ export function TripDetail({ trip }: { trip: any }) {
   const [tab, setTab] = useState<'routes' | 'gear' | 'checklist' | 'emergency'>('routes')
   const [tripRoutes, setTripRoutes] = useState<any[]>([])
   const [packingItems, setPackingItems] = useState<any[]>([])
+  const [availableRoutes, setAvailableRoutes] = useState<any[]>([])
+  const [showAddRoutes, setShowAddRoutes] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -29,6 +31,17 @@ export function TripDetail({ trip }: { trip: any }) {
       .eq('trip_id', trip.id)
       .then(({ data }) => { if (data) setTripRoutes(data) })
 
+    // Load available routes for this mountain
+    if (trip.mountain_id) {
+      supabase
+        .from('routes')
+        .select('id, name, description, difficulty')
+        .eq('mountain_id', trip.mountain_id)
+        .order('difficulty')
+        .order('name')
+        .then(({ data }) => { if (data) setAvailableRoutes(data) })
+    }
+
     // Load packing items
     if (trip.packing_set_id) {
       supabase
@@ -38,6 +51,22 @@ export function TripDetail({ trip }: { trip: any }) {
         .then(({ data }) => { if (data) setPackingItems(data as any) })
     }
   }, [trip])
+
+  async function addRoute(routeId: string) {
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('trip_routes')
+      .insert({ trip_id: trip.id, route_id: routeId })
+      .select('*, routes(id, name, description, difficulty, season)')
+      .single()
+    if (data) setTripRoutes(prev => [...prev, data])
+  }
+
+  async function removeRoute(tripRouteId: string) {
+    const supabase = createClient()
+    await supabase.from('trip_routes').delete().eq('id', tripRouteId)
+    setTripRoutes(prev => prev.filter(r => r.id !== tripRouteId))
+  }
 
   async function updateStatus(status: string) {
     const supabase = createClient()
@@ -123,14 +152,23 @@ export function TripDetail({ trip }: { trip: any }) {
       {/* Tab content */}
       {tab === 'routes' && (
         <div className="space-y-3">
+          <Button variant="outline" onClick={() => setShowAddRoutes(true)}>
+            <Plus size={16} className="mr-2" /> Добавить маршрут
+          </Button>
+
           {tripRoutes.length > 0 ? tripRoutes.map((tr: any) => {
             const route = tr.routes
             const grade = route?.description?.match(/Категория:\s*(\S+)/)?.[1]
             return (
               <Card key={tr.id} className="space-y-2">
-                <div className="flex items-center gap-2">
-                  {grade && <span className="text-xs font-mono font-bold text-mountain-accent">{grade}</span>}
-                  <h3 className="font-medium">{route?.name?.replace(/^№\d+\.\s*/, '')}</h3>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {grade && <span className="text-xs font-mono font-bold text-mountain-accent">{grade}</span>}
+                    <h3 className="font-medium">{route?.name?.replace(/^№\d+\.\s*/, '')}</h3>
+                  </div>
+                  <button onClick={() => removeRoute(tr.id)} className="text-mountain-muted hover:text-mountain-danger p-1">
+                    <X size={16} />
+                  </button>
                 </div>
                 {route?.description && (
                   <p className="text-sm text-mountain-muted whitespace-pre-line">{route.description}</p>
@@ -138,7 +176,39 @@ export function TripDetail({ trip }: { trip: any }) {
               </Card>
             )
           }) : (
-            <Card><p className="text-mountain-muted text-center">Маршруты не выбраны</p></Card>
+            <Card><p className="text-mountain-muted text-center">Маршруты не выбраны. Нажми "Добавить маршрут" выше.</p></Card>
+          )}
+
+          {/* Add routes modal */}
+          {showAddRoutes && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowAddRoutes(false)}>
+              <div className="glass-card w-full max-w-lg max-h-[70vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="p-4 border-b border-mountain-border flex items-center justify-between">
+                  <h2 className="text-lg font-bold">Добавить маршрут</h2>
+                  <button onClick={() => setShowAddRoutes(false)} className="text-mountain-muted hover:text-mountain-text"><X size={20} /></button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-1">
+                  {availableRoutes
+                    .filter(r => !tripRoutes.some(tr => tr.route_id === r.id))
+                    .map(r => {
+                      const grade = r.description?.match(/Категория:\s*(\S+)/)?.[1]
+                      return (
+                        <button
+                          key={r.id}
+                          onClick={() => addRoute(r.id)}
+                          className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-mountain-surface transition-colors text-left"
+                        >
+                          <div className="flex items-center gap-2">
+                            {grade && <span className="text-xs font-mono font-bold text-mountain-accent">{grade}</span>}
+                            <span className="text-sm">{r.name.replace(/^№\d+\.\s*/, '')}</span>
+                          </div>
+                          <Plus size={18} className="text-mountain-primary" />
+                        </button>
+                      )
+                    })}
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}

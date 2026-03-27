@@ -252,6 +252,14 @@ export function TripWizard({ mountains }: { mountains: MountainData[] }) {
             )
           })}
 
+          {templateGear.filter(g => !userGearIds.has(g.id)).length > 0 && (
+            <Card className="p-4 border-mountain-accent/30 bg-mountain-accent/5">
+              <p className="text-sm text-mountain-accent">
+                Часть снаряжения отсутствует в кладовке. Вы можете одолжить его у друзей или взять в турклубе.
+              </p>
+            </Card>
+          )}
+
           <Button onClick={() => setStep(4)} className="w-full">
             Далее &rarr; Выбор маршрутов <ArrowRight size={16} className="ml-2" />
           </Button>
