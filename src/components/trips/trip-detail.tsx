@@ -1,18 +1,30 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { ArrowLeft, Map, Package, CheckSquare, Phone, Navigation, Plus, Check, X } from 'lucide-react'
+import {
+  ArrowLeft, Map, Package, CheckSquare, Phone, Navigation,
+  Plus, Check, X, Weight, Mountain, Flag, ChevronDown, ChevronUp,
+  Backpack, AlertTriangle
+} from 'lucide-react'
 
 const TEMPLATE_LABELS: Record<string, string> = {
   light_trek: 'Лёгкий треккинг', np: 'НП', sp3: 'СП-3', sp2: 'СП-2 и выше',
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  planning: 'Планирование', packing: 'Сборы', active: 'На маршруте', completed: 'Завершена',
+  planning: 'Планирование', packing: 'Сборы', active: 'Активно', completed: 'Завершено',
+}
+
+const ROUTE_STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  planned: { label: 'Запланирован', color: 'text-mountain-muted' },
+  preparing: { label: 'Подготовка к штурму', color: 'text-mountain-accent' },
+  active: { label: 'На маршруте', color: 'text-mountain-primary' },
+  summit: { label: 'Вершина!', color: 'text-mountain-success' },
+  failed: { label: 'Не дошли', color: 'text-mountain-danger' },
 }
 
 export function TripDetail({ trip }: { trip: any }) {
@@ -21,17 +33,24 @@ export function TripDetail({ trip }: { trip: any }) {
   const [packingItems, setPackingItems] = useState<any[]>([])
   const [availableRoutes, setAvailableRoutes] = useState<any[]>([])
   const [showAddRoutes, setShowAddRoutes] = useState(false)
+  const [expandedRoute, setExpandedRoute] = useState<string | null>(null)
+  const [routeGear, setRouteGear] = useState<Record<string, any[]>>({})
+  const [showGearPicker, setShowGearPicker] = useState<string | null>(null)
 
-  useEffect(() => {
+  const loadTripRoutes = useCallback(async () => {
     const supabase = createClient()
-    // Load trip routes
-    supabase
+    const { data } = await supabase
       .from('trip_routes')
       .select('*, routes(id, name, description, difficulty, season)')
       .eq('trip_id', trip.id)
-      .then(({ data }) => { if (data) setTripRoutes(data) })
+      .order('created_at')
+    if (data) setTripRoutes(data)
+  }, [trip.id])
 
-    // Load available routes for this mountain
+  useEffect(() => {
+    const supabase = createClient()
+    loadTripRoutes()
+
     if (trip.mountain_id) {
       supabase
         .from('routes')
@@ -42,15 +61,24 @@ export function TripDetail({ trip }: { trip: any }) {
         .then(({ data }) => { if (data) setAvailableRoutes(data) })
     }
 
-    // Load packing items
     if (trip.packing_set_id) {
       supabase
         .from('packing_items')
-        .select('*, gear(name, weight, category)')
+        .select('*, gear(id, name, weight, category)')
         .eq('packing_set_id', trip.packing_set_id)
         .then(({ data }) => { if (data) setPackingItems(data as any) })
     }
-  }, [trip])
+  }, [trip, loadTripRoutes])
+
+  // Load gear for a specific trip route
+  async function loadRouteGear(tripRouteId: string) {
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('trip_route_gear')
+      .select('*, gear(id, name, weight, category)')
+      .eq('trip_route_id', tripRouteId)
+    if (data) setRouteGear(prev => ({ ...prev, [tripRouteId]: data }))
+  }
 
   async function addRoute(routeId: string) {
     const supabase = createClient()
@@ -68,18 +96,55 @@ export function TripDetail({ trip }: { trip: any }) {
     setTripRoutes(prev => prev.filter(r => r.id !== tripRouteId))
   }
 
-  async function updateStatus(status: string) {
+  async function updateRouteStatus(tripRouteId: string, status: string, summitReached?: boolean) {
+    const supabase = createClient()
+    const updates: any = { status }
+    if (summitReached !== undefined) updates.summit_reached = summitReached
+    await supabase.from('trip_routes').update(updates).eq('id', tripRouteId)
+    setTripRoutes(prev => prev.map(r =>
+      r.id === tripRouteId ? { ...r, status, ...(summitReached !== undefined ? { summit_reached: summitReached } : {}) } : r
+    ))
+  }
+
+  async function addGearToRoute(tripRouteId: string, gearId: string) {
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('trip_route_gear')
+      .insert({ trip_route_id: tripRouteId, gear_id: gearId })
+      .select('*, gear(id, name, weight, category)')
+      .single()
+    if (data) {
+      setRouteGear(prev => ({
+        ...prev,
+        [tripRouteId]: [...(prev[tripRouteId] || []), data]
+      }))
+    }
+  }
+
+  async function removeGearFromRoute(tripRouteId: string, gearItemId: string) {
+    const supabase = createClient()
+    await supabase.from('trip_route_gear').delete().eq('id', gearItemId)
+    setRouteGear(prev => ({
+      ...prev,
+      [tripRouteId]: (prev[tripRouteId] || []).filter(g => g.id !== gearItemId)
+    }))
+  }
+
+  async function updateTripStatus(status: string) {
     const supabase = createClient()
     await supabase.from('trips').update({ status }).eq('id', trip.id)
     window.location.reload()
   }
 
   const totalWeight = packingItems.reduce((sum: number, i: any) => sum + (i.gear?.weight || 0), 0)
-  const packedCount = packingItems.filter((i: any) => i.packed).length
+
+  function getRouteWeight(tripRouteId: string): number {
+    return (routeGear[tripRouteId] || []).reduce((sum: number, i: any) => sum + (i.gear?.weight || 0), 0)
+  }
 
   const tabs = [
     { key: 'routes' as const, label: 'Маршруты', icon: Map },
-    { key: 'gear' as const, label: 'Снаряжение', icon: Package },
+    { key: 'gear' as const, label: 'Общее снаряжение', icon: Package },
     { key: 'checklist' as const, label: 'Чеклист', icon: CheckSquare },
     { key: 'emergency' as const, label: 'Экстренное', icon: Phone },
   ]
@@ -100,45 +165,38 @@ export function TripDetail({ trip }: { trip: any }) {
             <span className="px-2 py-0.5 rounded bg-mountain-primary/20 text-mountain-primary">{STATUS_LABELS[trip.status]}</span>
           </div>
         </div>
-        <div className="flex gap-2">
-          {trip.status === 'packing' && (
-            <Button onClick={() => updateStatus('active')}>
-              <Navigation size={16} className="mr-2" /> На маршрут!
-            </Button>
-          )}
-          {trip.status === 'active' && (
-            <Button variant="outline" onClick={() => updateStatus('completed')}>Завершить</Button>
-          )}
-        </div>
+        {trip.status !== 'completed' && (
+          <Button variant="outline" onClick={() => updateTripStatus('completed')}>
+            <Flag size={16} className="mr-2" /> Закончить мероприятие
+          </Button>
+        )}
       </div>
 
-      {/* Stats bar */}
+      {/* Stats */}
       <div className="flex gap-4">
         <Card className="flex-1 p-3">
           <p className="text-xs text-mountain-muted">Маршрутов</p>
           <p className="text-xl font-bold font-mono">{tripRoutes.length}</p>
         </Card>
         <Card className="flex-1 p-3">
-          <p className="text-xs text-mountain-muted">Вещей</p>
-          <p className="text-xl font-bold font-mono">{packingItems.length}</p>
+          <p className="text-xs text-mountain-muted">Вершин достигнуто</p>
+          <p className="text-xl font-bold font-mono text-mountain-success">
+            {tripRoutes.filter(r => r.summit_reached).length}/{tripRoutes.length}
+          </p>
         </Card>
         <Card className="flex-1 p-3">
-          <p className="text-xs text-mountain-muted">Общий вес</p>
+          <p className="text-xs text-mountain-muted">Общее снаряжение</p>
           <p className="text-xl font-bold font-mono">{(totalWeight / 1000).toFixed(1)} кг</p>
-        </Card>
-        <Card className="flex-1 p-3">
-          <p className="text-xs text-mountain-muted">Упаковано</p>
-          <p className="text-xl font-bold font-mono">{packedCount}/{packingItems.length}</p>
         </Card>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-mountain-border">
+      <div className="flex border-b border-mountain-border overflow-x-auto">
         {tabs.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               tab === key
                 ? 'border-mountain-primary text-mountain-primary'
                 : 'border-transparent text-mountain-muted hover:text-mountain-text'
@@ -149,34 +207,141 @@ export function TripDetail({ trip }: { trip: any }) {
         ))}
       </div>
 
-      {/* Tab content */}
+      {/* Routes tab */}
       {tab === 'routes' && (
-        <div className="space-y-3">
-          <Button variant="outline" onClick={() => setShowAddRoutes(true)}>
-            <Plus size={16} className="mr-2" /> Добавить маршрут
-          </Button>
+        <div className="space-y-4">
+          {trip.status !== 'completed' && (
+            <Button variant="outline" onClick={() => setShowAddRoutes(true)}>
+              <Plus size={16} className="mr-2" /> Добавить маршрут
+            </Button>
+          )}
 
-          {tripRoutes.length > 0 ? tripRoutes.map((tr: any) => {
+          {tripRoutes.map((tr: any) => {
             const route = tr.routes
             const grade = route?.description?.match(/Категория:\s*(\S+)/)?.[1]
+            const status = ROUTE_STATUS_LABELS[tr.status || 'planned']
+            const isExpanded = expandedRoute === tr.id
+            const rGear = routeGear[tr.id] || []
+            const rWeight = getRouteWeight(tr.id)
+
+            // Load gear when expanding
+            if (isExpanded && !routeGear[tr.id]) {
+              loadRouteGear(tr.id)
+            }
+
             return (
-              <Card key={tr.id} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {grade && <span className="text-xs font-mono font-bold text-mountain-accent">{grade}</span>}
-                    <h3 className="font-medium">{route?.name?.replace(/^№\d+\.\s*/, '')}</h3>
+              <Card key={tr.id} className="p-0 overflow-hidden">
+                {/* Route header */}
+                <div
+                  className="p-4 cursor-pointer hover:bg-mountain-surface/30 transition-colors"
+                  onClick={() => setExpandedRoute(isExpanded ? null : tr.id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {grade && <span className="text-xs font-mono font-bold text-mountain-accent">{grade}</span>}
+                      <h3 className="font-medium">{route?.name?.replace(/^№\d+\.\s*/, '')}</h3>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs font-medium ${status.color}`}>{status.label}</span>
+                      {tr.summit_reached && <Mountain size={16} className="text-mountain-success" />}
+                      {isExpanded ? <ChevronUp size={16} className="text-mountain-muted" /> : <ChevronDown size={16} className="text-mountain-muted" />}
+                    </div>
                   </div>
-                  <button onClick={() => removeRoute(tr.id)} className="text-mountain-muted hover:text-mountain-danger p-1">
-                    <X size={16} />
-                  </button>
                 </div>
-                {route?.description && (
-                  <p className="text-sm text-mountain-muted whitespace-pre-line">{route.description}</p>
+
+                {/* Expanded content */}
+                {isExpanded && (
+                  <div className="border-t border-mountain-border p-4 space-y-4">
+                    {/* Action buttons based on status */}
+                    <div className="flex flex-wrap gap-2">
+                      {tr.status === 'planned' && (
+                        <Button onClick={() => updateRouteStatus(tr.id, 'preparing')}>
+                          <Backpack size={16} className="mr-2" /> Подготовка к штурму
+                        </Button>
+                      )}
+                      {tr.status === 'preparing' && (
+                        <>
+                          <Button onClick={() => updateRouteStatus(tr.id, 'active')}>
+                            <Navigation size={16} className="mr-2" /> На маршрут!
+                          </Button>
+                          <Button variant="outline" onClick={() => updateRouteStatus(tr.id, 'planned')}>
+                            Отменить подготовку
+                          </Button>
+                        </>
+                      )}
+                      {tr.status === 'active' && (
+                        <>
+                          <Button onClick={() => updateRouteStatus(tr.id, 'summit', true)}>
+                            <Mountain size={16} className="mr-2" /> Дошли!
+                          </Button>
+                          <Button variant="outline" onClick={() => updateRouteStatus(tr.id, 'failed', false)}>
+                            <AlertTriangle size={16} className="mr-2" /> Не дошли
+                          </Button>
+                        </>
+                      )}
+                      {(tr.status === 'summit' || tr.status === 'failed') && (
+                        <span className={`text-sm font-medium ${tr.summit_reached ? 'text-mountain-success' : 'text-mountain-danger'}`}>
+                          {tr.summit_reached ? 'Вершина достигнута!' : 'Вершина не достигнута'}
+                        </span>
+                      )}
+                      {trip.status !== 'completed' && (
+                        <button onClick={() => removeRoute(tr.id)} className="ml-auto text-sm text-mountain-muted hover:text-mountain-danger">
+                          Убрать маршрут
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Backpack for this route (visible in preparing/active) */}
+                    {(tr.status === 'preparing' || tr.status === 'active') && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-medium flex items-center gap-2">
+                            <Backpack size={16} className="text-mountain-primary" />
+                            Рюкзак на маршрут
+                            <span className="font-mono text-mountain-accent">{(rWeight / 1000).toFixed(1)} кг</span>
+                          </h4>
+                          <Button variant="outline" onClick={() => setShowGearPicker(tr.id)}>
+                            <Plus size={14} className="mr-1" /> Добавить
+                          </Button>
+                        </div>
+
+                        {rGear.length > 0 ? (
+                          <div className="space-y-1">
+                            {rGear.map((g: any) => (
+                              <div key={g.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-mountain-bg">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm">{g.gear?.name}</span>
+                                  {g.gear?.weight && <span className="text-xs text-mountain-muted">{g.gear.weight}г</span>}
+                                </div>
+                                <button onClick={() => removeGearFromRoute(tr.id, g.id)} className="text-mountain-muted hover:text-mountain-danger">
+                                  <X size={14} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-mountain-muted">Набери снаряжение в рюкзак из общего списка</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Route description */}
+                    {route?.description && (
+                      <details className="text-sm text-mountain-muted">
+                        <summary className="cursor-pointer hover:text-mountain-text">Описание маршрута</summary>
+                        <p className="mt-2 whitespace-pre-line leading-relaxed">{route.description}</p>
+                      </details>
+                    )}
+                  </div>
                 )}
               </Card>
             )
-          }) : (
-            <Card><p className="text-mountain-muted text-center">Маршруты не выбраны. Нажми "Добавить маршрут" выше.</p></Card>
+          })}
+
+          {tripRoutes.length === 0 && (
+            <Card className="py-8">
+              <p className="text-mountain-muted text-center">Маршруты не добавлены. Нажми "Добавить маршрут".</p>
+            </Card>
           )}
 
           {/* Add routes modal */}
@@ -191,15 +356,12 @@ export function TripDetail({ trip }: { trip: any }) {
                   {availableRoutes
                     .filter(r => !tripRoutes.some(tr => tr.route_id === r.id))
                     .map(r => {
-                      const grade = r.description?.match(/Категория:\s*(\S+)/)?.[1]
+                      const g = r.description?.match(/Категория:\s*(\S+)/)?.[1]
                       return (
-                        <button
-                          key={r.id}
-                          onClick={() => addRoute(r.id)}
-                          className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-mountain-surface transition-colors text-left"
-                        >
+                        <button key={r.id} onClick={() => addRoute(r.id)}
+                          className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-mountain-surface transition-colors text-left">
                           <div className="flex items-center gap-2">
-                            {grade && <span className="text-xs font-mono font-bold text-mountain-accent">{grade}</span>}
+                            {g && <span className="text-xs font-mono font-bold text-mountain-accent">{g}</span>}
                             <span className="text-sm">{r.name.replace(/^№\d+\.\s*/, '')}</span>
                           </div>
                           <Plus size={18} className="text-mountain-primary" />
@@ -210,11 +372,42 @@ export function TripDetail({ trip }: { trip: any }) {
               </div>
             </div>
           )}
+
+          {/* Gear picker for route backpack */}
+          {showGearPicker && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowGearPicker(null)}>
+              <div className="glass-card w-full max-w-lg max-h-[70vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="p-4 border-b border-mountain-border flex items-center justify-between">
+                  <h2 className="text-lg font-bold">Добавить в рюкзак</h2>
+                  <button onClick={() => setShowGearPicker(null)} className="text-mountain-muted hover:text-mountain-text"><X size={20} /></button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-1">
+                  {packingItems
+                    .filter(pi => !(routeGear[showGearPicker] || []).some(rg => rg.gear_id === pi.gear?.id))
+                    .map((pi: any) => (
+                      <button key={pi.id} onClick={() => addGearToRoute(showGearPicker, pi.gear.id)}
+                        className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-mountain-surface transition-colors text-left">
+                        <div>
+                          <span className="text-sm">{pi.gear?.name}</span>
+                          {pi.gear?.weight && <span className="text-xs text-mountain-muted ml-2">{pi.gear.weight}г</span>}
+                        </div>
+                        <Plus size={18} className="text-mountain-primary" />
+                      </button>
+                    ))}
+                  {packingItems.length === 0 && (
+                    <p className="text-mountain-muted text-center py-4">Общее снаряжение пусто</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
+      {/* Gear tab */}
       {tab === 'gear' && (
         <div className="space-y-3">
+          <p className="text-sm text-mountain-muted">Всё снаряжение мероприятия. При подготовке к штурму маршрута — набираешь рюкзак из этого списка.</p>
           {packingItems.length > 0 ? packingItems.map((item: any) => (
             <div key={item.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-mountain-surface">
               <span className="text-sm">{item.gear?.name}</span>
@@ -230,6 +423,7 @@ export function TripDetail({ trip }: { trip: any }) {
         </div>
       )}
 
+      {/* Checklist tab */}
       {tab === 'checklist' && (
         <div className="space-y-3">
           {['Снаряжение упаковано', 'Документы взяты', 'Связь проверена (рация/телефон)', 'Регистрация в МЧС', 'Маршрутная книжка заполнена', 'Страховка оформлена', 'Аптечка собрана', 'Контакты переданы близким'].map(item => (
@@ -241,6 +435,7 @@ export function TripDetail({ trip }: { trip: any }) {
         </div>
       )}
 
+      {/* Emergency tab */}
       {tab === 'emergency' && (
         <div className="space-y-4">
           <Card className="space-y-2">
