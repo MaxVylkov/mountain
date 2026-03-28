@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, Search, Trash2, Weight, X } from 'lucide-react'
+import { GearExcelImport } from './gear-excel-import'
 
 interface GearItem {
   id: string
@@ -124,7 +125,7 @@ export function GearInventory({ catalog, userId }: { catalog: GearItem[]; userId
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button onClick={() => setShowAddModal(true)}>
           <Plus size={16} className="mr-2" />
           Из каталога
@@ -133,6 +134,7 @@ export function GearInventory({ catalog, userId }: { catalog: GearItem[]; userId
           <Plus size={16} className="mr-2" />
           Своё снаряжение
         </Button>
+        <GearExcelImport userId={userId} onImportComplete={loadUserGear} />
       </div>
 
       {/* Inventory by category */}
