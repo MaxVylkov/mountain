@@ -13,6 +13,7 @@ interface GearItem {
   category: string
   description: string | null
   weight: number | null
+  brand: string | null
 }
 
 export function GearModule({ catalog }: { catalog: GearItem[] }) {
