@@ -28,9 +28,9 @@ export function TeamGearTab({ teamId, members, currentUserId, isLeader }: TeamGe
   const storageKey = `mountaine_team_gear_view_${teamId}`
   const [view, setView] = useState<ViewMode>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem(storageKey) as ViewMode) ?? 'svodka'
+      return (localStorage.getItem(storageKey) as ViewMode) ?? 'kartochki'
     }
-    return 'svodka'
+    return 'kartochki'
   })
 
   const switchView = (v: ViewMode) => {
@@ -179,6 +179,7 @@ export function TeamGearTab({ teamId, members, currentUserId, isLeader }: TeamGe
           memberGear={memberGear}
           members={members}
           currentUserId={currentUserId}
+          onSaveCell={handleSaveCell}
         />
       )}
 
@@ -188,7 +189,7 @@ export function TeamGearTab({ teamId, members, currentUserId, isLeader }: TeamGe
           <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-500/20 inline-block" /> Достаточно</span>
           <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-500/20 inline-block" /> Не хватает</span>
           <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-500/20 inline-block" /> Лишнее</span>
-          <span className="flex items-center gap-1.5 text-mountain-primary">● Ваши данные (нажмите для редактирования)</span>
+          <span className="flex items-center gap-1.5 text-mountain-primary">● Колонка «Моё» — нажмите для быстрого ввода</span>
         </div>
       )}
 
