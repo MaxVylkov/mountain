@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Mountain, Backpack, BookOpen, Grip, Dumbbell, User, Menu, Navigation, UtensilsCrossed } from 'lucide-react'
+import { Mountain, Backpack, BookOpen, Grip, Dumbbell, User, Menu, Navigation, UtensilsCrossed, UsersRound } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { MobileMenu } from './mobile-menu'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
@@ -16,6 +16,7 @@ const navLinks = [
   { href: '/knots', label: 'Узлы', icon: Grip },
   { href: '/training', label: 'Тренировки', icon: Dumbbell },
   { href: '/rations', label: 'Раскладка', icon: UtensilsCrossed },
+  { href: '/teams', label: 'Отделения', icon: UsersRound },
 ]
 
 export function Navbar() {
