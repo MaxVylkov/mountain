@@ -7,7 +7,7 @@ import { AttachmentRouteCard } from './attachment-route-card'
 import { AttachmentPackingCard } from './attachment-packing-card'
 import { AttachmentGearChips } from './attachment-gear-chips'
 import { ForumReplyList } from './forum-reply-list'
-import { ThumbsUp, ArrowLeft } from 'lucide-react'
+import { ThumbsUp, ArrowLeft, MapPin } from 'lucide-react'
 import Link from 'next/link'
 
 interface RouteData { routeId: string; routeName: string; mountainName: string; difficulty: number | null; season: string | null }
@@ -74,6 +74,13 @@ export function ForumPostDetail({ post, replies, routeData, packingData, gearChi
             {likeCount}
           </button>
         </div>
+
+        {post.route_note && routeData.length === 0 && (
+          <div className="flex items-center gap-1.5 text-xs text-mountain-muted border-t border-mountain-border/40 pt-3">
+            <MapPin className="w-3.5 h-3.5 shrink-0" />
+            <span>Маршрут: {post.route_note}</span>
+          </div>
+        )}
 
         {post.body && (
           <div className="text-sm text-mountain-text leading-relaxed whitespace-pre-wrap border-t border-mountain-border/40 pt-4">

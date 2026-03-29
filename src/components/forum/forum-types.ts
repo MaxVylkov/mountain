@@ -16,6 +16,7 @@ export interface ForumPost {
   like_count?: number
   reply_count?: number
   liked_by_me?: boolean
+  route_note?: string | null
 }
 
 export interface ForumReply {

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ThumbsUp, MessageCircle } from 'lucide-react'
+import { ThumbsUp, MessageCircle, MapPin } from 'lucide-react'
 import { ForumPost, typeLabel, formatRelativeTime } from './forum-types'
 
 interface Props {
@@ -18,6 +18,12 @@ export function ForumPostCard({ post }: Props) {
           </span>
           <h3 className="text-sm font-semibold text-mountain-text leading-snug flex-1">{post.title}</h3>
         </div>
+
+        {post.route_note && (
+          <p className="flex items-center gap-1 text-xs text-mountain-muted">
+            <MapPin className="w-3 h-3 shrink-0" />{post.route_note}
+          </p>
+        )}
 
         {post.body && (
           <p className="text-xs text-mountain-muted line-clamp-2 leading-relaxed pl-0">{post.body}</p>
