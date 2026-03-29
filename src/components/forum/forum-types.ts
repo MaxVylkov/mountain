@@ -26,8 +26,8 @@ export interface ForumReply {
   body: string
   created_at: string
   author?: { display_name: string | null } | null
-  like_count?: number
-  liked_by_me?: boolean
+  like_count: number
+  liked_by_me: boolean
 }
 
 export interface ForumAttachment {

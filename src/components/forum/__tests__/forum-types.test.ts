@@ -1,5 +1,5 @@
 // src/components/forum/__tests__/forum-types.test.ts
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { categoryLabel, typeLabel, formatRelativeTime, isValidCategory } from '../forum-types'
 
 describe('categoryLabel', () => {
@@ -23,6 +23,10 @@ describe('formatRelativeTime', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-01-01T12:00:00Z'))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('returns только что for < 60 seconds ago', () => {
