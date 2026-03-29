@@ -57,10 +57,17 @@ export function TeamGearTab({ teamId, members, currentUserId, isLeader }: TeamGe
   useEffect(() => { load() }, [load])
 
   const handleDeleteItem = async (id: string) => {
-    const supabase = createClient()
-    await supabase.from('team_required_gear').delete().eq('id', id)
+    const prevItems = items
+    const prevMemberGear = memberGear
     setItems(prev => prev.filter(i => i.id !== id))
     setMemberGear(prev => prev.filter(e => e.required_gear_id !== id))
+
+    const supabase = createClient()
+    const { error } = await supabase.from('team_required_gear').delete().eq('id', id)
+    if (error) {
+      setItems(prevItems)
+      setMemberGear(prevMemberGear)
+    }
   }
 
   const handleSaveCell = async (itemId: string, userId: string, quantity: number) => {
