@@ -4,6 +4,7 @@ import { Mountain, MapPin, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { RouteList } from '@/components/mountains/route-list'
+import { RouteDiscussionsBlock } from '@/components/forum/route-discussions-block'
 
 export default async function MountainDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -56,6 +57,8 @@ export default async function MountainDetailPage({ params }: { params: Promise<{
       </div>
 
       <RouteList routes={routes || []} mountainId={id} />
+
+      <RouteDiscussionsBlock mountainId={id} />
     </div>
   )
 }
