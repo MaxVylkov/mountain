@@ -7,6 +7,7 @@ export default async function MountainsPage() {
   const { data: mountains } = await supabase
     .from('mountains')
     .select('*, routes(count)')
+    .order('region')
     .order('name')
 
   return (
