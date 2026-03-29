@@ -25,7 +25,7 @@ describe('Navbar', () => {
 
   it('renders navigation links', () => {
     render(<Navbar />)
-    expect(screen.getByText('Горы')).toBeInTheDocument()
+    expect(screen.getByText('Маршруты')).toBeInTheDocument()
     expect(screen.getByText('Кладовка')).toBeInTheDocument()
     expect(screen.getByText('Знания')).toBeInTheDocument()
     expect(screen.getByText('Узлы')).toBeInTheDocument()

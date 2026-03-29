@@ -118,7 +118,6 @@ export default async function ForumPostPage({ params }: Props) {
     <ForumPostDetail
       post={post}
       replies={replies}
-      attachments={attachments ?? []}
       routeData={routeData}
       packingData={packingData}
       gearChips={gearChips}
