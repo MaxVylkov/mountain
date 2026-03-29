@@ -151,15 +151,18 @@ export function GearPickerModal({
     }
 
     if (toRemove.length > 0) {
-      await supabase
+      const { error: deleteError } = await supabase
         .from('team_required_gear')
         .delete()
         .in('id', toRemove.map(i => i.id))
+      if (deleteError) { setApplying(false); alert(deleteError.message); return }
     }
 
     if (toAdd.length > 0) {
-      const maxOrder = existingItems.length
-      await supabase.from('team_required_gear').insert(
+      const maxOrder = existingItems.length > 0
+        ? Math.max(...existingItems.map(i => i.sort_order)) + 1
+        : 0
+      const { error: insertError } = await supabase.from('team_required_gear').insert(
         toAdd.map((item, idx) => ({
           team_id: teamId,
           name: item.name,
@@ -169,6 +172,7 @@ export function GearPickerModal({
           norm_per_team: item.norm_per_team ?? null,
         }))
       )
+      if (insertError) { setApplying(false); alert(insertError.message); return }
     }
 
     setApplying(false)
@@ -199,7 +203,7 @@ export function GearPickerModal({
     }
 
     if (matched.length > 0) {
-      await supabase.from('team_member_gear').upsert(
+      const { error: upsertError } = await supabase.from('team_member_gear').upsert(
         matched.map(m => ({
           team_id: teamId,
           required_gear_id: m.required_gear_id,
@@ -208,6 +212,7 @@ export function GearPickerModal({
         })),
         { onConflict: 'required_gear_id,user_id' }
       )
+      if (upsertError) { setApplying(false); alert(upsertError.message); return }
     }
 
     setDiffMessage(
@@ -270,23 +275,25 @@ export function GearPickerModal({
             )}
           </div>
 
-          {/* Templates by level */}
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-mountain-muted uppercase tracking-wider">Шаблоны по уровню</p>
-            {LEVEL_KEYS.map(level => {
-              const info = LEVEL_LABELS[level]
-              return (
-                <PickerCard
-                  key={level}
-                  title={info.name}
-                  desc={info.desc}
-                  badge={info.weight}
-                  active={selected?.key === level}
-                  onClick={() => handleSelectLevel(level)}
-                />
-              )
-            })}
-          </div>
+          {/* Templates by level — leader only */}
+          {mode === 'leader' && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-mountain-muted uppercase tracking-wider">Шаблоны по уровню</p>
+              {LEVEL_KEYS.map(level => {
+                const info = LEVEL_LABELS[level]
+                return (
+                  <PickerCard
+                    key={level}
+                    title={info.name}
+                    desc={info.desc}
+                    badge={info.weight}
+                    active={selected?.key === level}
+                    onClick={() => handleSelectLevel(level)}
+                  />
+                )
+              })}
+            </div>
+          )}
 
           {/* Excel import */}
           <div className="space-y-2">
