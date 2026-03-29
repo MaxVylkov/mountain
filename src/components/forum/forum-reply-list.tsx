@@ -19,37 +19,50 @@ export function ForumReplyList({ replies: initialReplies, postId, currentUserId 
   const submit = async () => {
     if (!body.trim() || !currentUserId) return
     setSubmitting(true)
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('forum_replies')
-      .insert({ post_id: postId, author_id: currentUserId, body: body.trim() })
-      .select('*, author:profiles(display_name)')
-      .single()
-    if (data) {
-      setReplies(prev => [...prev, {
-        ...data,
-        author: Array.isArray(data.author) ? data.author[0] : data.author,
-        like_count: 0,
-        liked_by_me: false,
-      }])
-      setBody('')
+    try {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('forum_replies')
+        .insert({ post_id: postId, author_id: currentUserId, body: body.trim() })
+        .select('*, author:profiles(display_name)')
+        .single()
+      if (data) {
+        setReplies(prev => [...prev, {
+          ...data,
+          author: Array.isArray(data.author) ? data.author[0] : data.author,
+          like_count: 0,
+          liked_by_me: false,
+        }])
+        setBody('')
+      }
+    } finally {
+      setSubmitting(false)
     }
-    setSubmitting(false)
   }
 
   const toggleLike = async (replyId: string, liked: boolean) => {
     if (!currentUserId) { window.location.href = '/login'; return }
-    const supabase = createClient()
-    if (liked) {
-      await supabase.from('forum_likes').delete().eq('user_id', currentUserId).eq('reply_id', replyId)
-    } else {
-      await supabase.from('forum_likes').insert({ user_id: currentUserId, reply_id: replyId })
-    }
+    // Optimistic update
     setReplies(prev => prev.map(r =>
       r.id === replyId
         ? { ...r, liked_by_me: !liked, like_count: r.like_count + (liked ? -1 : 1) }
         : r
     ))
+    try {
+      const supabase = createClient()
+      if (liked) {
+        await supabase.from('forum_likes').delete().eq('user_id', currentUserId).eq('reply_id', replyId)
+      } else {
+        await supabase.from('forum_likes').insert({ user_id: currentUserId, reply_id: replyId })
+      }
+    } catch {
+      // Revert on error
+      setReplies(prev => prev.map(r =>
+        r.id === replyId
+          ? { ...r, liked_by_me: liked, like_count: r.like_count + (liked ? 1 : -1) }
+          : r
+      ))
+    }
   }
 
   return (

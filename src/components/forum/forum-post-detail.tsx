@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { ForumPost, ForumReply, ForumAttachment, typeLabel, categoryLabel, formatRelativeTime } from './forum-types'
+import { ForumPost, ForumReply, typeLabel, categoryLabel, formatRelativeTime } from './forum-types'
 import { AttachmentRouteCard } from './attachment-route-card'
 import { AttachmentPackingCard } from './attachment-packing-card'
 import { AttachmentGearChips } from './attachment-gear-chips'
@@ -17,7 +17,6 @@ interface GearChip { gearId: string; gearName: string; category: string }
 interface Props {
   post: ForumPost
   replies: ForumReply[]
-  attachments: ForumAttachment[]
   routeData: RouteData[]
   packingData: PackingData[]
   gearChips: GearChip[]
