@@ -141,8 +141,8 @@ export function getRequired(
   item: Pick<RequiredGearItem, 'norm_per_person' | 'norm_per_team'>,
   memberCount: number
 ): number | null {
-  if (item.norm_per_person !== null) return item.norm_per_person * memberCount
-  if (item.norm_per_team !== null) return item.norm_per_team
+  if (item.norm_per_person != null) return item.norm_per_person * memberCount
+  if (item.norm_per_team != null) return item.norm_per_team
   return null
 }
 

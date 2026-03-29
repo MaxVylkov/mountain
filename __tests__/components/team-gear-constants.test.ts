@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getItemsForLevel, getRequired, getDeficit, LEVEL_ORDER } from '@/components/teams/gear-constants'
+import { getItemsForLevel, getRequired, getDeficit, LEVEL_ORDER, RequiredGearItem } from '@/components/teams/gear-constants'
 
 describe('getItemsForLevel', () => {
   it('light_trek returns only light_trek items', () => {
@@ -24,46 +24,46 @@ describe('getItemsForLevel', () => {
 
   it('sp2 includes all items', () => {
     const items = getItemsForLevel('sp2')
-    // Should have more items than sp3
-    expect(items.length).toBeGreaterThanOrEqual(getItemsForLevel('sp3').length)
+    expect(items.length).toBeGreaterThan(getItemsForLevel('sp3').length)
+    expect(items.find(i => i.name === 'Ледовый инструмент (второй)')).toBeDefined()
   })
 })
 
 describe('getRequired', () => {
   it('norm_per_person × members when norm_per_person set', () => {
-    const item = { norm_per_person: 2, norm_per_team: null } as any
+    const item: Pick<RequiredGearItem, 'norm_per_person' | 'norm_per_team'> = { norm_per_person: 2, norm_per_team: null }
     expect(getRequired(item, 3)).toBe(6)
   })
 
   it('norm_per_team directly when set', () => {
-    const item = { norm_per_person: null, norm_per_team: 5 } as any
+    const item: Pick<RequiredGearItem, 'norm_per_person' | 'norm_per_team'> = { norm_per_person: null, norm_per_team: 5 }
     expect(getRequired(item, 3)).toBe(5)
   })
 
   it('returns null when no norm set', () => {
-    const item = { norm_per_person: null, norm_per_team: null } as any
+    const item: Pick<RequiredGearItem, 'norm_per_person' | 'norm_per_team'> = { norm_per_person: null, norm_per_team: null }
     expect(getRequired(item, 3)).toBeNull()
   })
 })
 
 describe('getDeficit', () => {
   it('returns positive number when shortage', () => {
-    const item = { norm_per_person: 1, norm_per_team: null } as any
+    const item: Pick<RequiredGearItem, 'norm_per_person' | 'norm_per_team'> = { norm_per_person: 1, norm_per_team: null }
     expect(getDeficit(item, 3, 2)).toBe(1) // need 3, have 2
   })
 
   it('returns 0 when exact', () => {
-    const item = { norm_per_person: 1, norm_per_team: null } as any
+    const item: Pick<RequiredGearItem, 'norm_per_person' | 'norm_per_team'> = { norm_per_person: 1, norm_per_team: null }
     expect(getDeficit(item, 3, 3)).toBe(0)
   })
 
   it('returns negative when excess', () => {
-    const item = { norm_per_person: 1, norm_per_team: null } as any
+    const item: Pick<RequiredGearItem, 'norm_per_person' | 'norm_per_team'> = { norm_per_person: 1, norm_per_team: null }
     expect(getDeficit(item, 3, 5)).toBe(-2)
   })
 
   it('returns null when no norm', () => {
-    const item = { norm_per_person: null, norm_per_team: null } as any
+    const item: Pick<RequiredGearItem, 'norm_per_person' | 'norm_per_team'> = { norm_per_person: null, norm_per_team: null }
     expect(getDeficit(item, 3, 2)).toBeNull()
   })
 })
