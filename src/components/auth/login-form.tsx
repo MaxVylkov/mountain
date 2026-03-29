@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { TelegramLogin } from './telegram-login'
 
 export function LoginForm() {
   const router = useRouter()
@@ -62,6 +63,7 @@ export function LoginForm() {
           Создать аккаунт
         </Link>
       </p>
+      <TelegramLogin />
     </form>
   )
 }
