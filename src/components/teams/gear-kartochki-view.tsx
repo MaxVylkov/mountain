@@ -34,7 +34,7 @@ export function GearKartochkiView({ items, memberGear, members, currentUserId }:
         return (
           <div
             key={member.user_id}
-            className={`glass-card p-4 space-y-3 ${isCurrent ? 'border-mountain-primary' : ''}`}
+            className={`glass-card p-4 space-y-3 ${isCurrent ? 'border-2 border-mountain-primary' : ''}`}
           >
             {/* Header */}
             <div className="flex items-center justify-between">
@@ -66,7 +66,7 @@ export function GearKartochkiView({ items, memberGear, members, currentUserId }:
                     <div className="space-y-0.5">
                       {sectionItems.map(item => {
                         const qty = getQuantity(item.id, member.user_id)
-                        const isGroup = item.norm_per_team !== null && item.norm_per_person === null
+                        const isGroup = item.section === 'group'
                         const norm = item.norm_per_person
                         const missing = norm !== null && qty < norm
 
