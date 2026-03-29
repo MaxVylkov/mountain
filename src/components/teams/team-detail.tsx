@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, Users, Wrench, UtensilsCrossed, CheckSquare, Crown } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { TeamMembers } from '@/components/teams/team-members'
-import { TeamGear } from '@/components/teams/team-gear'
+import { TeamGearTab } from '@/components/teams/team-gear-tab'
 import { TeamRations } from '@/components/teams/team-rations'
 import { TeamReadiness } from '@/components/teams/team-readiness'
 
@@ -142,7 +142,7 @@ export function TeamDetail({ teamId, team, currentUserId }: TeamDetailProps) {
           />
         )}
         {activeTab === 'gear' && (
-          <TeamGear teamId={teamId} members={members} currentUserId={currentUserId} />
+          <TeamGearTab teamId={teamId} members={members} currentUserId={currentUserId} isLeader={isLeader} />
         )}
         {activeTab === 'rations' && (
           <TeamRations teamId={teamId} memberCount={members.length} startDate={team.start_date} endDate={team.end_date} />
