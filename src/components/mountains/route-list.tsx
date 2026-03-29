@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
-import { Heart, Check, Target, ChevronDown, ChevronUp } from 'lucide-react'
+import { Heart, Check, Target, ChevronDown, ChevronUp, MessageCircle } from 'lucide-react'
+import { RouteComments } from './route-comments'
 
 interface Route {
   id: string
@@ -46,6 +47,7 @@ export function RouteList({ routes, mountainId }: { routes: Route[]; mountainId:
   const [statuses, setStatuses] = useState<Record<string, RouteStatus>>({})
   const [userId, setUserId] = useState<string | null>(null)
   const [expandedRoute, setExpandedRoute] = useState<string | null>(null)
+  const [adoptedDescs, setAdoptedDescs] = useState<Record<string, any[]>>({})
 
   useEffect(() => {
     const supabase = createClient()
@@ -67,6 +69,19 @@ export function RouteList({ routes, mountainId }: { routes: Route[]; mountainId:
       }
     })
   }, [])
+
+  async function loadAdoptedDescriptions(routeId: string) {
+    if (adoptedDescs[routeId]) return
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('adopted_descriptions')
+      .select('*, author:profiles!adopted_descriptions_author_id_fkey(display_name)')
+      .eq('route_id', routeId)
+      .order('created_at', { ascending: false })
+    if (data) {
+      setAdoptedDescs(prev => ({ ...prev, [routeId]: data }))
+    }
+  }
 
   async function toggleStatus(routeId: string, field: 'completed' | 'want_to_do' | 'favorite') {
     if (!userId) return
@@ -202,7 +217,11 @@ export function RouteList({ routes, mountainId }: { routes: Route[]; mountainId:
             <Card key={route.id} className="space-y-0 p-0 overflow-hidden">
               <div
                 className="p-4 cursor-pointer hover:bg-mountain-surface/50 transition-colors"
-                onClick={() => setExpandedRoute(isExpanded ? null : route.id)}
+                onClick={() => {
+                  const next = isExpanded ? null : route.id
+                  setExpandedRoute(next)
+                  if (next) loadAdoptedDescriptions(next)
+                }}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -260,6 +279,7 @@ export function RouteList({ routes, mountainId }: { routes: Route[]; mountainId:
                         </button>
                       </>
                     )}
+                    <MessageCircle size={14} className="text-mountain-muted" />
                     {isExpanded ? <ChevronUp size={18} className="text-mountain-muted" /> : <ChevronDown size={18} className="text-mountain-muted" />}
                   </div>
                 </div>
@@ -270,6 +290,14 @@ export function RouteList({ routes, mountainId }: { routes: Route[]; mountainId:
                   <p className="text-sm text-mountain-muted leading-relaxed whitespace-pre-line">
                     {route.description}
                   </p>
+                  {adoptedDescs[route.id]?.map((ad: any) => (
+                    <div key={ad.id} className="mt-4 p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
+                      <p className="text-xs text-amber-400 font-medium mb-1">Альтернативное описание</p>
+                      <p className="text-sm text-mountain-text whitespace-pre-wrap">{ad.text}</p>
+                      <p className="text-xs text-mountain-muted mt-2">— {ad.author?.display_name || 'Аноним'}</p>
+                    </div>
+                  ))}
+                  <RouteComments routeId={route.id} currentUserId={userId} />
                 </div>
               )}
             </Card>
