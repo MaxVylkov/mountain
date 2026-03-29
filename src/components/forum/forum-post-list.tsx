@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { ForumPost, ForumCategory } from './forum-types'
 import { ForumPostCard } from './forum-post-card'
+import { CreatePostModal } from './create-post-modal'
 
 interface Props {
   posts: ForumPost[]
@@ -58,16 +59,13 @@ export function ForumPostList({ posts, category, currentUserId }: Props) {
         </div>
       )}
 
-      {/* Modal placeholder — wired in Task 7 */}
-      {showModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-          onClick={() => setShowModal(false)}
-        >
-          <div className="glass-card p-6 text-mountain-text" onClick={e => e.stopPropagation()}>
-            Создание поста — скоро
-          </div>
-        </div>
+      {/* Post creation modal */}
+      {showModal && currentUserId && (
+        <CreatePostModal
+          category={category}
+          currentUserId={currentUserId}
+          onClose={() => setShowModal(false)}
+        />
       )}
     </div>
   )
