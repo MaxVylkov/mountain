@@ -57,13 +57,22 @@ DECLARE
   old_bp_id    uuid;
   new_bp_id    uuid;
 BEGIN
+  IF auth.uid() IS DISTINCT FROM target_user_id THEN
+    RAISE EXCEPTION 'permission denied: cannot copy to another user';
+  END IF;
+
   SELECT name INTO source_name FROM packing_sets WHERE id = source_set_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'packing set % not found', source_set_id;
+  END IF;
 
   INSERT INTO packing_sets (user_id, name)
     VALUES (target_user_id, source_name || ' (копия)')
     RETURNING id INTO new_set_id;
 
-  CREATE TEMP TABLE _bp_map (old_id uuid, new_id uuid) ON COMMIT DROP;
+  CREATE TEMP TABLE IF NOT EXISTS _bp_map (old_id uuid, new_id uuid) ON COMMIT DROP;
+  DELETE FROM _bp_map;
 
   FOR old_bp_id IN
     SELECT id FROM packing_backpacks WHERE packing_set_id = source_set_id
