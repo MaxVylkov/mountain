@@ -16,6 +16,7 @@ import {
   UsersRound,
   MessageCircle,
   ChevronDown,
+  Globe,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { MobileMenu } from './mobile-menu'
@@ -36,6 +37,7 @@ const navLinks: NavLink[] = [
   { href: '/knowledge', label: 'Знания', icon: BookOpen },
   { href: '/knots', label: 'Узлы', icon: Grip },
   { href: '/training', label: 'Тренировки', icon: Dumbbell },
+  { href: '/resources', label: 'Ресурсы', icon: Globe },
   { href: '/gear', label: 'Кладовка', icon: Backpack },
   { href: '/rations', label: 'Раскладка', icon: UtensilsCrossed },
   { href: '/forum', label: 'Форум', icon: MessageCircle },
@@ -51,6 +53,7 @@ const learningLinks: NavLink[] = [
   { href: '/knowledge', label: 'Знания', icon: BookOpen },
   { href: '/knots', label: 'Узлы', icon: Grip },
   { href: '/training', label: 'Тренировки', icon: Dumbbell },
+  { href: '/resources', label: 'Ресурсы', icon: Globe },
 ]
 
 const gearLinks: NavLink[] = [
