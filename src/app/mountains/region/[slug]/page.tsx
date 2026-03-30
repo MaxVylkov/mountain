@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { RegionRouteList } from '@/components/mountains/region-route-list'
+import { RegionStatusButtons } from '@/components/mountains/region-status-buttons'
 
 export default async function RegionPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -33,12 +34,15 @@ export default async function RegionPage({ params }: { params: Promise<{ slug: s
         <span className="text-mountain-text">{region}</span>
       </nav>
 
-      <div>
-        <p className="text-xs font-semibold tracking-[0.15em] uppercase text-mountain-muted mb-2">Регион</p>
-        <h1 className="text-3xl font-bold text-mountain-text">{region}</h1>
-        <p className="text-mountain-muted mt-1 text-sm">
-          {mountains.length} {mountains.length === 1 ? 'вершина' : mountains.length < 5 ? 'вершины' : 'вершин'} · {routes?.length || 0} маршрутов
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <p className="text-xs font-semibold tracking-[0.15em] uppercase text-mountain-muted mb-2">Регион</p>
+          <h1 className="text-3xl font-bold text-mountain-text">{region}</h1>
+          <p className="text-mountain-muted mt-1 text-sm">
+            {mountains.length} {mountains.length === 1 ? 'вершина' : mountains.length < 5 ? 'вершины' : 'вершин'} · {routes?.length || 0} маршрутов
+          </p>
+        </div>
+        <RegionStatusButtons region={region} />
       </div>
 
       <RegionRouteList mountains={mountains} routes={routes || []} />
