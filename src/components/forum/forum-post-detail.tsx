@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ForumPost, ForumReply, typeLabel, categoryLabel, formatRelativeTime } from './forum-types'
 import { AttachmentRouteCard } from './attachment-route-card'
@@ -26,6 +27,7 @@ interface Props {
 }
 
 export function ForumPostDetail({ post, replies, routeData, packingData, gearChips, currentUserId }: Props) {
+  const router = useRouter()
   const [liked, setLiked] = useState(post.liked_by_me ?? false)
   const [likeCount, setLikeCount] = useState(post.like_count ?? 0)
 
@@ -106,7 +108,7 @@ export function ForumPostDetail({ post, replies, routeData, packingData, gearChi
   }
 
   const toggleLike = async () => {
-    if (!currentUserId) { window.location.href = '/login'; return }
+    if (!currentUserId) { router.push('/login'); return }
     const supabase = createClient()
     if (liked) {
       await supabase.from('forum_likes').delete().eq('user_id', currentUserId).eq('post_id', post.id)
@@ -131,9 +133,9 @@ export function ForumPostDetail({ post, replies, routeData, packingData, gearChi
           <div className="space-y-1 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                post.type === 'thread' ? 'bg-blue-500/15 text-blue-400' : 'bg-emerald-500/15 text-emerald-400'
+                post.type === 'thread' ? 'bg-mountain-primary/15 text-mountain-primary' : 'bg-mountain-success/15 text-mountain-success'
               }`}>
-                {typeLabel(post.type)}
+                {post.type === 'thread' ? 'Обсуждение' : 'Отчёт'}
               </span>
             </div>
 
@@ -182,6 +184,8 @@ export function ForumPostDetail({ post, replies, routeData, packingData, gearChi
             )}
             <button
               onClick={toggleLike}
+              aria-label={liked ? 'Убрать лайк' : 'Поставить лайк'}
+              aria-pressed={liked}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm transition-colors ${
                 liked
                   ? 'border-mountain-primary text-mountain-primary'

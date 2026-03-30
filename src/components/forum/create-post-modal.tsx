@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ForumCategory, PostType } from './forum-types'
-import { X, MapPin, Search } from 'lucide-react'
+import { X, MapPin, Search, Package } from 'lucide-react'
 
 interface PreAttached {
   type: 'route'
@@ -89,6 +89,15 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  // Escape key handler — close modal
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [onClose])
+
   const loadPackingSets = async () => {
     if (packingLoaded) return
     const supabase = createClient()
@@ -96,6 +105,12 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
     setPackingSets(data ?? [])
     setPackingLoaded(true)
   }
+
+  // Load packing sets on mount
+  useEffect(() => {
+    loadPackingSets()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const submit = async () => {
     if (!title.trim()) return
@@ -144,11 +159,20 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-mountain-bg border border-mountain-border rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-post-title"
+        className="w-full max-w-lg bg-mountain-bg border border-mountain-border rounded-2xl shadow-2xl flex flex-col max-h-[90vh]"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-mountain-border">
-          <h2 className="font-semibold text-mountain-text">Новый пост</h2>
-          <button onClick={onClose} className="text-mountain-muted hover:text-mountain-text transition-colors">
+          <h2 id="create-post-title" className="font-semibold text-mountain-text">Новый пост</h2>
+          <button
+            onClick={onClose}
+            aria-label="Закрыть"
+            className="text-mountain-muted hover:text-mountain-text transition-colors"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -160,6 +184,7 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
               <button
                 key={t}
                 onClick={() => setType(t)}
+                aria-pressed={type === t}
                 className={`flex-1 py-2 text-sm font-medium transition-colors ${
                   type === t ? 'bg-mountain-primary text-white' : 'text-mountain-muted hover:text-mountain-text'
                 }`}
@@ -168,9 +193,14 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
               </button>
             ))}
           </div>
+          <p className="text-xs text-mountain-muted">
+            {type === 'thread' ? 'Вопрос или обсуждение с сообществом' : 'Рассказ о пройденном маршруте или восхождении'}
+          </p>
 
           {/* Title */}
+          <label htmlFor="post-title" className="sr-only">Заголовок поста</label>
           <input
+            id="post-title"
             type="text"
             value={title}
             onChange={e => setTitle(e.target.value)}
@@ -221,8 +251,10 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
                   ) : (
                     <>
                       <div className="relative">
+                        <label htmlFor="route-search" className="sr-only">Поиск маршрута</label>
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-mountain-muted pointer-events-none" />
                         <input
+                          id="route-search"
                           type="text"
                           value={routeQuery}
                           onChange={e => searchRoutes(e.target.value)}
@@ -265,27 +297,26 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
           )}
 
           {/* Packing set picker */}
-          <div>
-            <button
-              onClick={loadPackingSets}
-              className="text-xs text-mountain-primary hover:underline"
-            >
-              + Прикрепить сборку снаряжения
-            </button>
-            {packingLoaded && packingSets.length > 0 && (
+          <div className="space-y-2">
+            <label className="flex items-center gap-1.5 text-xs font-medium text-mountain-muted">
+              <Package className="w-3.5 h-3.5" />
+              Сборка снаряжения
+            </label>
+            {!packingLoaded ? (
+              <p className="text-xs text-mountain-muted">Загрузка...</p>
+            ) : packingSets.length > 0 ? (
               <select
                 value={selectedPackingId ?? ''}
                 onChange={e => setSelectedPackingId(e.target.value || null)}
-                className="mt-2 w-full rounded-xl border border-mountain-border bg-mountain-bg px-3 py-2 text-sm text-mountain-text focus:outline-none focus:border-mountain-primary"
+                className="w-full rounded-xl border border-mountain-border bg-mountain-bg px-3 py-2 text-sm text-mountain-text focus:outline-none focus:border-mountain-primary"
               >
                 <option value="">— Не прикреплять —</option>
                 {packingSets.map(s => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
-            )}
-            {packingLoaded && packingSets.length === 0 && (
-              <p className="mt-1 text-xs text-mountain-muted">У вас пока нет сборок в кладовке</p>
+            ) : (
+              <p className="text-xs text-mountain-muted">У вас пока нет сборок в кладовке</p>
             )}
           </div>
         </div>

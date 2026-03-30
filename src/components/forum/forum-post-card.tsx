@@ -12,9 +12,9 @@ export function ForumPostCard({ post }: Props) {
       <div className="surface-card interactive-card p-4 space-y-2">
         <div className="flex items-start gap-2">
           <span className={`shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full mt-0.5 ${
-            post.type === 'thread' ? 'bg-blue-500/15 text-blue-400' : 'bg-emerald-500/15 text-emerald-400'
+            post.type === 'thread' ? 'bg-mountain-primary/15 text-mountain-primary' : 'bg-mountain-success/15 text-mountain-success'
           }`}>
-            {typeLabel(post.type)}
+            {post.type === 'thread' ? 'Обсуждение' : 'Отчёт'}
           </span>
           <h3 className="text-sm font-semibold text-mountain-text leading-snug flex-1">{post.title}</h3>
         </div>

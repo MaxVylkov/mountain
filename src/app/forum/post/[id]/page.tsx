@@ -50,20 +50,30 @@ export default async function ForumPostPage({ params }: Props) {
     .eq('post_id', id)
     .order('created_at', { ascending: true })
 
-  // Fetch per-reply like counts and liked_by_me
-  const replies: ForumReply[] = await Promise.all((rawReplies ?? []).map(async (r: any) => {
-    const { count: rLikeCount } = await supabase
-      .from('forum_likes').select('*', { count: 'exact', head: true }).eq('reply_id', r.id)
-      .then(res => ({ count: res.count ?? 0 }))
-    const liked = user
-      ? (await supabase.from('forum_likes').select('id').eq('user_id', user.id).eq('reply_id', r.id).maybeSingle()).data !== null
-      : false
-    return {
-      ...r,
-      author: Array.isArray(r.author) ? r.author[0] : r.author,
-      like_count: rLikeCount,
-      liked_by_me: liked,
-    }
+  // Fetch reply like counts and liked_by_me with 2 batch queries instead of 2N
+  const replyIds = (rawReplies ?? []).map((r: any) => r.id)
+
+  const [replyLikesAll, replyLikedByMe] = replyIds.length > 0
+    ? await Promise.all([
+        supabase.from('forum_likes').select('reply_id').in('reply_id', replyIds)
+          .then(({ data }) => data ?? []),
+        user
+          ? supabase.from('forum_likes').select('reply_id').eq('user_id', user.id).in('reply_id', replyIds)
+              .then(({ data }) => new Set((data ?? []).map((r: any) => r.reply_id)))
+          : Promise.resolve(new Set<string>()),
+      ])
+    : [[], new Set<string>()]
+
+  const replyLikeCountMap = (replyLikesAll as { reply_id: string }[]).reduce<Record<string, number>>((acc, row) => {
+    acc[row.reply_id] = (acc[row.reply_id] ?? 0) + 1
+    return acc
+  }, {})
+
+  const replies: ForumReply[] = (rawReplies ?? []).map((r: any) => ({
+    ...r,
+    author: Array.isArray(r.author) ? r.author[0] : r.author,
+    like_count: replyLikeCountMap[r.id] ?? 0,
+    liked_by_me: (replyLikedByMe as Set<string>).has(r.id),
   }))
 
   // Fetch attachments

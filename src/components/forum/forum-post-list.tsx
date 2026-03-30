@@ -29,7 +29,7 @@ export function ForumPostList({ posts, category, currentUserId }: Props) {
               key={s}
               href={`?sort=${s}`}
               className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                sort === s ? 'bg-mountain-surface text-mountain-text' : 'text-mountain-muted hover:text-mountain-text'
+                sort === s ? 'bg-mountain-primary/10 text-mountain-primary font-semibold' : 'text-mountain-muted hover:text-mountain-text'
               }`}
             >
               {s === 'new' ? 'Новые' : s === 'popular' ? 'Популярные' : 'Обсуждаемые'}

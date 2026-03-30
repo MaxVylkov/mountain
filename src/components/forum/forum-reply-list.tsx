@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ForumReply, formatRelativeTime } from './forum-types'
 import { ThumbsUp, Send } from 'lucide-react'
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function ForumReplyList({ replies: initialReplies, postId, currentUserId }: Props) {
+  const router = useRouter()
   const [replies, setReplies] = useState(initialReplies)
   const [body, setBody] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -41,7 +43,7 @@ export function ForumReplyList({ replies: initialReplies, postId, currentUserId 
   }
 
   const toggleLike = async (replyId: string, liked: boolean) => {
-    if (!currentUserId) { window.location.href = '/login'; return }
+    if (!currentUserId) { router.push('/login'); return }
     // Optimistic update
     setReplies(prev => prev.map(r =>
       r.id === replyId
@@ -80,6 +82,8 @@ export function ForumReplyList({ replies: initialReplies, postId, currentUserId 
           <p className="text-sm text-mountain-text leading-relaxed whitespace-pre-wrap">{reply.body}</p>
           <button
             onClick={() => toggleLike(reply.id, reply.liked_by_me)}
+            aria-label={reply.liked_by_me ? 'Убрать лайк' : 'Поставить лайк'}
+            aria-pressed={reply.liked_by_me}
             className={`flex items-center gap-1 text-xs transition-colors ${
               reply.liked_by_me ? 'text-mountain-primary' : 'text-mountain-muted hover:text-mountain-text'
             }`}
@@ -93,7 +97,9 @@ export function ForumReplyList({ replies: initialReplies, postId, currentUserId 
       {/* Reply form */}
       {currentUserId ? (
         <div className="flex gap-2">
+          <label htmlFor="reply-body" className="sr-only">Написать комментарий</label>
           <textarea
+            id="reply-body"
             value={body}
             onChange={e => setBody(e.target.value)}
             placeholder="Написать комментарий..."

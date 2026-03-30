@@ -29,10 +29,14 @@ export function ForumCategoryTabs() {
         )
       })}
       {/* Лента tab — disabled, coming soon */}
-      <span className="px-4 py-2.5 text-sm font-medium text-mountain-muted/50 border-b-2 border-transparent whitespace-nowrap flex items-center gap-1.5 cursor-not-allowed">
+      <button
+        disabled
+        aria-disabled="true"
+        className="px-4 py-2.5 text-sm font-medium text-mountain-muted/50 border-b-2 border-transparent whitespace-nowrap flex items-center gap-1.5 cursor-not-allowed"
+      >
         Лента
         <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-mountain-surface text-mountain-muted">Скоро</span>
-      </span>
+      </button>
     </div>
   )
 }
