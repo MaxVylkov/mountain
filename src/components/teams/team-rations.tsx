@@ -224,14 +224,16 @@ export function TeamRations({ teamId, memberCount, startDate, endDate }: TeamRat
           <div className="flex items-center justify-center gap-2">
             <button
               onClick={() => setPeople(p => Math.max(1, p - 1))}
-              className="w-6 h-6 rounded-full bg-mountain-surface border border-mountain-border text-mountain-text text-sm flex items-center justify-center hover:bg-mountain-border"
+              aria-label="Уменьшить количество участников"
+              className="w-10 h-10 rounded-full bg-mountain-surface border border-mountain-border text-mountain-text text-sm flex items-center justify-center hover:bg-mountain-border"
             >
               −
             </button>
             <span className="text-xl font-bold text-mountain-text">{people}</span>
             <button
               onClick={() => setPeople(p => p + 1)}
-              className="w-6 h-6 rounded-full bg-mountain-surface border border-mountain-border text-mountain-text text-sm flex items-center justify-center hover:bg-mountain-border"
+              aria-label="Увеличить количество участников"
+              className="w-10 h-10 rounded-full bg-mountain-surface border border-mountain-border text-mountain-text text-sm flex items-center justify-center hover:bg-mountain-border"
             >
               +
             </button>

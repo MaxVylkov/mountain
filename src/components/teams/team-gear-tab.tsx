@@ -25,6 +25,9 @@ export function TeamGearTab({ teamId, members, currentUserId, isLeader }: TeamGe
   const [loading, setLoading] = useState(true)
   const [showPicker, setShowPicker] = useState(false)
   const [pickerMode, setPickerMode] = useState<'leader' | 'member'>('member')
+  const [showTemplateInput, setShowTemplateInput] = useState(false)
+  const [templateInputValue, setTemplateInputValue] = useState('')
+  const [templateSaveMsg, setTemplateSaveMsg] = useState<string | null>(null)
 
   const storageKey = `mountaine_team_gear_view_${teamId}`
   const [view, setView] = useState<ViewMode>(() => {
@@ -122,10 +125,7 @@ export function TeamGearTab({ teamId, members, currentUserId, isLeader }: TeamGe
 
   const saveGroupTemplate = async () => {
     const groupItems = items.filter(i => i.section === 'group')
-    if (groupItems.length === 0) return
-
-    const name = prompt('Название шаблона:')
-    if (!name?.trim()) return
+    if (groupItems.length === 0 || !templateInputValue.trim()) return
 
     const supabase = createClient()
     const templateItems = groupItems.map(i => ({
@@ -137,12 +137,18 @@ export function TeamGearTab({ teamId, members, currentUserId, isLeader }: TeamGe
 
     const { error } = await supabase.from('team_gear_templates').insert({
       user_id: currentUserId,
-      name: name.trim(),
+      name: templateInputValue.trim(),
       items: templateItems,
     })
 
-    if (error) alert('Ошибка: ' + error.message)
-    else alert('Шаблон сохранён!')
+    if (error) {
+      setTemplateSaveMsg('Ошибка: ' + error.message)
+    } else {
+      setTemplateSaveMsg('Шаблон сохранён!')
+      setTemplateInputValue('')
+      setShowTemplateInput(false)
+      setTimeout(() => setTemplateSaveMsg(null), 3000)
+    }
   }
 
   if (loading) {
@@ -176,7 +182,7 @@ export function TeamGearTab({ teamId, members, currentUserId, isLeader }: TeamGe
           </Button>
         )}
         {hasItems && isLeader && items.some(i => i.section === 'group') && (
-          <Button variant="outline" onClick={saveGroupTemplate}>
+          <Button variant="outline" onClick={() => setShowTemplateInput(v => !v)}>
             <BookmarkPlus className="w-4 h-4 mr-1.5" />
             Сохранить шаблон
           </Button>
@@ -210,6 +216,28 @@ export function TeamGearTab({ teamId, members, currentUserId, isLeader }: TeamGe
           </div>
         )}
       </div>
+
+      {/* Inline template name input */}
+      {showTemplateInput && (
+        <div className="flex items-center gap-2">
+          <input
+            autoFocus
+            value={templateInputValue}
+            onChange={e => setTemplateInputValue(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') saveGroupTemplate()
+              if (e.key === 'Escape') setShowTemplateInput(false)
+            }}
+            placeholder="Название шаблона..."
+            className="flex-1 px-3 py-1.5 bg-mountain-bg border border-mountain-border rounded-lg text-sm text-mountain-text placeholder:text-mountain-muted focus:outline-none focus:border-mountain-primary"
+          />
+          <Button onClick={saveGroupTemplate} disabled={!templateInputValue.trim()}>Сохранить</Button>
+          <Button variant="outline" onClick={() => setShowTemplateInput(false)}>Отмена</Button>
+        </div>
+      )}
+      {templateSaveMsg && (
+        <p className="text-sm text-mountain-success">{templateSaveMsg}</p>
+      )}
 
       {/* Empty state */}
       {!hasItems && (
@@ -255,9 +283,9 @@ export function TeamGearTab({ teamId, members, currentUserId, isLeader }: TeamGe
       {/* Legend (Svodka only) */}
       {hasItems && view === 'svodka' && (
         <div className="flex flex-wrap gap-4 text-xs text-mountain-muted px-1">
-          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-500/20 inline-block" /> Достаточно</span>
-          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-500/20 inline-block" /> Не хватает</span>
-          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-500/20 inline-block" /> Лишнее</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-mountain-success/20 inline-block" /> Достаточно</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-mountain-danger/20 inline-block" /> Не хватает</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-mountain-accent/20 inline-block" /> Лишнее</span>
           <span className="flex items-center gap-1.5 text-mountain-primary">● Колонка «Моё» — нажмите для быстрого ввода</span>
         </div>
       )}

@@ -23,6 +23,22 @@ interface Member {
   profile: { display_name: string } | null
 }
 
+function copyToClipboard(text: string) {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).catch(() => {})
+    return
+  }
+  const ta = document.createElement('textarea')
+  ta.value = text
+  ta.style.position = 'fixed'
+  ta.style.left = '-9999px'
+  document.body.appendChild(ta)
+  ta.focus()
+  ta.select()
+  document.execCommand('copy')
+  document.body.removeChild(ta)
+}
+
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('ru-RU', {
     day: 'numeric',
@@ -55,9 +71,9 @@ export function TeamMembers({ teamId, leaderId, currentUserId, inviteToken }: Te
     loadMembers()
   }, [loadMembers])
 
-  const handleCopyInvite = async () => {
+  const handleCopyInvite = () => {
     const link = `${window.location.origin}/teams/join/${inviteToken}`
-    await navigator.clipboard.writeText(link)
+    copyToClipboard(link)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -104,11 +120,11 @@ export function TeamMembers({ teamId, leaderId, currentUserId, inviteToken }: Te
                       {member.profile?.display_name ?? 'Без имени'}
                     </span>
                     {isMemberLeader ? (
-                      <span className="inline-flex px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 text-xs font-medium">
+                      <span className="inline-flex px-2 py-0.5 rounded-md bg-mountain-accent/20 text-mountain-accent text-xs font-medium">
                         Руководитель
                       </span>
                     ) : (
-                      <span className="inline-flex px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-400 text-xs font-medium">
+                      <span className="inline-flex px-2 py-0.5 rounded-md bg-mountain-primary/20 text-mountain-primary text-xs font-medium">
                         Участник
                       </span>
                     )}

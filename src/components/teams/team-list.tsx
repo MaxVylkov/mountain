@@ -16,16 +16,13 @@ interface TeamData {
   end_date: string | null
   leader_id: string
   mountain: { name: string } | null
+  team_members: { count: number }[]
 }
 
 interface TeamMemberRow {
   team_id: string
   role: string
   team: TeamData
-}
-
-interface TeamWithCount extends TeamMemberRow {
-  memberCount: number
 }
 
 interface TeamListProps {
@@ -42,7 +39,7 @@ function formatDate(dateStr: string): string {
 
 export default function TeamList({ userId, mountains }: TeamListProps) {
   const router = useRouter()
-  const [teams, setTeams] = useState<TeamWithCount[]>([])
+  const [teams, setTeams] = useState<TeamMemberRow[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
 
@@ -52,27 +49,10 @@ export default function TeamList({ userId, mountains }: TeamListProps) {
 
     const { data } = await supabase
       .from('team_members')
-      .select('team_id, role, team:teams(id, name, description, start_date, end_date, leader_id, mountain:mountains(name))')
+      .select('team_id, role, team:teams(id, name, description, start_date, end_date, leader_id, mountain:mountains(name), team_members(count))')
       .eq('user_id', userId)
 
-    if (!data || data.length === 0) {
-      setTeams([])
-      setLoading(false)
-      return
-    }
-
-    const teamsWithCounts: TeamWithCount[] = await Promise.all(
-      (data as unknown as TeamMemberRow[]).map(async (row) => {
-        const { count } = await supabase
-          .from('team_members')
-          .select('*', { count: 'exact', head: true })
-          .eq('team_id', row.team_id)
-
-        return { ...row, memberCount: count ?? 0 }
-      })
-    )
-
-    setTeams(teamsWithCounts)
+    setTeams((data ?? []) as unknown as TeamMemberRow[])
     setLoading(false)
   }
 
@@ -155,12 +135,10 @@ export default function TeamList({ userId, mountains }: TeamListProps) {
                   )}
 
                   <span>
-                    {item.memberCount}{' '}
-                    {item.memberCount === 1
-                      ? 'участник'
-                      : item.memberCount >= 2 && item.memberCount <= 4
-                        ? 'участника'
-                        : 'участников'}
+                    {(() => {
+                      const c = item.team.team_members[0]?.count ?? 0
+                      return `${c} ${c === 1 ? 'участник' : c >= 2 && c <= 4 ? 'участника' : 'участников'}`
+                    })()}
                   </span>
                 </div>
               </div>

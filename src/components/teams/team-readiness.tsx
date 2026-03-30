@@ -139,9 +139,16 @@ export function TeamReadiness({ teamId, members, currentUserId, isLeader }: Team
             {checkedItems}/{totalItems}
           </span>
         </div>
-        <div className="w-full h-3 rounded-full bg-mountain-surface border border-mountain-border overflow-hidden">
+        <div
+          className="w-full h-3 rounded-full bg-mountain-surface border border-mountain-border overflow-hidden"
+          role="progressbar"
+          aria-valuenow={overallPercent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Готовность отделения"
+        >
           <div
-            className="h-full rounded-full bg-green-500 transition-all duration-300"
+            className="h-full rounded-full bg-mountain-success transition-all duration-300"
             style={{ width: `${overallPercent}%` }}
           />
         </div>
@@ -195,7 +202,7 @@ export function TeamReadiness({ teamId, members, currentUserId, isLeader }: Team
                         {isTogglingThis ? (
                           <Loader2 className="w-5 h-5 animate-spin text-mountain-muted" />
                         ) : checked ? (
-                          <CheckCircle className="w-5 h-5 text-green-500" />
+                          <CheckCircle className="w-5 h-5 text-mountain-success" />
                         ) : (
                           <Circle className="w-5 h-5 text-mountain-muted/40" />
                         )}
@@ -225,13 +232,19 @@ export function TeamReadiness({ teamId, members, currentUserId, isLeader }: Team
                   {checked}/{DEFAULT_ITEMS.length} готов
                 </span>
               </div>
-              <div className="w-full h-2 rounded-full bg-mountain-surface border border-mountain-border overflow-hidden">
+              <div
+                className="w-full h-2 rounded-full bg-mountain-surface border border-mountain-border overflow-hidden"
+                role="progressbar"
+                aria-valuenow={percent}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`Готовность: ${m.display_name}`}
+              >
                 <div
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{
-                    width: `${percent}%`,
-                    backgroundColor: percent === 100 ? '#22c55e' : percent >= 50 ? '#eab308' : '#ef4444',
-                  }}
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    percent === 100 ? 'bg-mountain-success' : percent >= 50 ? 'bg-mountain-accent' : 'bg-mountain-danger'
+                  }`}
+                  style={{ width: `${percent}%` }}
                 />
               </div>
             </Card>

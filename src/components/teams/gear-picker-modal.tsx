@@ -44,6 +44,8 @@ export function GearPickerModal({
   const [previewItems, setPreviewItems] = useState<TemplateItem[]>([])
   const [applying, setApplying] = useState(false)
   const [diffMessage, setDiffMessage] = useState<string | null>(null)
+  const [pendingDiff, setPendingDiff] = useState<{ toAdd: TemplateItem[]; toRemove: RequiredGearItem[] } | null>(null)
+  const [inlineError, setInlineError] = useState<string | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -154,34 +156,17 @@ export function GearPickerModal({
     e.target.value = ''
   }
 
-  const applyLeader = async () => {
+  const doApplyLeader = async (toAdd: TemplateItem[], toRemove: RequiredGearItem[]) => {
     setApplying(true)
+    setInlineError(null)
     const supabase = createClient()
-
-    const incomingNames = new Set(previewItems.map(i => i.name.toLowerCase()))
-    const existingNames = new Set(existingItems.map(i => i.name.toLowerCase()))
-
-    const toAdd = previewItems.filter(i => !existingNames.has(i.name.toLowerCase()))
-    const toRemove = existingItems.filter(i => !incomingNames.has(i.name.toLowerCase()))
-
-    if (existingItems.length > 0) {
-      const addNames = toAdd.map(i => i.name).join(', ') || 'нет'
-      const removeNames = toRemove.map(i => i.name).join(', ') || 'нет'
-      const warn = toRemove.length > 0
-        ? `\n\n⚠ Удалённые позиции потеряют данные всех участников.`
-        : ''
-      const confirmed = confirm(
-        `Будет добавлено: ${addNames}\nБудет удалено: ${removeNames}${warn}\n\nПродолжить?`
-      )
-      if (!confirmed) { setApplying(false); return }
-    }
 
     if (toRemove.length > 0) {
       const { error: deleteError } = await supabase
         .from('team_required_gear')
         .delete()
         .in('id', toRemove.map(i => i.id))
-      if (deleteError) { setApplying(false); alert(deleteError.message); return }
+      if (deleteError) { setApplying(false); setInlineError(deleteError.message); return }
     }
 
     if (toAdd.length > 0) {
@@ -198,11 +183,26 @@ export function GearPickerModal({
           norm_per_team: item.norm_per_team ?? null,
         }))
       )
-      if (insertError) { setApplying(false); alert(insertError.message); return }
+      if (insertError) { setApplying(false); setInlineError(insertError.message); return }
     }
 
     setApplying(false)
     onDone()
+  }
+
+  const applyLeader = async () => {
+    const incomingNames = new Set(previewItems.map(i => i.name.toLowerCase()))
+    const existingNames = new Set(existingItems.map(i => i.name.toLowerCase()))
+
+    const toAdd = previewItems.filter(i => !existingNames.has(i.name.toLowerCase()))
+    const toRemove = existingItems.filter(i => !incomingNames.has(i.name.toLowerCase()))
+
+    if (existingItems.length > 0 && (toAdd.length > 0 || toRemove.length > 0)) {
+      setPendingDiff({ toAdd, toRemove })
+      return
+    }
+
+    await doApplyLeader(toAdd, toRemove)
   }
 
   const applyMember = async () => {
@@ -238,7 +238,7 @@ export function GearPickerModal({
         })),
         { onConflict: 'required_gear_id,user_id' }
       )
-      if (upsertError) { setApplying(false); alert(upsertError.message); return }
+      if (upsertError) { setApplying(false); setInlineError(upsertError.message); return }
     }
 
     setDiffMessage(
@@ -252,6 +252,14 @@ export function GearPickerModal({
 
   // memberCount is part of the interface for future use (e.g. norm calculations)
   void memberCount
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
 
   return (
     <div
@@ -379,9 +387,37 @@ export function GearPickerModal({
           {diffMessage && (
             <p className="text-sm text-mountain-muted bg-mountain-surface rounded-lg px-3 py-2">{diffMessage}</p>
           )}
+
+          {/* Inline confirmation panel */}
+          {pendingDiff && (
+            <div className="rounded-xl border border-mountain-accent/50 bg-mountain-accent/10 p-4 space-y-3">
+              <p className="text-sm font-medium text-mountain-text">Подтвердите изменения:</p>
+              {pendingDiff.toAdd.length > 0 && (
+                <p className="text-xs text-mountain-muted">+ Добавить: {pendingDiff.toAdd.map(i => i.name).join(', ')}</p>
+              )}
+              {pendingDiff.toRemove.length > 0 && (
+                <p className="text-xs text-mountain-danger">− Удалить: {pendingDiff.toRemove.map(i => i.name).join(', ')}</p>
+              )}
+              {pendingDiff.toRemove.length > 0 && (
+                <p className="text-xs text-mountain-muted">⚠ Удалённые позиции потеряют данные всех участников.</p>
+              )}
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => { const d = pendingDiff; setPendingDiff(null); doApplyLeader(d.toAdd, d.toRemove) }}
+                  disabled={applying}
+                >
+                  {applying ? 'Применение...' : 'Подтвердить'}
+                </Button>
+                <Button variant="outline" onClick={() => setPendingDiff(null)}>Отмена</Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
+        {inlineError && (
+          <p className="px-6 pb-2 text-sm text-mountain-danger">{inlineError}</p>
+        )}
         <div className="p-6 pt-4 border-t border-mountain-border flex gap-3">
           {mode === 'member' && diffMessage ? (
             <Button className="flex-1" onClick={onClose}>Закрыть</Button>
