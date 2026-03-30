@@ -19,9 +19,13 @@ export function ForumPostCard({ post }: Props) {
           <h3 className="text-sm font-semibold text-mountain-text leading-snug flex-1">{post.title}</h3>
         </div>
 
-        {post.route_note && (
+        {(post.attached_route || post.route_note) && (
           <p className="flex items-center gap-1 text-xs text-mountain-muted">
-            <MapPin className="w-3 h-3 shrink-0" />{post.route_note}
+            <MapPin className="w-3 h-3 shrink-0 text-mountain-primary" />
+            {post.attached_route
+              ? <><span className="text-mountain-text font-medium">{post.attached_route.name}</span>{post.attached_route.mountainName && <span className="text-mountain-muted"> · {post.attached_route.mountainName}</span>}</>
+              : post.route_note
+            }
           </p>
         )}
 

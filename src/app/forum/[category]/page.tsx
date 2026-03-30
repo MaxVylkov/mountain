@@ -35,21 +35,62 @@ export default async function ForumCategoryPage({ params, searchParams }: Props)
 
   const { data: rawPosts } = await query.limit(50)
 
+  const postList = rawPosts ?? []
+  const postIds = postList.map((p: any) => p.id)
+
+  // Batch: counts + route attachments
+  const [likeCounts, replyCounts, routeAttachments] = await Promise.all([
+    postIds.length > 0
+      ? supabase.from('forum_likes').select('post_id').in('post_id', postIds)
+          .then(({ data }) => {
+            const map: Record<string, number> = {}
+            ;(data ?? []).forEach((r: any) => { map[r.post_id] = (map[r.post_id] ?? 0) + 1 })
+            return map
+          })
+      : Promise.resolve({} as Record<string, number>),
+    postIds.length > 0
+      ? supabase.from('forum_replies').select('post_id').in('post_id', postIds)
+          .then(({ data }) => {
+            const map: Record<string, number> = {}
+            ;(data ?? []).forEach((r: any) => { map[r.post_id] = (map[r.post_id] ?? 0) + 1 })
+            return map
+          })
+      : Promise.resolve({} as Record<string, number>),
+    postIds.length > 0
+      ? supabase.from('forum_attachments').select('post_id, ref_id').eq('type', 'route').in('post_id', postIds)
+          .then(async ({ data: atts }) => {
+            if (!atts || atts.length === 0) return {} as Record<string, { name: string; mountainName: string }>
+            const routeIds = [...new Set(atts.map((a: any) => a.ref_id))]
+            const { data: routes } = await supabase
+              .from('routes')
+              .select('id, name, mountain:mountains(name)')
+              .in('id', routeIds)
+            const routeMap: Record<string, { name: string; mountainName: string }> = {}
+            ;(routes ?? []).forEach((r: any) => {
+              routeMap[r.id] = {
+                name: r.name,
+                mountainName: Array.isArray(r.mountain) ? r.mountain[0]?.name ?? '' : r.mountain?.name ?? '',
+              }
+            })
+            const postRouteMap: Record<string, { name: string; mountainName: string }> = {}
+            atts.forEach((a: any) => {
+              if (!postRouteMap[a.post_id] && routeMap[a.ref_id]) {
+                postRouteMap[a.post_id] = routeMap[a.ref_id]
+              }
+            })
+            return postRouteMap
+          })
+      : Promise.resolve({} as Record<string, { name: string; mountainName: string }>),
+  ])
+
   // Fetch counts for each post separately (reliable pattern)
-  const posts: ForumPost[] = await Promise.all((rawPosts ?? []).map(async (p: any) => {
-    const [{ count: likeCount }, { count: replyCount }] = await Promise.all([
-      supabase.from('forum_likes').select('*', { count: 'exact', head: true }).eq('post_id', p.id)
-        .then(r => ({ count: r.count ?? 0 })),
-      supabase.from('forum_replies').select('*', { count: 'exact', head: true }).eq('post_id', p.id)
-        .then(r => ({ count: r.count ?? 0 })),
-    ])
-    return {
-      ...p,
-      author: Array.isArray(p.author) ? p.author[0] : p.author,
-      like_count: likeCount,
-      reply_count: replyCount,
-      liked_by_me: false,
-    }
+  const posts: ForumPost[] = postList.map((p: any) => ({
+    ...p,
+    author: Array.isArray(p.author) ? p.author[0] : p.author,
+    like_count: likeCounts[p.id] ?? 0,
+    reply_count: replyCounts[p.id] ?? 0,
+    liked_by_me: false,
+    attached_route: routeAttachments[p.id] ?? null,
   }))
 
   // Apply sort after counts are fetched

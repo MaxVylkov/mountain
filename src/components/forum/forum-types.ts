@@ -18,6 +18,7 @@ export interface ForumPost {
   liked_by_me?: boolean
   route_note?: string | null
   ration_template_id?: string | null
+  attached_route?: { name: string; mountainName: string } | null
 }
 
 export interface ForumReply {

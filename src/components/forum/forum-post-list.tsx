@@ -21,7 +21,12 @@ export function ForumPostList({ posts, category, currentUserId }: Props) {
   const [routeFilter, setRouteFilter] = useState('')
 
   const filteredPosts = routeFilter.trim()
-    ? posts.filter(p => p.route_note?.toLowerCase().includes(routeFilter.toLowerCase()))
+    ? posts.filter(p => {
+        const q = routeFilter.toLowerCase()
+        return p.route_note?.toLowerCase().includes(q) ||
+          p.attached_route?.name.toLowerCase().includes(q) ||
+          p.attached_route?.mountainName.toLowerCase().includes(q)
+      })
     : posts
 
   return (
