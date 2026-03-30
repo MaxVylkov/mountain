@@ -83,7 +83,6 @@ export default async function ForumCategoryPage({ params, searchParams }: Props)
       : Promise.resolve({} as Record<string, { name: string; mountainName: string }>),
   ])
 
-  // Fetch counts for each post separately (reliable pattern)
   const posts: ForumPost[] = postList.map((p: any) => ({
     ...p,
     author: Array.isArray(p.author) ? p.author[0] : p.author,

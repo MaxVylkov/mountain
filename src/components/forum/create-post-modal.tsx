@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ForumCategory, PostType } from './forum-types'
-import { X, MapPin, Search, Package, ChefHat, Dumbbell } from 'lucide-react'
+import { X, MapPin, Search, Package, ChefHat, Dumbbell, Paperclip, ChevronDown, AlertCircle } from 'lucide-react'
 import templates from '@/lib/data/ration-templates.json'
 
 const WORKOUTS_SUMMARY = [
@@ -45,6 +45,10 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Attachments accordion
+  const [showAttachments, setShowAttachments] = useState(false)
 
   // Route picker state
   const [routeMode, setRouteMode] = useState<'search' | 'custom'>('search')
@@ -64,6 +68,14 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
   // Ration and workout pickers
   const [selectedRationId, setSelectedRationId] = useState<string | null>(null)
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<string | null>(null)
+
+  // Count of active attachments for badge
+  const attachmentCount = [
+    !preAttached && (selectedRoute || routeNote.trim()),
+    selectedPackingId,
+    selectedRationId,
+    selectedWorkoutId,
+  ].filter(Boolean).length
 
   const searchRoutes = (q: string) => {
     setRouteQuery(q)
@@ -124,7 +136,6 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
     setPackingLoaded(true)
   }
 
-  // Load packing sets on mount
   useEffect(() => {
     loadPackingSets()
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -132,6 +143,7 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
 
   const submit = async () => {
     if (!title.trim()) return
+    setError(null)
     setSubmitting(true)
     try {
       const supabase = createClient()
@@ -148,14 +160,14 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
       }
       if (selectedRationId) insertData.ration_template_id = selectedRationId
 
-      const { data: post, error } = await supabase
+      const { data: post, error: insertError } = await supabase
         .from('forum_posts')
         .insert(insertData)
         .select('id')
         .single()
 
-      if (error || !post) {
-        alert('Ошибка: ' + (error?.message ?? 'Не удалось создать пост'))
+      if (insertError || !post) {
+        setError(insertError?.message ?? 'Не удалось создать пост. Попробуйте ещё раз.')
         return
       }
 
@@ -213,7 +225,7 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
               </button>
             ))}
           </div>
-          <p className="text-xs text-mountain-muted">
+          <p className="text-xs text-mountain-muted -mt-2">
             {type === 'thread' ? 'Вопрос или обсуждение с сообществом' : 'Рассказ о пройденном маршруте или восхождении'}
           </p>
 
@@ -237,144 +249,178 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
             className="w-full rounded-xl border border-mountain-border bg-mountain-bg px-4 py-2.5 text-mountain-text text-sm resize-none focus:outline-none focus:border-mountain-primary placeholder:text-mountain-muted"
           />
 
-          {/* Route field */}
-          {preAttached ? (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-mountain-surface border border-mountain-border text-sm">
-              <MapPin className="w-3.5 h-3.5 text-mountain-primary shrink-0" />
-              <span className="text-mountain-text">{preAttached.label}</span>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-mountain-muted flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5" />
-                  Маршрут
-                </label>
-                <button
-                  type="button"
-                  onClick={() => { clearRoute(); setRouteMode(m => m === 'search' ? 'custom' : 'search') }}
-                  className="text-xs text-mountain-primary hover:underline"
-                >
-                  {routeMode === 'search' ? 'Нет в базе — ввести вручную' : 'Выбрать из базы'}
-                </button>
-              </div>
+          {/* Attachments accordion */}
+          <div className="rounded-xl border border-mountain-border overflow-hidden">
+            <button
+              type="button"
+              onClick={() => { setShowAttachments(v => !v); if (!packingLoaded) loadPackingSets() }}
+              className="w-full flex items-center justify-between px-4 py-3 text-sm text-mountain-muted hover:text-mountain-text hover:bg-mountain-surface/50 transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <Paperclip className="w-3.5 h-3.5" />
+                Прикрепить материалы
+                {attachmentCount > 0 && (
+                  <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-mountain-primary text-white">
+                    {attachmentCount}
+                  </span>
+                )}
+              </span>
+              <ChevronDown className={`w-4 h-4 transition-transform duration-150 ${showAttachments ? 'rotate-180' : ''}`} />
+            </button>
 
-              {routeMode === 'search' ? (
-                <div className="relative" onMouseDown={e => e.stopPropagation()}>
-                  {selectedRoute ? (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-mountain-surface border border-mountain-primary/40 text-sm">
-                      <span className="flex-1 text-mountain-text text-sm">{selectedRoute.mountainName} · {selectedRoute.name}</span>
-                      <button onClick={clearRoute} className="text-mountain-muted hover:text-mountain-text">
-                        <X className="w-3.5 h-3.5" />
+            {showAttachments && (
+              <div className="px-4 pb-4 space-y-4 border-t border-mountain-border/60 pt-3">
+
+                {/* Route field */}
+                {preAttached ? (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-mountain-surface border border-mountain-border text-sm">
+                    <MapPin className="w-3.5 h-3.5 text-mountain-primary shrink-0" />
+                    <span className="text-mountain-text">{preAttached.label}</span>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-medium text-mountain-muted flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5" />
+                        Маршрут
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => { clearRoute(); setRouteMode(m => m === 'search' ? 'custom' : 'search') }}
+                        className="text-xs text-mountain-primary hover:underline"
+                      >
+                        {routeMode === 'search' ? 'Нет в базе — ввести вручную' : 'Выбрать из базы'}
                       </button>
                     </div>
-                  ) : (
-                    <>
-                      <div className="relative">
-                        <label htmlFor="route-search" className="sr-only">Поиск маршрута</label>
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-mountain-muted pointer-events-none" />
-                        <input
-                          id="route-search"
-                          type="text"
-                          value={routeQuery}
-                          onChange={e => searchRoutes(e.target.value)}
-                          onFocus={() => routeQuery.length >= 2 && setShowDropdown(true)}
-                          placeholder="Поиск маршрута..."
-                          className="w-full rounded-xl border border-mountain-border bg-mountain-bg pl-9 pr-4 py-2.5 text-mountain-text text-sm focus:outline-none focus:border-mountain-primary placeholder:text-mountain-muted"
-                        />
+
+                    {routeMode === 'search' ? (
+                      <div className="relative" onMouseDown={e => e.stopPropagation()}>
+                        {selectedRoute ? (
+                          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-mountain-surface border border-mountain-primary/40 text-sm">
+                            <span className="flex-1 text-mountain-text text-sm">{selectedRoute.mountainName} · {selectedRoute.name}</span>
+                            <button onClick={clearRoute} className="text-mountain-muted hover:text-mountain-text">
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="relative">
+                              <label htmlFor="route-search" className="sr-only">Поиск маршрута</label>
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-mountain-muted pointer-events-none" />
+                              <input
+                                id="route-search"
+                                type="text"
+                                value={routeQuery}
+                                onChange={e => searchRoutes(e.target.value)}
+                                onFocus={() => routeQuery.length >= 2 && setShowDropdown(true)}
+                                placeholder="Поиск маршрута..."
+                                className="w-full rounded-xl border border-mountain-border bg-mountain-bg pl-9 pr-4 py-2.5 text-mountain-text text-sm focus:outline-none focus:border-mountain-primary placeholder:text-mountain-muted"
+                              />
+                            </div>
+                            {showDropdown && (routeResults.length > 0 || routeSearching) && (
+                              <div className="absolute z-10 w-full mt-1 rounded-xl border border-mountain-border bg-mountain-bg shadow-lg overflow-hidden">
+                                {routeSearching ? (
+                                  <p className="px-4 py-3 text-xs text-mountain-muted">Поиск...</p>
+                                ) : (
+                                  routeResults.map(r => (
+                                    <button
+                                      key={r.id}
+                                      onMouseDown={() => selectRoute(r)}
+                                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-mountain-surface transition-colors"
+                                    >
+                                      <span className="text-mountain-text">{r.name}</span>
+                                      {r.mountainName && <span className="text-mountain-muted text-xs ml-2">{r.mountainName}</span>}
+                                    </button>
+                                  ))
+                                )}
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
-                      {showDropdown && (routeResults.length > 0 || routeSearching) && (
-                        <div className="absolute z-10 w-full mt-1 rounded-xl border border-mountain-border bg-mountain-bg shadow-lg overflow-hidden">
-                          {routeSearching ? (
-                            <p className="px-4 py-3 text-xs text-mountain-muted">Поиск...</p>
-                          ) : (
-                            routeResults.map(r => (
-                              <button
-                                key={r.id}
-                                onMouseDown={() => selectRoute(r)}
-                                className="w-full text-left px-4 py-2.5 text-sm hover:bg-mountain-surface transition-colors"
-                              >
-                                <span className="text-mountain-text">{r.name}</span>
-                                {r.mountainName && <span className="text-mountain-muted text-xs ml-2">{r.mountainName}</span>}
-                              </button>
-                            ))
-                          )}
-                        </div>
-                      )}
-                    </>
+                    ) : (
+                      <input
+                        type="text"
+                        value={routeNote}
+                        onChange={e => setRouteNote(e.target.value)}
+                        placeholder="Название маршрута..."
+                        className="w-full rounded-xl border border-mountain-border bg-mountain-bg px-4 py-2.5 text-mountain-text text-sm focus:outline-none focus:border-mountain-primary placeholder:text-mountain-muted"
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Packing set picker */}
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-mountain-muted">
+                    <Package className="w-3.5 h-3.5" />
+                    Сборка снаряжения
+                  </label>
+                  {!packingLoaded ? (
+                    <p className="text-xs text-mountain-muted">Загрузка...</p>
+                  ) : packingSets.length > 0 ? (
+                    <select
+                      value={selectedPackingId ?? ''}
+                      onChange={e => setSelectedPackingId(e.target.value || null)}
+                      className="w-full rounded-xl border border-mountain-border bg-mountain-bg px-3 py-2 text-sm text-mountain-text focus:outline-none focus:border-mountain-primary"
+                    >
+                      <option value="">— Не прикреплять —</option>
+                      {packingSets.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-xs text-mountain-muted">У вас пока нет сборок в кладовке</p>
                   )}
                 </div>
-              ) : (
-                <input
-                  type="text"
-                  value={routeNote}
-                  onChange={e => setRouteNote(e.target.value)}
-                  placeholder="Название маршрута..."
-                  className="w-full rounded-xl border border-mountain-border bg-mountain-bg px-4 py-2.5 text-mountain-text text-sm focus:outline-none focus:border-mountain-primary placeholder:text-mountain-muted"
-                />
-              )}
-            </div>
-          )}
 
-          {/* Packing set picker */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-1.5 text-xs font-medium text-mountain-muted">
-              <Package className="w-3.5 h-3.5" />
-              Сборка снаряжения
-            </label>
-            {!packingLoaded ? (
-              <p className="text-xs text-mountain-muted">Загрузка...</p>
-            ) : packingSets.length > 0 ? (
-              <select
-                value={selectedPackingId ?? ''}
-                onChange={e => setSelectedPackingId(e.target.value || null)}
-                className="w-full rounded-xl border border-mountain-border bg-mountain-bg px-3 py-2 text-sm text-mountain-text focus:outline-none focus:border-mountain-primary"
-              >
-                <option value="">— Не прикреплять —</option>
-                {packingSets.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            ) : (
-              <p className="text-xs text-mountain-muted">У вас пока нет сборок в кладовке</p>
+                {/* Ration picker */}
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-mountain-muted">
+                    <ChefHat className="w-3.5 h-3.5" />
+                    Раскладка питания
+                  </label>
+                  <select
+                    value={selectedRationId ?? ''}
+                    onChange={e => setSelectedRationId(e.target.value || null)}
+                    className="w-full rounded-xl border border-mountain-border bg-mountain-bg px-3 py-2 text-sm text-mountain-text focus:outline-none focus:border-mountain-primary"
+                  >
+                    <option value="">— Не прикреплять —</option>
+                    {(templates as any[]).map(t => (
+                      <option key={t.id} value={t.id}>{t.name} · {t.caloriesPerDay} ккал/день</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Workout picker */}
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-mountain-muted">
+                    <Dumbbell className="w-3.5 h-3.5" />
+                    Тренировка
+                  </label>
+                  <select
+                    value={selectedWorkoutId ?? ''}
+                    onChange={e => setSelectedWorkoutId(e.target.value || null)}
+                    className="w-full rounded-xl border border-mountain-border bg-mountain-bg px-3 py-2 text-sm text-mountain-text focus:outline-none focus:border-mountain-primary"
+                  >
+                    <option value="">— Не прикреплять —</option>
+                    {WORKOUTS_SUMMARY.map(w => (
+                      <option key={w.id} value={w.id}>{w.title}</option>
+                    ))}
+                  </select>
+                </div>
+
+              </div>
             )}
           </div>
 
-          {/* Ration picker */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-1.5 text-xs font-medium text-mountain-muted">
-              <ChefHat className="w-3.5 h-3.5" />
-              Раскладка питания
-            </label>
-            <select
-              value={selectedRationId ?? ''}
-              onChange={e => setSelectedRationId(e.target.value || null)}
-              className="w-full rounded-xl border border-mountain-border bg-mountain-bg px-3 py-2 text-sm text-mountain-text focus:outline-none focus:border-mountain-primary"
-            >
-              <option value="">— Не прикреплять —</option>
-              {(templates as any[]).map(t => (
-                <option key={t.id} value={t.id}>{t.name} · {t.caloriesPerDay} ккал/день</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Workout picker */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-1.5 text-xs font-medium text-mountain-muted">
-              <Dumbbell className="w-3.5 h-3.5" />
-              Тренировка
-            </label>
-            <select
-              value={selectedWorkoutId ?? ''}
-              onChange={e => setSelectedWorkoutId(e.target.value || null)}
-              className="w-full rounded-xl border border-mountain-border bg-mountain-bg px-3 py-2 text-sm text-mountain-text focus:outline-none focus:border-mountain-primary"
-            >
-              <option value="">— Не прикреплять —</option>
-              {WORKOUTS_SUMMARY.map(w => (
-                <option key={w.id} value={w.id}>{w.title}</option>
-              ))}
-            </select>
-          </div>
+          {/* Inline error */}
+          {error && (
+            <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+              {error}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
