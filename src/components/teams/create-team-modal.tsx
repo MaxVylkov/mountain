@@ -116,7 +116,7 @@ export default function CreateTeamModal({
       onClick={onClose}
     >
       <div
-        className="glass-card w-full max-w-md p-6 space-y-4"
+        className="surface-card w-full max-w-md p-6 space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-bold text-mountain-text">

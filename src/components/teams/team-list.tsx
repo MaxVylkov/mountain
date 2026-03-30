@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import CreateTeamModal from '@/components/teams/create-team-modal'
+import { TeamGearTemplateDownload } from '@/components/teams/team-gear-template-download'
 
 interface TeamData {
   id: string
@@ -90,13 +91,16 @@ export default function TeamList({ userId, mountains }: TeamListProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-xl font-bold text-mountain-text">
           Мои отделения
         </h2>
-        <Button onClick={() => setShowModal(true)}>
-          Создать отделение
-        </Button>
+        <div className="flex items-center gap-2">
+          <TeamGearTemplateDownload />
+          <Button onClick={() => setShowModal(true)}>
+            Создать отделение
+          </Button>
+        </div>
       </div>
 
       {teams.length === 0 ? (

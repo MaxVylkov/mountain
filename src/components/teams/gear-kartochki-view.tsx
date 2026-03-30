@@ -66,7 +66,7 @@ export function GearKartochkiView({ items, memberGear, members, currentUserId, o
           return (
             <div
               key={member.user_id}
-              className={`glass-card p-4 space-y-3 ${isCurrent ? 'border-2 border-mountain-primary' : 'cursor-pointer select-none'}`}
+              className={`surface-card p-4 space-y-3 ${isCurrent ? 'border-2 border-mountain-primary' : 'cursor-pointer select-none'}`}
               onClick={!isCurrent ? () => toggleMember(member.user_id) : undefined}
             >
               {/* Header */}
@@ -225,7 +225,7 @@ export function GearKartochkiView({ items, memberGear, members, currentUserId, o
 
           return (
             <div
-              className="glass-card p-4 space-y-3 cursor-pointer select-none"
+              className="surface-card p-4 space-y-3 cursor-pointer select-none"
               onClick={() => setGroupExpanded(v => !v)}
             >
               <div className="flex items-center justify-between">

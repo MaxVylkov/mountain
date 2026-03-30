@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { Map, List } from 'lucide-react'
+import { Map, List, Mountain as MountainIcon } from 'lucide-react'
 import { Card } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
 
 const AlpineMap = dynamic(() => import('./alpine-map'), { ssr: false })
 
@@ -52,9 +53,11 @@ export default function MountainsView({ mountains }: { mountains: Mountain[] }) 
       {view === 'list' ? (
         <>
           {(!mountains || mountains.length === 0) ? (
-            <Card>
-              <p className="text-mountain-muted text-center">Горы пока не добавлены.</p>
-            </Card>
+            <EmptyState
+              icon={MountainIcon}
+              title="Горы ещё не добавлены"
+              description="База данных пополняется. Скоро здесь появятся маршруты и вершины Кавказа, Тянь-Шаня и Памира."
+            />
           ) : (
             <RegionGroups mountains={mountains} />
           )}
@@ -67,7 +70,6 @@ export default function MountainsView({ mountains }: { mountains: Mountain[] }) 
 }
 
 function RegionGroups({ mountains }: { mountains: Mountain[] }) {
-  // Group by region, preserving insertion order of first occurrence
   const grouped = mountains.reduce<Record<string, Mountain[]>>((acc, m) => {
     const key = m.region || 'Без региона'
     ;(acc[key] ??= []).push(m)
@@ -75,41 +77,28 @@ function RegionGroups({ mountains }: { mountains: Mountain[] }) {
   }, {})
 
   return (
-    <div className="space-y-10">
-      {Object.entries(grouped).map(([region, items]) => (
-        <section key={region}>
-          <div className="flex items-center gap-3 mb-4">
-            <h2 className="text-lg font-semibold text-mountain-text">{region}</h2>
-            <span className="text-xs text-mountain-muted">{items.length} {items.length === 1 ? 'вершина' : items.length < 5 ? 'вершины' : 'вершин'}</span>
-            <div className="flex-1 h-px bg-mountain-border" />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map(mountain => (
-              <Link key={mountain.id} href={`/mountains/${mountain.id}`}>
-                <Card hover className="h-full space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-base font-bold">{mountain.name}</h3>
-                    {mountain.height > 0 && (
-                      <span className="text-sm font-mono text-mountain-accent">{mountain.height} м</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-mountain-muted">
-                      {mountain.routes?.[0]?.count || 0} маршрутов
-                    </span>
-                    {mountain.difficulty && (
-                      <>
-                        <span className="text-mountain-muted">•</span>
-                        <DifficultyBadge difficulty={mountain.difficulty} />
-                      </>
-                    )}
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </section>
-      ))}
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {Object.entries(grouped).map(([region, items]) => {
+        const totalRoutes = items.reduce((sum, m) => sum + (m.routes?.[0]?.count || 0), 0)
+        const href = items.length === 1
+          ? `/mountains/${items[0].id}`
+          : `/mountains/region/${encodeURIComponent(region)}`
+        return (
+          <Link key={region} href={href}>
+            <Card hover className="h-full space-y-2">
+              <h3 className="text-base font-bold">{region}</h3>
+              <div className="flex items-center gap-2 text-sm text-mountain-muted">
+                {items.length > 1 && <span>{items.length} вершины</span>}
+                {items.length > 1 && totalRoutes > 0 && <span>·</span>}
+                {totalRoutes > 0 && <span>{totalRoutes} маршрутов</span>}
+                {items.length === 1 && items[0].height > 0 && (
+                  <span className="ml-auto font-mono text-mountain-accent">{items[0].height} м</span>
+                )}
+              </div>
+            </Card>
+          </Link>
+        )
+      })}
     </div>
   )
 }

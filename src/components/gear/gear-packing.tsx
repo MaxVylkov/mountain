@@ -298,7 +298,7 @@ export function GearPacking({ userId }: { userId: string }) {
       {/* Create set modal */}
       {showCreateSet && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowCreateSet(false)}>
-          <div className="glass-card w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+          <div className="surface-card w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-bold mb-4">Новый набор сборов</h2>
             <form onSubmit={e => { e.preventDefault(); createSet(new FormData(e.currentTarget).get('name') as string) }} className="space-y-3">
               <Input name="name" label="Название" placeholder="Хибины, март 2026" required />
@@ -314,7 +314,7 @@ export function GearPacking({ userId }: { userId: string }) {
       {/* Add backpack modal */}
       {showAddBackpack && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowAddBackpack(false)}>
-          <div className="glass-card w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+          <div className="surface-card w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-bold mb-4">Добавить рюкзак</h2>
             <form onSubmit={e => {
               e.preventDefault()
@@ -335,7 +335,7 @@ export function GearPacking({ userId }: { userId: string }) {
       {/* Add item modal */}
       {showAddItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowAddItem(false)}>
-          <div className="glass-card w-full max-w-lg max-h-[70vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+          <div className="surface-card w-full max-w-lg max-h-[70vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-mountain-border flex items-center justify-between">
               <h2 className="text-lg font-bold">Добавить из инвентаря</h2>
               <button onClick={() => setShowAddItem(false)} className="text-mountain-muted hover:text-mountain-text"><X size={20} /></button>

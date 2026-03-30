@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Search, Trash2, Weight, X, Cable, Wrench, Shirt, Footprints, Tent, Cpu, Package, Sparkles, Check, AlertTriangle, CircleAlert, Download, Filter } from 'lucide-react'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Plus, Search, Trash2, Weight, X, Cable, Wrench, Shirt, Footprints, Tent, Cpu, Package, Sparkles, Check, AlertTriangle, CircleAlert, Download, Filter, Backpack } from 'lucide-react'
 import { GearExcelImport } from './gear-excel-import'
 import { GearDetailModal } from './gear-detail-modal'
 import * as XLSX from 'xlsx'
@@ -424,15 +425,20 @@ export function GearInventory({ catalog, userId }: { catalog: GearItem[]; userId
       })}
 
       {filteredGear.length === 0 && userGear.length > 0 && (
-        <Card className="py-12">
-          <p className="text-mountain-muted text-center">Ничего не найдено. <button onClick={clearFilters} className="text-mountain-primary hover:underline">Сбросить фильтры</button></p>
-        </Card>
+        <EmptyState
+          title="Ничего не найдено"
+          description="Попробуйте изменить параметры фильтра или сбросить поиск."
+          action={{ label: 'Сбросить фильтры', onClick: clearFilters }}
+        />
       )}
 
       {userGear.length === 0 && (
-        <Card className="py-12">
-          <p className="text-mountain-muted text-center">Кладовка пуста. Добавь снаряжение из каталога или создай своё!</p>
-        </Card>
+        <EmptyState
+          icon={Backpack}
+          title="Кладовка пуста"
+          description="Добавьте снаряжение из каталога или внесите своё — и начните собирать списки для выходов."
+          action={{ label: 'Добавить из каталога', onClick: () => setShowAddModal(true) }}
+        />
       )}
 
       {/* Detail modal */}
@@ -448,7 +454,7 @@ export function GearInventory({ catalog, userId }: { catalog: GearItem[]; userId
       {/* Add from catalog modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowAddModal(false)}>
-          <div className="glass-card w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+          <div className="surface-card w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-mountain-border flex items-center justify-between">
               <h2 className="text-lg font-bold">Добавить из каталога</h2>
               <button onClick={() => setShowAddModal(false)} className="text-mountain-muted hover:text-mountain-text">
@@ -523,7 +529,7 @@ function CustomItemModal({ onAdd, onClose }: { onAdd: (name: string, category: s
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="glass-card w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
+      <div className="surface-card w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
         <h2 className="text-lg font-bold">Добавить своё снаряжение</h2>
         <form
           onSubmit={e => {

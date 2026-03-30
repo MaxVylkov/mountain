@@ -347,7 +347,7 @@ export function TripDetail({ trip }: { trip: any }) {
           {/* Add routes modal */}
           {showAddRoutes && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowAddRoutes(false)}>
-              <div className="glass-card w-full max-w-lg max-h-[70vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+              <div className="surface-card w-full max-w-lg max-h-[70vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-mountain-border flex items-center justify-between">
                   <h2 className="text-lg font-bold">Добавить маршрут</h2>
                   <button onClick={() => setShowAddRoutes(false)} className="text-mountain-muted hover:text-mountain-text"><X size={20} /></button>
@@ -376,7 +376,7 @@ export function TripDetail({ trip }: { trip: any }) {
           {/* Gear picker for route backpack */}
           {showGearPicker && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowGearPicker(null)}>
-              <div className="glass-card w-full max-w-lg max-h-[70vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+              <div className="surface-card w-full max-w-lg max-h-[70vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-mountain-border flex items-center justify-between">
                   <h2 className="text-lg font-bold">Добавить в рюкзак</h2>
                   <button onClick={() => setShowGearPicker(null)} className="text-mountain-muted hover:text-mountain-text"><X size={20} /></button>

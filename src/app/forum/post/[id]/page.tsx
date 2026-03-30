@@ -40,6 +40,7 @@ export default async function ForumPostPage({ params }: Props) {
     like_count: likeCount,
     reply_count: replyCount,
     liked_by_me,
+    ration_template_id: rawPost.ration_template_id ?? null,
   }
 
   // Fetch replies with authors

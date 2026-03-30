@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { LayoutList, LayoutGrid, Plus, Edit2, PackageOpen } from 'lucide-react'
+import { LayoutList, LayoutGrid, Plus, Edit2, PackageOpen, Download, BookmarkPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { GearPickerModal } from './gear-picker-modal'
 import { GearSvodkaView } from './gear-svodka-view'
 import { GearKartochkiView } from './gear-kartochki-view'
-import { RequiredGearItem, MemberGearEntry, Member } from './gear-constants'
+import { RequiredGearItem, MemberGearEntry, Member, SECTIONS, SECTION_KEYS, getRequired } from './gear-constants'
+import * as XLSX from 'xlsx'
 
 type ViewMode = 'svodka' | 'kartochki'
 
@@ -88,6 +89,62 @@ export function TeamGearTab({ teamId, members, currentUserId, isLeader }: TeamGe
   const openLeaderPicker = () => { setPickerMode('leader'); setShowPicker(true) }
   const openMemberPicker = () => { setPickerMode('member'); setShowPicker(true) }
 
+  const exportXlsx = () => {
+    const wb = XLSX.utils.book_new()
+
+    for (const section of SECTION_KEYS) {
+      const sectionItems = items.filter(i => i.section === section)
+      if (sectionItems.length === 0) continue
+
+      const header = ['Наименование', 'Норма', ...members.map(m => m.display_name), 'Итого', 'Нужно']
+      const rows = sectionItems.map(item => {
+        const norm = getRequired(item, members.length)
+        const memberQtys = members.map(m =>
+          memberGear.find(e => e.required_gear_id === item.id && e.user_id === m.user_id)?.quantity ?? 0
+        )
+        const total = memberQtys.reduce((s, q) => s + q, 0)
+        return [
+          item.name,
+          norm ?? '—',
+          ...memberQtys,
+          total,
+          norm != null ? (norm - total !== 0 ? norm - total : '✓') : '—',
+        ]
+      })
+
+      const ws = XLSX.utils.aoa_to_sheet([header, ...rows])
+      ws['!cols'] = [{ wch: 30 }, { wch: 8 }, ...members.map(() => ({ wch: 12 })), { wch: 8 }, { wch: 8 }]
+      XLSX.utils.book_append_sheet(wb, ws, SECTIONS[section].slice(0, 31))
+    }
+
+    XLSX.writeFile(wb, 'снаряжение_отделения.xlsx')
+  }
+
+  const saveGroupTemplate = async () => {
+    const groupItems = items.filter(i => i.section === 'group')
+    if (groupItems.length === 0) return
+
+    const name = prompt('Название шаблона:')
+    if (!name?.trim()) return
+
+    const supabase = createClient()
+    const templateItems = groupItems.map(i => ({
+      name: i.name,
+      section: i.section,
+      norm_per_person: i.norm_per_person,
+      norm_per_team: i.norm_per_team,
+    }))
+
+    const { error } = await supabase.from('team_gear_templates').insert({
+      user_id: currentUserId,
+      name: name.trim(),
+      items: templateItems,
+    })
+
+    if (error) alert('Ошибка: ' + error.message)
+    else alert('Шаблон сохранён!')
+  }
+
   if (loading) {
     return <div className="text-mountain-muted text-center py-12">Загрузка...</div>
   }
@@ -110,6 +167,18 @@ export function TeamGearTab({ teamId, members, currentUserId, isLeader }: TeamGe
           <Button variant="outline" onClick={openMemberPicker}>
             <PackageOpen className="w-4 h-4 mr-1.5" />
             Добавить моё снаряжение
+          </Button>
+        )}
+        {hasItems && (
+          <Button variant="outline" onClick={exportXlsx}>
+            <Download className="w-4 h-4 mr-1.5" />
+            Скачать .xlsx
+          </Button>
+        )}
+        {hasItems && isLeader && items.some(i => i.section === 'group') && (
+          <Button variant="outline" onClick={saveGroupTemplate}>
+            <BookmarkPlus className="w-4 h-4 mr-1.5" />
+            Сохранить шаблон
           </Button>
         )}
 

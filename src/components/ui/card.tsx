@@ -10,8 +10,8 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={`
-          glass-card p-6
-          ${hover ? 'glow-hover cursor-pointer' : ''}
+          surface-card p-6
+          ${hover ? 'interactive-card cursor-pointer' : ''}
           ${className}
         `}
         {...props}

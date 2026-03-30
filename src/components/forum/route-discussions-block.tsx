@@ -86,7 +86,7 @@ export async function RouteDiscussionsBlock({ mountainId }: Props) {
       <div className="space-y-2">
         {postsWithCounts.map(post => (
           <Link key={post.id} href={`/forum/post/${post.id}`} className="block">
-            <div className="glass-card p-3 hover:border-mountain-primary/40 transition-colors">
+            <div className="surface-card interactive-card p-3">
               <div className="flex items-start gap-2">
                 <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full mt-0.5 ${
                   post.type === 'thread' ? 'bg-blue-500/15 text-blue-400' : 'bg-emerald-500/15 text-emerald-400'

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
-import { Heart, Check, Target, ChevronDown, ChevronUp, MessageCircle } from 'lucide-react'
+import { Heart, Check, Target, ChevronDown, ChevronUp, MessageCircle, Search } from 'lucide-react'
 import { RouteComments } from './route-comments'
 
 interface Route {
@@ -42,6 +42,7 @@ const DIFFICULTY_COLORS: Record<number, string> = {
 type Tab = 'all' | 'favorites' | 'want_to_do' | 'completed'
 
 export function RouteList({ routes, mountainId }: { routes: Route[]; mountainId: string }) {
+  const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<number | null>(null)
   const [tab, setTab] = useState<Tab>('all')
   const [statuses, setStatuses] = useState<Record<string, RouteStatus>>({})
@@ -121,7 +122,10 @@ export function RouteList({ routes, mountainId }: { routes: Route[]; mountainId:
         if (tab === 'completed') return s.completed
         return true
       })
-  const filtered = filter !== null ? tabFiltered.filter(r => r.difficulty === filter) : tabFiltered
+  const diffFiltered = filter !== null ? tabFiltered.filter(r => r.difficulty === filter) : tabFiltered
+  const filtered = search
+    ? diffFiltered.filter(r => r.name.toLowerCase().includes(search.toLowerCase()))
+    : diffFiltered
   const difficulties = [...new Set(routes.map(r => r.difficulty))].sort()
 
   const tabCounts = {
@@ -131,13 +135,14 @@ export function RouteList({ routes, mountainId }: { routes: Route[]; mountainId:
   }
 
   // Extract grade from description (e.g., "Категория: 2А" -> "2А")
-  function extractGrade(description: string): string | null {
+  function extractGrade(description: string | null): string | null {
+    if (!description) return null
     const match = description.match(/Категория:\s*(\S+)/)
     return match ? match[1].replace('.', '') : null
   }
 
-  // Extract peak name from description
-  function extractPeak(description: string): string | null {
+  function extractPeak(description: string | null): string | null {
+    if (!description) return null
     const match = description.match(/Вершина:\s*([^.]+)/)
     return match ? match[1].trim() : null
   }
@@ -148,6 +153,17 @@ export function RouteList({ routes, mountainId }: { routes: Route[]; mountainId:
         <h2 className="text-2xl font-bold">
           Маршруты <span className="text-mountain-muted font-normal text-lg">({filtered.length})</span>
         </h2>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mountain-muted pointer-events-none" />
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Поиск маршрутов..."
+          className="w-full pl-9 pr-4 py-2.5 bg-mountain-surface border border-mountain-border rounded-xl text-sm text-mountain-text placeholder:text-mountain-muted focus:outline-none focus:border-mountain-primary transition-colors"
+        />
       </div>
 
       {/* Tabs */}

@@ -182,7 +182,7 @@ export default function AlpineMap({ mountains }: { mountains: Mountain[] }) {
       </div>
 
       {/* ФАР info bar */}
-      <div className="glass-card p-3 flex items-center justify-between text-sm">
+      <div className="surface-card p-3 flex items-center justify-between text-sm">
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded bg-purple-500 inline-block" />
           <span className="text-mountain-muted">

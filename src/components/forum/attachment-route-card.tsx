@@ -2,7 +2,18 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Star, BookmarkPlus, CheckCircle } from 'lucide-react'
+import { BookmarkPlus, CheckCircle } from 'lucide-react'
+
+const DIFFICULTY_LABELS: Record<number, string> = {
+  1: '1Б', 2: '2А-2Б', 3: '3А-3Б', 4: '4А-4Б', 5: '5А-5Б',
+}
+const DIFFICULTY_COLORS: Record<number, string> = {
+  1: 'bg-mountain-success/20 text-mountain-success border-mountain-success/30',
+  2: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+  3: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  4: 'bg-mountain-danger/20 text-mountain-danger border-mountain-danger/30',
+  5: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+}
 
 interface RouteData {
   routeId: string
@@ -52,15 +63,10 @@ export function AttachmentRouteCard({ data, currentUserId }: Props) {
           <p className="text-xs text-mountain-muted">{data.mountainName}</p>
           <p className="text-sm font-semibold text-mountain-text">{data.routeName}</p>
         </div>
-        {data.difficulty !== null && (
-          <div className="flex gap-0.5">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star
-                key={i}
-                className={`w-3.5 h-3.5 ${i < data.difficulty! ? 'text-amber-400 fill-amber-400' : 'text-mountain-border'}`}
-              />
-            ))}
-          </div>
+        {data.difficulty !== null && DIFFICULTY_LABELS[data.difficulty] && (
+          <span className={`px-2 py-0.5 rounded text-xs font-mono font-bold border ${DIFFICULTY_COLORS[data.difficulty]}`}>
+            {DIFFICULTY_LABELS[data.difficulty]}
+          </span>
         )}
       </div>
       {data.season && (

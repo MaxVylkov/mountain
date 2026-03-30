@@ -1,19 +1,76 @@
 @import "tailwindcss";
 
+/* ─── Runtime color vars (dark by default) ──────────────────────────── */
+:root {
+  color-scheme: light dark;
+
+  --bg:      #0F1923;
+  --surface: #1A2735;
+  --primary: #3B82F6;
+  --accent:  #F59E0B;
+  --success: #10B981;
+  --danger:  #EF4444;
+  --text:    #F1F5F9;
+  --muted:   #94A3B8;
+  --border:  #334155;
+}
+
+/* ─── Light theme via system preference ─────────────────────────────── */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:      #F8F6F2;
+    --surface: #FFFFFF;
+    --primary: #3B82F6;
+    --accent:  #D97706;
+    --success: #059669;
+    --danger:  #DC2626;
+    --text:    #1A2735;
+    --muted:   #64748B;
+    --border:  #E2E8F0;
+  }
+}
+
+/* ─── Manual theme overrides via data-theme attribute ───────────────── */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:      #0F1923;
+  --surface: #1A2735;
+  --primary: #3B82F6;
+  --accent:  #F59E0B;
+  --success: #10B981;
+  --danger:  #EF4444;
+  --text:    #F1F5F9;
+  --muted:   #94A3B8;
+  --border:  #334155;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg:      #F8F6F2;
+  --surface: #FFFFFF;
+  --primary: #3B82F6;
+  --accent:  #D97706;
+  --success: #059669;
+  --danger:  #DC2626;
+  --text:    #1A2735;
+  --muted:   #64748B;
+  --border:  #E2E8F0;
+}
+
+/* ─── Tailwind design tokens (reference runtime vars) ───────────────── */
 @theme inline {
-  /* Mountain Night color palette */
-  --color-mountain-bg: #0F1923;
-  --color-mountain-surface: #1A2735;
-  --color-mountain-primary: #3B82F6;
-  --color-mountain-accent: #F59E0B;
-  --color-mountain-success: #10B981;
-  --color-mountain-danger: #EF4444;
-  --color-mountain-text: #F1F5F9;
-  --color-mountain-muted: #94A3B8;
-  --color-mountain-border: #334155;
+  --color-mountain-bg:      var(--bg);
+  --color-mountain-surface: var(--surface);
+  --color-mountain-primary: var(--primary);
+  --color-mountain-accent:  var(--accent);
+  --color-mountain-success: var(--success);
+  --color-mountain-danger:  var(--danger);
+  --color-mountain-text:    var(--text);
+  --color-mountain-muted:   var(--muted);
+  --color-mountain-border:  var(--border);
 
   /* Fonts */
-  --font-sans: var(--font-inter);
+  --font-sans: var(--font-geologica);
   --font-mono: var(--font-jetbrains-mono);
 }
 
@@ -27,17 +84,16 @@
 }
 
 @layer components {
-  .glass-card {
-    background-color: color-mix(in srgb, var(--color-mountain-surface) 80%, transparent);
-    backdrop-filter: blur(12px);
+  .surface-card {
+    background-color: var(--color-mountain-surface);
     border: 1px solid var(--color-mountain-border);
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;
   }
 
-  .glow-hover {
-    transition: box-shadow 0.3s ease;
+  .interactive-card {
+    transition: border-color 0.15s ease;
   }
-  .glow-hover:hover {
-    box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--color-mountain-primary) 10%, transparent);
+  .interactive-card:hover {
+    border-color: var(--color-mountain-primary);
   }
 }

@@ -102,7 +102,7 @@ export function GearDetailModal({ item, onClose, onUpdate, onRemove }: GearDetai
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
       <div
-        className="glass-card w-full max-w-md p-6 space-y-5"
+        className="surface-card w-full max-w-md p-6 space-y-5"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}

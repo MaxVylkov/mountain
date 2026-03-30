@@ -72,7 +72,7 @@ export function ForumReplyList({ replies: initialReplies, postId, currentUserId 
       </h3>
 
       {replies.map(reply => (
-        <div key={reply.id} className="glass-card p-4 space-y-2">
+        <div key={reply.id} className="surface-card p-4 space-y-2">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs font-medium text-mountain-text">{reply.author?.display_name ?? 'Участник'}</span>
             <span className="text-xs text-mountain-muted">{formatRelativeTime(reply.created_at)}</span>

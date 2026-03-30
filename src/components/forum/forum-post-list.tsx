@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Plus } from 'lucide-react'
+import { Plus, MessageSquare } from 'lucide-react'
 import { ForumPost, ForumCategory } from './forum-types'
 import { ForumPostCard } from './forum-post-card'
 import { CreatePostModal } from './create-post-modal'
+import { EmptyState } from '@/components/ui/empty-state'
 
 interface Props {
   posts: ForumPost[]
@@ -49,10 +50,16 @@ export function ForumPostList({ posts, category, currentUserId }: Props) {
 
       {/* Posts */}
       {posts.length === 0 ? (
-        <div className="text-center py-12 text-mountain-muted">
-          <p className="text-sm">Постов пока нет</p>
-          <p className="text-xs mt-1">Будьте первым!</p>
-        </div>
+        <EmptyState
+          icon={MessageSquare}
+          title="Постов пока нет"
+          description="Начните обсуждение — задайте вопрос или поделитесь опытом с сообществом."
+          action={
+            currentUserId
+              ? { label: 'Написать пост', onClick: () => setShowModal(true) }
+              : { label: 'Войти и написать', href: '/login' }
+          }
+        />
       ) : (
         <div className="space-y-3">
           {posts.map(post => <ForumPostCard key={post.id} post={post} />)}

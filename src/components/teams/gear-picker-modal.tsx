@@ -17,6 +17,12 @@ interface PackingSet {
   itemNames: string[]
 }
 
+interface GearTemplate {
+  id: string
+  name: string
+  items: { name: string; section: string; norm_per_person: number | null; norm_per_team: number | null }[]
+}
+
 interface GearPickerModalProps {
   teamId: string
   currentUserId: string
@@ -32,6 +38,7 @@ export function GearPickerModal({
   teamId, currentUserId, mode, existingItems, memberCount, onClose, onRefresh, onDone
 }: GearPickerModalProps) {
   const [packingSets, setPackingSets] = useState<PackingSet[]>([])
+  const [gearTemplates, setGearTemplates] = useState<GearTemplate[]>([])
   const [loadingData, setLoadingData] = useState(true)
   const [selected, setSelected] = useState<{ type: 'level' | 'set'; key: string } | null>(null)
   const [previewItems, setPreviewItems] = useState<TemplateItem[]>([])
@@ -40,21 +47,28 @@ export function GearPickerModal({
 
   useEffect(() => {
     const supabase = createClient()
-    supabase
-      .from('packing_sets')
-      .select('id, name, packing_items(gear:gear(name))')
-      .eq('user_id', currentUserId)
-      .then(({ data }) => {
-        if (data) {
-          setPackingSets(data.map((s: any) => ({
-            id: s.id,
-            name: s.name,
-            itemNames: (s.packing_items ?? []).map((pi: any) => pi.gear?.name).filter(Boolean),
-          })))
-        }
-        setLoadingData(false)
-      })
-  }, [currentUserId])
+    Promise.all([
+      supabase
+        .from('packing_sets')
+        .select('id, name, packing_items(gear:gear(name))')
+        .eq('user_id', currentUserId),
+      mode === 'leader'
+        ? supabase.from('team_gear_templates').select('id, name, items').eq('user_id', currentUserId).order('created_at', { ascending: false })
+        : Promise.resolve({ data: [] }),
+    ]).then(([{ data: sets }, { data: templates }]) => {
+      if (sets) {
+        setPackingSets(sets.map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          itemNames: (s.packing_items ?? []).map((pi: any) => pi.gear?.name).filter(Boolean),
+        })))
+      }
+      if (templates) {
+        setGearTemplates(templates as GearTemplate[])
+      }
+      setLoadingData(false)
+    })
+  }, [currentUserId, mode])
 
   const handleSelectLevel = (level: GearLevel) => {
     setSelected({ type: 'level', key: level })
@@ -85,6 +99,18 @@ export function GearPickerModal({
       section: 'personal' as const,
       minLevel: 'light_trek' as const,
     })).filter(i => i.name)
+    setPreviewItems(items)
+  }
+
+  const handleSelectGearTemplate = (tpl: GearTemplate) => {
+    setSelected({ type: 'set', key: `__tpl__${tpl.id}` })
+    const items: TemplateItem[] = tpl.items.map(i => ({
+      name: i.name,
+      section: (['personal', 'group', 'personal_items', 'clothing'].includes(i.section) ? i.section : 'group') as any,
+      minLevel: 'light_trek' as const,
+      norm_per_person: i.norm_per_person,
+      norm_per_team: i.norm_per_team,
+    }))
     setPreviewItems(items)
   }
 
@@ -233,7 +259,7 @@ export function GearPickerModal({
       onClick={onClose}
     >
       <div
-        className="glass-card w-full max-w-lg max-h-[85vh] flex flex-col"
+        className="surface-card w-full max-w-lg max-h-[85vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -292,6 +318,22 @@ export function GearPickerModal({
                   />
                 )
               })}
+            </div>
+          )}
+
+          {/* Saved group gear templates — leader only */}
+          {mode === 'leader' && gearTemplates.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-mountain-muted uppercase tracking-wider">Мои шаблоны общественного снаряжения</p>
+              {gearTemplates.map(tpl => (
+                <PickerCard
+                  key={tpl.id}
+                  title={tpl.name}
+                  desc={`${tpl.items.length} позиций`}
+                  active={selected?.key === `__tpl__${tpl.id}`}
+                  onClick={() => handleSelectGearTemplate(tpl)}
+                />
+              ))}
             </div>
           )}
 

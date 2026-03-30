@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Geologica, JetBrains_Mono } from "next/font/google";
 import { Navbar } from "@/components/nav/navbar";
 import "./globals.css";
 
-const inter = Inter({
+const geologica = Geologica({
   subsets: ["latin", "cyrillic"],
-  variable: "--font-inter",
+  variable: "--font-geologica",
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -24,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html lang="ru" className={`${geologica.variable} ${jetbrainsMono.variable}`}>
       <body className="font-sans min-h-screen">
         <Navbar />
         <main className="mx-auto max-w-7xl px-4 py-8">
