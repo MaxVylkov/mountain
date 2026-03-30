@@ -165,15 +165,34 @@ export function GearPacking({ userId }: { userId: string }) {
             className={`px-4 py-2 rounded-xl text-sm transition-colors ${
               selectedSet === s.id
                 ? 'bg-mountain-primary text-white'
-                : 'bg-mountain-surface text-mountain-muted hover:text-mountain-text'
+                : 'bg-mountain-surface text-mountain-muted hover:text-mountain-text border border-mountain-border'
             }`}
           >
             {s.name}
           </button>
         ))}
-        <Button variant="outline" onClick={() => setShowCreateSet(true)}>
-          <Plus size={16} className="mr-1" /> Новый набор
-        </Button>
+        {showCreateSet ? (
+          <form
+            onSubmit={e => { e.preventDefault(); createSet(new FormData(e.currentTarget).get('name') as string) }}
+            className="flex items-center gap-2"
+          >
+            <input
+              name="name"
+              autoFocus
+              placeholder="Название набора..."
+              required
+              className="px-3 py-2 rounded-xl border border-mountain-primary bg-mountain-surface text-sm text-mountain-text placeholder:text-mountain-muted focus:outline-none"
+            />
+            <Button type="submit" className="py-2">Создать</Button>
+            <button type="button" onClick={() => setShowCreateSet(false)} aria-label="Отмена" className="p-2 text-mountain-muted hover:text-mountain-text">
+              <X size={16} />
+            </button>
+          </form>
+        ) : (
+          <Button variant="outline" onClick={() => setShowCreateSet(true)}>
+            <Plus size={16} className="mr-1" /> Новый набор
+          </Button>
+        )}
       </div>
 
       {currentSet ? (
@@ -217,7 +236,12 @@ export function GearPacking({ userId }: { userId: string }) {
                     {bpItems.map(item => (
                       <div key={item.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-mountain-bg">
                         <div className="flex items-center gap-2">
-                          <button onClick={() => togglePacked(item.id)}>
+                          <button
+                            onClick={() => togglePacked(item.id)}
+                            aria-label={item.packed ? 'Отметить как неупакованное' : 'Отметить как упакованное'}
+                            aria-pressed={item.packed}
+                            className="p-1 rounded"
+                          >
                             <Check size={16} className={item.packed ? 'text-mountain-success' : 'text-mountain-muted'} />
                           </button>
                           <span className={`text-sm ${item.packed ? 'line-through text-mountain-muted' : ''}`}>
@@ -225,16 +249,21 @@ export function GearPacking({ userId }: { userId: string }) {
                           </span>
                           {item.gear?.weight && <span className="text-xs text-mountain-muted">{item.gear.weight}г</span>}
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2">
                           <select
                             value={item.backpack_id || ''}
                             onChange={e => moveItem(item.id, e.target.value || null)}
-                            className="text-xs bg-mountain-surface border border-mountain-border rounded px-1 py-0.5 text-mountain-muted"
+                            aria-label="Переместить в рюкзак"
+                            className="text-xs bg-mountain-surface border border-mountain-border rounded-lg px-2 py-1.5 text-mountain-muted min-h-[36px]"
                           >
                             <option value="">Не распределено</option>
                             {backpacks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                           </select>
-                          <button onClick={() => removeItem(item.id)} className="text-mountain-muted hover:text-mountain-danger">
+                          <button
+                            onClick={() => removeItem(item.id)}
+                            aria-label="Удалить"
+                            className="p-1.5 text-mountain-muted hover:text-mountain-danger rounded"
+                          >
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -256,22 +285,32 @@ export function GearPacking({ userId }: { userId: string }) {
                 {unassignedItems.map(item => (
                   <div key={item.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-mountain-bg">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => togglePacked(item.id)}>
+                      <button
+                        onClick={() => togglePacked(item.id)}
+                        aria-label={item.packed ? 'Отметить как неупакованное' : 'Отметить как упакованное'}
+                        aria-pressed={item.packed}
+                        className="p-1 rounded"
+                      >
                         <Check size={16} className={item.packed ? 'text-mountain-success' : 'text-mountain-muted'} />
                       </button>
                       <span className="text-sm">{item.gear?.name}</span>
                       {item.gear?.weight && <span className="text-xs text-mountain-muted">{item.gear.weight}г</span>}
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
                       <select
                         value=""
                         onChange={e => moveItem(item.id, e.target.value || null)}
-                        className="text-xs bg-mountain-surface border border-mountain-border rounded px-1 py-0.5 text-mountain-muted"
+                        aria-label="Переместить в рюкзак"
+                        className="text-xs bg-mountain-surface border border-mountain-border rounded-lg px-2 py-1.5 text-mountain-muted min-h-[36px]"
                       >
                         <option value="">Выбрать рюкзак</option>
                         {backpacks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                       </select>
-                      <button onClick={() => removeItem(item.id)} className="text-mountain-muted hover:text-mountain-danger">
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        aria-label="Удалить"
+                        className="p-1.5 text-mountain-muted hover:text-mountain-danger rounded"
+                      >
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -293,22 +332,6 @@ export function GearPacking({ userId }: { userId: string }) {
             {sets.length > 0 ? 'Выбери набор или создай новый' : 'Создай первый набор для сборов'}
           </p>
         </Card>
-      )}
-
-      {/* Create set modal */}
-      {showCreateSet && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowCreateSet(false)}>
-          <div className="surface-card w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-bold mb-4">Новый набор сборов</h2>
-            <form onSubmit={e => { e.preventDefault(); createSet(new FormData(e.currentTarget).get('name') as string) }} className="space-y-3">
-              <Input name="name" label="Название" placeholder="Хибины, март 2026" required />
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" type="button" onClick={() => setShowCreateSet(false)}>Отмена</Button>
-                <Button type="submit">Создать</Button>
-              </div>
-            </form>
-          </div>
-        </div>
       )}
 
       {/* Add backpack modal */}
@@ -338,7 +361,7 @@ export function GearPacking({ userId }: { userId: string }) {
           <div className="surface-card w-full max-w-lg max-h-[70vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-mountain-border flex items-center justify-between">
               <h2 className="text-lg font-bold">Добавить из инвентаря</h2>
-              <button onClick={() => setShowAddItem(false)} className="text-mountain-muted hover:text-mountain-text"><X size={20} /></button>
+              <button onClick={() => setShowAddItem(false)} aria-label="Закрыть" className="text-mountain-muted hover:text-mountain-text"><X size={20} /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-1">
               {userGear.filter(ug => !items.some(i => i.gear_id === ug.gear?.id)).map((ug: any) => (

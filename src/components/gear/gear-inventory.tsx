@@ -50,13 +50,13 @@ const CATEGORY_ICONS: Record<string, any> = {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  clothing: 'bg-purple-500/20 text-purple-400',
-  footwear: 'bg-amber-500/20 text-amber-400',
-  hardware: 'bg-blue-500/20 text-blue-400',
-  ropes: 'bg-green-500/20 text-green-400',
-  bivouac: 'bg-orange-500/20 text-orange-400',
-  electronics: 'bg-cyan-500/20 text-cyan-400',
-  other: 'bg-mountain-muted/20 text-mountain-muted',
+  clothing: 'bg-purple-500/15 text-purple-500',
+  footwear: 'bg-mountain-accent/15 text-mountain-accent',
+  hardware: 'bg-mountain-primary/15 text-mountain-primary',
+  ropes: 'bg-mountain-success/15 text-mountain-success',
+  bivouac: 'bg-orange-500/15 text-orange-500',
+  electronics: 'bg-mountain-primary/10 text-mountain-primary',
+  other: 'bg-mountain-muted/15 text-mountain-muted',
 }
 
 const CONDITION_ICONS: Record<string, { icon: any; cls: string; title: string }> = {
@@ -216,17 +216,14 @@ export function GearInventory({ catalog, userId }: { catalog: GearItem[]; userId
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
-      <div className="flex gap-4">
-        <Card className="flex-1 p-4">
-          <p className="text-xs text-mountain-muted">Предметов</p>
-          <p className="text-2xl font-bold font-mono">{totalItems}</p>
-        </Card>
-        <Card className="flex-1 p-4">
-          <p className="text-xs text-mountain-muted">Общий вес</p>
-          <p className="text-2xl font-bold font-mono">{(totalWeight / 1000).toFixed(1)} кг</p>
-        </Card>
-      </div>
+      {/* Stats inline */}
+      {userGear.length > 0 && (
+        <div className="flex items-center gap-4 text-sm text-mountain-muted">
+          <span><span className="font-mono font-semibold text-mountain-text">{totalItems}</span> предметов</span>
+          <span className="w-px h-4 bg-mountain-border" />
+          <span><span className="font-mono font-semibold text-mountain-accent">{(totalWeight / 1000).toFixed(1)} кг</span> общий вес</span>
+        </div>
+      )}
 
       {/* Search & Filter bar */}
       <div className="space-y-3">
@@ -240,7 +237,7 @@ export function GearInventory({ catalog, userId }: { catalog: GearItem[]; userId
               className="w-full rounded-xl border border-mountain-border bg-mountain-surface pl-9 pr-4 py-2 text-sm text-mountain-text placeholder:text-mountain-muted/50 focus:border-mountain-primary focus:outline-none"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-mountain-muted hover:text-mountain-text">
+              <button onClick={() => setSearchQuery('')} aria-label="Очистить поиск" className="absolute right-3 top-1/2 -translate-y-1/2 text-mountain-muted hover:text-mountain-text">
                 <X size={14} />
               </button>
             )}
@@ -457,7 +454,7 @@ export function GearInventory({ catalog, userId }: { catalog: GearItem[]; userId
           <div className="surface-card w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-mountain-border flex items-center justify-between">
               <h2 className="text-lg font-bold">Добавить из каталога</h2>
-              <button onClick={() => setShowAddModal(false)} className="text-mountain-muted hover:text-mountain-text">
+              <button onClick={() => setShowAddModal(false)} aria-label="Закрыть" className="text-mountain-muted hover:text-mountain-text">
                 <X size={20} />
               </button>
             </div>

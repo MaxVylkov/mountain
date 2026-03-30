@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { Backpack } from 'lucide-react'
 import { GearModule } from '@/components/gear/gear-module'
 
 export default async function GearPage() {
@@ -13,10 +12,10 @@ export default async function GearPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold flex items-center gap-3">
-        <Backpack className="text-mountain-primary" />
-        Кладовка
-      </h1>
+      <div>
+        <p className="text-xs font-semibold tracking-[0.15em] uppercase text-mountain-muted mb-2">Снаряжение</p>
+        <h1 className="text-3xl font-bold">Кладовка</h1>
+      </div>
       <GearModule catalog={catalog || []} />
     </div>
   )

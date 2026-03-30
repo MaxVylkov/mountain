@@ -29,14 +29,27 @@ export function GearModule({ catalog }: { catalog: GearItem[] }) {
     })
   }, [])
 
-  if (loading) return null
+  if (loading) return (
+    <div className="flex items-center justify-center py-24">
+      <div className="w-6 h-6 rounded-full border-2 border-mountain-border border-t-mountain-primary animate-spin" />
+    </div>
+  )
 
   if (!userId) {
     return (
-      <Card>
-        <p className="text-mountain-muted text-center">
-          <a href="/login" className="text-mountain-primary hover:underline">Войди</a>, чтобы управлять своим снаряжением.
-        </p>
+      <Card className="py-12 text-center space-y-4">
+        <div>
+          <p className="font-semibold text-mountain-text mb-1">Управляй своим снаряжением</p>
+          <p className="text-sm text-mountain-muted max-w-sm mx-auto">
+            Веди учёт, отслеживай состояние и собирай списки для каждого выхода — всё в одном месте.
+          </p>
+        </div>
+        <a
+          href="/login"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-mountain-primary text-white text-sm font-medium hover:bg-mountain-primary/90 transition-colors"
+        >
+          Войти
+        </a>
       </Card>
     )
   }
