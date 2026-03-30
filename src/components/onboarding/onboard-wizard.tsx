@@ -32,6 +32,13 @@ export function OnboardWizard() {
   }
 
   async function handleComplete() {
+    if (user) {
+      const supabase = createClient()
+      await supabase
+        .from('profiles')
+        .update({ onboarded: true })
+        .eq('id', user.id)
+    }
     router.push('/')
   }
 
