@@ -187,7 +187,7 @@ export default function ProfilePage() {
         </Button>
       </div>
 
-      {/* Find by email */}
+      {/* Find friend */}
       <Card className="space-y-3">
         <div className="flex items-center gap-2">
           <Search size={18} className="text-mountain-primary" />
@@ -206,7 +206,7 @@ export default function ProfilePage() {
             </button>
           )}
         </div>
-        {searchQuery.length < 3 && (
+        {searchQuery.length > 0 && searchQuery.length < 3 && (
           <p className="text-xs text-mountain-muted">Введите минимум 3 символа</p>
         )}
 
