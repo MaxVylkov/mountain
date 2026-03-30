@@ -69,29 +69,33 @@ export default function ProfilePage() {
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) { router.push('/login'); return }
-      setUser(data.user)
+      try {
+        setUser(data.user)
 
-      const { data: prof } = await supabase
-        .from('profiles')
-        .select('experience_level, invite_token')
-        .eq('id', data.user.id)
-        .single()
-      setProfile(prof ?? null)
-      setIsLoading(false)
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('experience_level, invite_token')
+          .eq('id', data.user.id)
+          .single()
+        setProfile(prof ?? null)
+        setIsLoading(false)
 
-      const { data: fs } = await supabase
-        .from('friendships')
-        .select('id, status, requester_id, addressee_id, requester:profiles!friendships_requester_id_fkey(id, display_name), addressee:profiles!friendships_addressee_id_fkey(id, display_name)')
-        .or(`requester_id.eq.${data.user.id},addressee_id.eq.${data.user.id}`)
+        const { data: fs } = await supabase
+          .from('friendships')
+          .select('id, status, requester_id, addressee_id, requester:profiles!friendships_requester_id_fkey(id, display_name), addressee:profiles!friendships_addressee_id_fkey(id, display_name)')
+          .or(`requester_id.eq.${data.user.id},addressee_id.eq.${data.user.id}`)
 
-      if (fs) {
-        setFriends(fs.map((f: any) => {
-          const isRequester = f.requester_id === data.user.id
-          const other = isRequester
-            ? (Array.isArray(f.addressee) ? f.addressee[0] : f.addressee)
-            : (Array.isArray(f.requester) ? f.requester[0] : f.requester)
-          return { id: f.id, status: f.status, other, isRequester }
-        }))
+        if (fs) {
+          setFriends(fs.map((f: any) => {
+            const isRequester = f.requester_id === data.user.id
+            const other = isRequester
+              ? (Array.isArray(f.addressee) ? f.addressee[0] : f.addressee)
+              : (Array.isArray(f.requester) ? f.requester[0] : f.requester)
+            return { id: f.id, status: f.status, other, isRequester }
+          }))
+        }
+      } finally {
+        setIsLoading(false)
       }
     })
   }, [router])
