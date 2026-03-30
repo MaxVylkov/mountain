@@ -57,6 +57,8 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [actionInFlightId, setActionInFlightId] = useState<string | null>(null)
 
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+
   // User search
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
@@ -312,15 +314,37 @@ export default function ProfilePage() {
           <h2 className="font-semibold">Друзья {accepted.length > 0 && `(${accepted.length})`}</h2>
         </div>
         {accepted.length === 0 && sent.length === 0 ? (
-          <p className="text-sm text-mountain-muted">Пока нет друзей. Найди по email или поделись ссылкой.</p>
+          <p className="text-sm text-mountain-muted">Найдите коллег по email или поделитесь ссылкой-приглашением.</p>
         ) : (
           <div className="space-y-2">
             {accepted.map(f => (
               <div key={f.id} className="flex items-center justify-between gap-3">
                 <span className="text-sm">{f.other?.display_name || 'Пользователь'}</span>
-                <button onClick={() => handleRemove(f.id)} className="text-xs text-mountain-muted hover:text-mountain-danger transition-colors">
-                  Удалить
-                </button>
+                {confirmDeleteId === f.id ? (
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-mountain-muted">Удалить?</span>
+                    <button
+                      onClick={() => { handleRemove(f.id); setConfirmDeleteId(null) }}
+                      disabled={actionInFlightId === f.id}
+                      className="text-mountain-danger hover:underline font-medium disabled:opacity-50"
+                    >
+                      Да
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteId(null)}
+                      className="text-mountain-muted hover:text-mountain-text"
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmDeleteId(f.id)}
+                    className="text-xs text-mountain-muted hover:text-mountain-danger transition-colors"
+                  >
+                    Удалить
+                  </button>
+                )}
               </div>
             ))}
             {sent.map(f => (
