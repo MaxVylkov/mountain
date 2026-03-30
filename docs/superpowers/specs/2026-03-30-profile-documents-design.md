@@ -38,6 +38,8 @@ All storage operations are performed from the **client** using the user's authen
 
 Stores metadata about uploaded files. The actual file lives in Storage; this table holds the reference.
 
+Note: `profiles.id` equals `auth.uid()` — confirmed by existing profile queries in `src/app/profile/page.tsx` (`.eq('id', data.user.id)`). The FK `user_id → profiles(id)` is therefore consistent with the RLS check `user_id = auth.uid()`.
+
 ```sql
 CREATE TABLE user_documents (
   id           uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -57,7 +59,18 @@ CREATE POLICY "Users manage own documents"
   WITH CHECK (user_id = auth.uid());
 ```
 
+### Supabase Storage bucket creation
+
+The bucket must be created in the same migration via an INSERT into `storage.buckets`:
+
+```sql
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('user-documents', 'user-documents', false, 10485760, NULL);
+```
+
 ### RLS on Storage
+
+Uses `name LIKE (auth.uid()::text || '/%')` for path matching — unambiguous across all Supabase versions, avoids `foldername()` indexing inconsistencies.
 
 ```sql
 -- Allow authenticated users to upload to their own folder
@@ -65,7 +78,7 @@ CREATE POLICY "Users upload own documents"
   ON storage.objects FOR INSERT TO authenticated
   WITH CHECK (
     bucket_id = 'user-documents'
-    AND (storage.foldername(name))[1] = auth.uid()::text
+    AND name LIKE (auth.uid()::text || '/%')
   );
 
 -- Allow authenticated users to read their own files
@@ -73,7 +86,7 @@ CREATE POLICY "Users read own documents"
   ON storage.objects FOR SELECT TO authenticated
   USING (
     bucket_id = 'user-documents'
-    AND (storage.foldername(name))[1] = auth.uid()::text
+    AND name LIKE (auth.uid()::text || '/%')
   );
 
 -- Allow authenticated users to delete their own files
@@ -81,7 +94,7 @@ CREATE POLICY "Users delete own documents"
   ON storage.objects FOR DELETE TO authenticated
   USING (
     bucket_id = 'user-documents'
-    AND (storage.foldername(name))[1] = auth.uid()::text
+    AND name LIKE (auth.uid()::text || '/%')
   );
 ```
 
@@ -103,7 +116,11 @@ New `<Card>` added to `src/app/profile/page.tsx` below the Friends card.
 
 Extracted to: `src/components/profile/documents-section.tsx`
 
-### Empty state
+### Empty state (loading)
+
+While `isLoading = true`, show one skeleton row: `<div className="h-10 rounded-lg bg-mountain-surface animate-pulse" />` — consistent with the page-level skeleton pattern.
+
+### Empty state (no documents)
 
 ```
 ┌─ Card ─────────────────────────────────────────────────────┐
@@ -131,12 +148,14 @@ Extracted to: `src/components/profile/documents-section.tsx`
 
 1. User clicks «+ Загрузить документ»
 2. Hidden `<input type="file" accept="*">` fires → user picks file
-3. Client validates: file size ≤ 10 MB (client-side check only)
-4. Show `isUploading = true` state: button disabled, spinner inline
-5. Upload to Storage: `supabase.storage.from('user-documents').upload(path, file)`
-6. On success: insert row to `user_documents` table
-7. Add new doc to local list (optimistic update after both steps succeed)
-8. On error: show inline error message `"Не удалось загрузить файл"`
+3. **Category selector appears inline** below the upload button: three pill-buttons «Разрядная книжка» / «Медицинская справка» / «Другое» (default: «Другое» pre-selected). A «Подтвердить загрузку» button becomes active.
+4. User selects category (optional, default used if unchanged) and clicks «Подтвердить загрузку»
+5. Client validates: file size ≤ 10 MB — if over limit, show error `"Файл превышает 10 МБ"`, abort
+6. Show `isUploading = true`: «Подтвердить» button disabled with spinner, category pills hidden
+7. Upload to Storage: `supabase.storage.from('user-documents').upload(path, file)`
+8. On success: insert row to `user_documents` table with `{ user_id, file_name, category, storage_path, file_size }`
+9. Add new doc to local list, reset `pendingCategory` to `'other'`, hide category selector
+10. On error: show `uploadError = "Не удалось загрузить файл"` inline below the button
 
 ### Download flow
 
@@ -149,7 +168,7 @@ Extracted to: `src/components/profile/documents-section.tsx`
 
 1. User clicks «Удалить»
 2. Inline confirm appears: «Удалить? [Да] [Отмена]»
-3. «Да»: delete from Storage → delete DB row
+3. «Да»: delete from Storage (`supabase.storage.from('user-documents').remove([path])`) → delete DB row
 4. Remove from local list on success
 
 ---
@@ -170,29 +189,48 @@ const [isLoading, setIsLoading] = useState(true)
 const [isUploading, setIsUploading] = useState(false)
 const [uploadError, setUploadError] = useState<string | null>(null)
 const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+const [pendingFile, setPendingFile] = useState<File | null>(null)        // file selected, awaiting confirm
 const [pendingCategory, setPendingCategory] = useState<Category>('other')
 ```
 
 **Type:**
 ```tsx
+type Category = 'grade_book' | 'medical' | 'other'
+
 interface UserDocument {
   id: string
   file_name: string
-  category: 'grade_book' | 'medical' | 'other'
+  category: Category
   storage_path: string
   file_size: number
   created_at: string
 }
 ```
 
-**Category selector:** Shown inline after file is selected (before upload starts). A simple `<select>` or three pill-buttons (grade_book / medical / other).
+**Initial data fetch (on mount):**
+```tsx
+useEffect(() => {
+  const supabase = createClient()
+  supabase
+    .from('user_documents')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .then(({ data }) => {
+      setDocuments(data ?? [])
+      setIsLoading(false)
+    })
+}, [userId])
+```
+
+**Category selector:** Three inline pill-buttons rendered when `pendingFile !== null`. Clicking a pill sets `pendingCategory`. Active pill gets `bg-mountain-primary/20 text-mountain-primary` class (same as level badge style). Default selection: `'other'`.
 
 ---
 
 ## Profile page integration
 
 In `src/app/profile/page.tsx`:
-1. Import `DocumentsSection`
+1. Import `DocumentsSection` from `@/components/profile/documents-section`
 2. Add `<DocumentsSection userId={user.id} />` after the Friends card and before the closing `</div>`
 3. No new props or state needed in the page itself
 
@@ -200,11 +238,11 @@ In `src/app/profile/page.tsx`:
 
 ## Files
 
-| File | Change |
-|------|--------|
-| `supabase/migrations/018_storage.sql` | Create bucket, table, RLS policies |
-| `src/components/profile/documents-section.tsx` | New component |
-| `src/app/profile/page.tsx` | Import and render DocumentsSection |
+| File | Change | Note |
+|------|--------|------|
+| `supabase/migrations/018_storage.sql` | Create bucket, table, RLS policies | The project has a pre-existing `005_*` numbering collision — verify migrations are applied manually (not via `supabase db push` auto-runner) before running |
+| `src/components/profile/documents-section.tsx` | New component | Create `src/components/profile/` directory |
+| `src/app/profile/page.tsx` | Import and render DocumentsSection | |
 
 ---
 
