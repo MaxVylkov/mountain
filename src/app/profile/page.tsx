@@ -251,7 +251,7 @@ export default function ProfilePage() {
         </div>
         <div className="flex items-center gap-2">
           <code className="flex-1 min-w-0 truncate text-xs bg-mountain-bg px-3 py-2 rounded-lg text-mountain-muted border border-mountain-border">
-            {`${window.location.origin}/invite/${profile!.invite_token}`}
+            {`${window.location.origin}/invite/${profile.invite_token}`}
           </code>
           <Button variant="outline" onClick={handleCopyInvite} className="shrink-0">
             {copied ? (
