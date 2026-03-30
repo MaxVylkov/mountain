@@ -8,10 +8,10 @@ import { Button } from '@/components/ui/button'
 import { CommentCard } from './comment-card'
 
 const TAG_COLORS: Record<string, string> = {
-  'впечатление': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  'описание': 'bg-green-500/20 text-green-400 border-green-500/30',
-  'альтернативное_описание': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-  'снаряжение': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  'впечатление':             'bg-sky-500/15 text-sky-600 border-sky-500/30',
+  'описание':                'bg-mountain-success/15 text-mountain-success border-mountain-success/30',
+  'альтернативное_описание': 'bg-mountain-accent/15 text-mountain-accent border-mountain-accent/30',
+  'снаряжение':              'bg-purple-600/15 text-purple-600 border-purple-600/30',
 }
 
 const AVAILABLE_TAGS = ['впечатление', 'описание', 'альтернативное_описание', 'снаряжение'] as const
@@ -279,9 +279,10 @@ export function RouteComments({ routeId, currentUserId }: RouteCommentsProps) {
           ))}
         </div>
       ) : (
-        <p className="text-sm text-mountain-muted text-center py-6">
-          Пока нет комментариев. Будь первым!
-        </p>
+        <div className="py-8 text-center">
+          <p className="text-sm font-medium text-mountain-text">Пока нет комментариев</p>
+          <p className="text-xs text-mountain-muted mt-1">Поделись опытом по этому маршруту</p>
+        </div>
       )}
 
       {/* Add comment form */}
@@ -322,12 +323,15 @@ export function RouteComments({ routeId, currentUserId }: RouteCommentsProps) {
           </Button>
         </div>
       ) : (
-        <p className="text-sm text-mountain-muted text-center py-4">
-          <Link href="/login" className="text-mountain-primary hover:underline">
+        <div className="flex items-center justify-center gap-2 py-4 rounded-lg border border-mountain-border bg-mountain-surface/50">
+          <Link
+            href="/login"
+            className="text-sm font-medium text-mountain-primary hover:text-mountain-primary/80 transition-colors"
+          >
             Войдите
           </Link>
-          , чтобы оставить комментарий
-        </p>
+          <span className="text-sm text-mountain-muted">, чтобы оставить комментарий</span>
+        </div>
       )}
     </div>
   )

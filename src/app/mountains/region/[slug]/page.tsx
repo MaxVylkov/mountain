@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import { Mountain, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { RegionRouteList } from '@/components/mountains/region-route-list'
 
@@ -28,16 +27,15 @@ export default async function RegionPage({ params }: { params: Promise<{ slug: s
 
   return (
     <div className="space-y-8">
-      <Link href="/mountains" className="inline-flex items-center gap-2 text-sm text-mountain-muted hover:text-mountain-text transition-colors">
-        <ArrowLeft size={16} />
-        Все горы
-      </Link>
+      <nav className="flex items-center gap-2 text-sm text-mountain-muted">
+        <Link href="/mountains" className="hover:text-mountain-text transition-colors">Маршруты</Link>
+        <span>/</span>
+        <span className="text-mountain-text">{region}</span>
+      </nav>
 
       <div>
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <Mountain className="text-mountain-primary" />
-          {region}
-        </h1>
+        <p className="text-xs font-semibold tracking-[0.15em] uppercase text-mountain-muted mb-2">Регион</p>
+        <h1 className="text-3xl font-bold text-mountain-text">{region}</h1>
         <p className="text-mountain-muted mt-1 text-sm">
           {mountains.length} {mountains.length === 1 ? 'вершина' : mountains.length < 5 ? 'вершины' : 'вершин'} · {routes?.length || 0} маршрутов
         </p>

@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
 import { createClient } from '@/lib/supabase/client'
-import { Heart, Check, Target, ChevronDown, ChevronUp, Search } from 'lucide-react'
+import { Heart, Check, Target, ChevronDown, ChevronUp, Search, LogIn } from 'lucide-react'
 import { RouteComments } from './route-comments'
 
 interface Mountain {
@@ -22,6 +23,7 @@ interface Route {
 }
 
 interface RouteStatus {
+  user_id: string
   route_id: string
   completed: boolean
   want_to_do: boolean
@@ -33,11 +35,11 @@ const DIFFICULTY_LABELS: Record<number, string> = {
 }
 
 const DIFFICULTY_COLORS: Record<number, string> = {
-  1: 'bg-mountain-success/20 text-mountain-success border-mountain-success/30',
-  2: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  3: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-  4: 'bg-mountain-danger/20 text-mountain-danger border-mountain-danger/30',
-  5: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  1: 'bg-mountain-success/15 text-mountain-success border-mountain-success/30',
+  2: 'bg-mountain-accent/15 text-mountain-accent border-mountain-accent/30',
+  3: 'bg-orange-500/15 text-orange-500 border-orange-500/30',
+  4: 'bg-mountain-danger/15 text-mountain-danger border-mountain-danger/30',
+  5: 'bg-purple-600/15 text-purple-600 border-purple-600/30',
 }
 
 function extractGrade(description: string | null): string | null {
@@ -72,13 +74,23 @@ export function RegionRouteList({ mountains, routes }: { mountains: Mountain[]; 
 
   async function toggleStatus(routeId: string, field: 'completed' | 'want_to_do' | 'favorite') {
     if (!userId) return
+    const current = statuses[routeId]
+    const newValue = !(current?.[field] || false)
+    // Optimistic update
+    setStatuses(prev => ({
+      ...prev,
+      [routeId]: { ...prev[routeId], user_id: userId, route_id: routeId, [field]: newValue }
+    }))
     const supabase = createClient()
-    const newValue = !(statuses[routeId]?.[field] || false)
     const updates: Record<string, unknown> = { user_id: userId, route_id: routeId, [field]: newValue }
     if (field === 'completed' && newValue) updates.completed_at = new Date().toISOString()
     const { data, error } = await supabase.from('user_route_status')
       .upsert(updates, { onConflict: 'user_id,route_id' }).select().single()
-    if (!error && data) setStatuses(prev => ({ ...prev, [routeId]: data as RouteStatus }))
+    if (error) {
+      setStatuses(prev => ({ ...prev, [routeId]: current })) // revert
+    } else if (data) {
+      setStatuses(prev => ({ ...prev, [routeId]: data as RouteStatus }))
+    }
   }
 
   const mountainMap = Object.fromEntries(mountains.map(m => [m.id, m]))
@@ -95,6 +107,8 @@ export function RegionRouteList({ mountains, routes }: { mountains: Mountain[]; 
     }
     return true
   })
+
+  const hasActiveFilters = mountainFilter !== null || diffFilter !== null || !!search
 
   return (
     <div className="space-y-4">
@@ -164,7 +178,7 @@ export function RegionRouteList({ mountains, routes }: { mountains: Mountain[]; 
 
       <p className="text-sm text-mountain-muted">
         {filtered.length} {filtered.length === 1 ? 'маршрут' : filtered.length < 5 ? 'маршрута' : 'маршрутов'}
-        {(mountainFilter || diffFilter !== null || search) && ` из ${routes.length}`}
+        {hasActiveFilters && ` из ${routes.length}`}
       </p>
 
       {/* Route list */}
@@ -178,7 +192,7 @@ export function RegionRouteList({ mountains, routes }: { mountains: Mountain[]; 
           return (
             <Card key={route.id} className="space-y-0 p-0 overflow-hidden">
               <div
-                className="p-4 cursor-pointer hover:bg-mountain-surface/50 transition-colors"
+                className="p-4 cursor-pointer hover:bg-mountain-border/30 transition-colors"
                 onClick={() => setExpandedRoute(isExpanded ? null : route.id)}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -201,19 +215,39 @@ export function RegionRouteList({ mountains, routes }: { mountains: Mountain[]; 
                       <>
                         <button
                           onClick={e => { e.stopPropagation(); toggleStatus(route.id, 'completed') }}
-                          className={`p-1.5 rounded-lg transition-colors ${status?.completed ? 'bg-mountain-success/20 text-mountain-success' : 'text-mountain-muted hover:text-mountain-success hover:bg-mountain-success/10'}`}
+                          className={`rounded-lg transition-colors p-1.5 sm:flex sm:items-center sm:gap-1 sm:px-2 sm:py-1.5 ${
+                            status?.completed
+                              ? 'bg-mountain-success/20 text-mountain-success'
+                              : 'text-mountain-muted hover:text-mountain-success hover:bg-mountain-success/10'
+                          }`}
                           title="Я ходил"
-                        ><Check size={18} /></button>
+                        >
+                          <Check size={18} />
+                          <span className="hidden sm:inline text-xs">Ходил</span>
+                        </button>
                         <button
                           onClick={e => { e.stopPropagation(); toggleStatus(route.id, 'want_to_do') }}
-                          className={`p-1.5 rounded-lg transition-colors ${status?.want_to_do ? 'bg-mountain-accent/20 text-mountain-accent' : 'text-mountain-muted hover:text-mountain-accent hover:bg-mountain-accent/10'}`}
+                          className={`rounded-lg transition-colors p-1.5 sm:flex sm:items-center sm:gap-1 sm:px-2 sm:py-1.5 ${
+                            status?.want_to_do
+                              ? 'bg-mountain-accent/20 text-mountain-accent'
+                              : 'text-mountain-muted hover:text-mountain-accent hover:bg-mountain-accent/10'
+                          }`}
                           title="Хочу пройти"
-                        ><Target size={18} /></button>
+                        >
+                          <Target size={18} />
+                          <span className="hidden sm:inline text-xs">Хочу</span>
+                        </button>
                         <button
                           onClick={e => { e.stopPropagation(); toggleStatus(route.id, 'favorite') }}
-                          className={`p-1.5 rounded-lg transition-colors ${status?.favorite ? 'bg-mountain-danger/20 text-mountain-danger' : 'text-mountain-muted hover:text-mountain-danger hover:bg-mountain-danger/10'}`}
+                          className={`rounded-lg transition-colors p-1.5 sm:flex sm:items-center sm:gap-1 sm:px-2 sm:py-1.5 ${
+                            status?.favorite
+                              ? 'bg-mountain-danger/20 text-mountain-danger'
+                              : 'text-mountain-muted hover:text-mountain-danger hover:bg-mountain-danger/10'
+                          }`}
                           title="Избранное"
-                        ><Heart size={18} fill={status?.favorite ? 'currentColor' : 'none'} /></button>
+                        >
+                          <Heart size={18} fill={status?.favorite ? 'currentColor' : 'none'} />
+                        </button>
                       </>
                     )}
                     {isExpanded ? <ChevronUp size={18} className="text-mountain-muted" /> : <ChevronDown size={18} className="text-mountain-muted" />}
@@ -237,17 +271,24 @@ export function RegionRouteList({ mountains, routes }: { mountains: Mountain[]; 
       </div>
 
       {filtered.length === 0 && (
-        <Card>
-          <p className="text-mountain-muted text-center">Маршрутов не найдено.</p>
-        </Card>
+        <EmptyState
+          icon={Search}
+          title="Маршрутов не найдено"
+          description={
+            hasActiveFilters
+              ? 'Попробуй другую вершину, сложность или измени поисковый запрос.'
+              : 'В этом регионе пока нет маршрутов.'
+          }
+        />
       )}
 
       {!userId && (
-        <Card>
-          <p className="text-sm text-mountain-muted text-center">
-            <a href="/login" className="text-mountain-primary hover:underline">Войди</a>, чтобы отмечать маршруты как пройденные, добавлять в избранное и планировать восхождения.
-          </p>
-        </Card>
+        <EmptyState
+          icon={LogIn}
+          title="Войди, чтобы отслеживать маршруты"
+          description="Отмечай пройденные, добавляй в избранное и планируй восхождения"
+          action={{ label: 'Войти', href: '/login' }}
+        />
       )}
     </div>
   )

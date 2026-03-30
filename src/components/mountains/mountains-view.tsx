@@ -83,18 +83,24 @@ function RegionGroups({ mountains }: { mountains: Mountain[] }) {
         const href = items.length === 1
           ? `/mountains/${items[0].id}`
           : `/mountains/region/${encodeURIComponent(region)}`
+        const heights = items.map(m => m.height).filter(h => h > 0).sort((a, b) => a - b)
+        const heightLabel = heights.length > 1
+          ? `${heights[0]}–${heights[heights.length - 1]} м`
+          : heights.length === 1 ? `${heights[0]} м` : null
         return (
           <Link key={region} href={href}>
-            <Card hover className="h-full space-y-2">
-              <h3 className="text-base font-bold">{region}</h3>
-              <div className="flex items-center gap-2 text-sm text-mountain-muted">
-                {items.length > 1 && <span>{items.length} вершины</span>}
-                {items.length > 1 && totalRoutes > 0 && <span>·</span>}
-                {totalRoutes > 0 && <span>{totalRoutes} маршрутов</span>}
-                {items.length === 1 && items[0].height > 0 && (
-                  <span className="ml-auto font-mono text-mountain-accent">{items[0].height} м</span>
-                )}
+            <Card hover className="h-full flex flex-col justify-between gap-3">
+              <div>
+                <h3 className="text-base font-bold">{region}</h3>
+                <div className="flex items-center gap-2 text-sm text-mountain-muted mt-1">
+                  {items.length > 1 && <span>{items.length} вершин</span>}
+                  {items.length > 1 && totalRoutes > 0 && <span>·</span>}
+                  {totalRoutes > 0 && <span>{totalRoutes} маршрутов</span>}
+                </div>
               </div>
+              {heightLabel && (
+                <div className="font-mono text-xs text-mountain-accent">{heightLabel}</div>
+              )}
             </Card>
           </Link>
         )
@@ -103,14 +109,3 @@ function RegionGroups({ mountains }: { mountains: Mountain[] }) {
   )
 }
 
-function DifficultyBadge({ difficulty }: { difficulty: number }) {
-  const labels: Record<number, { text: string; color: string }> = {
-    1: { text: 'Простая', color: 'text-mountain-success' },
-    2: { text: 'Средняя', color: 'text-mountain-accent' },
-    3: { text: 'Сложная', color: 'text-mountain-accent' },
-    4: { text: 'Трудная', color: 'text-mountain-danger' },
-    5: { text: 'Экстремальная', color: 'text-mountain-danger' },
-  }
-  const label = labels[difficulty] || labels[3]
-  return <span className={`font-medium ${label.color}`}>{label.text}</span>
-}
