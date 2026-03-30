@@ -55,6 +55,7 @@ export default function ProfilePage() {
   const [friends, setFriends] = useState<Friend[]>([])
   const [copied, setCopied] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [actionInFlightId, setActionInFlightId] = useState<string | null>(null)
 
   // User search
   const [searchQuery, setSearchQuery] = useState('')
@@ -120,15 +121,25 @@ export default function ProfilePage() {
   }
 
   async function handleAccept(friendshipId: string) {
-    const supabase = createClient()
-    await supabase.from('friendships').update({ status: 'accepted' }).eq('id', friendshipId)
-    setFriends(prev => prev.map(f => f.id === friendshipId ? { ...f, status: 'accepted' } : f))
+    setActionInFlightId(friendshipId)
+    try {
+      const supabase = createClient()
+      await supabase.from('friendships').update({ status: 'accepted' }).eq('id', friendshipId)
+      setFriends(prev => prev.map(f => f.id === friendshipId ? { ...f, status: 'accepted' } : f))
+    } finally {
+      setActionInFlightId(null)
+    }
   }
 
   async function handleRemove(friendshipId: string) {
-    const supabase = createClient()
-    await supabase.from('friendships').delete().eq('id', friendshipId)
-    setFriends(prev => prev.filter(f => f.id !== friendshipId))
+    setActionInFlightId(friendshipId)
+    try {
+      const supabase = createClient()
+      await supabase.from('friendships').delete().eq('id', friendshipId)
+      setFriends(prev => prev.filter(f => f.id !== friendshipId))
+    } finally {
+      setActionInFlightId(null)
+    }
   }
 
   async function handleLogout() {
@@ -276,8 +287,17 @@ export default function ProfilePage() {
               <div key={f.id} className="flex items-center justify-between gap-3">
                 <span className="text-sm">{f.other?.display_name || 'Пользователь'}</span>
                 <div className="flex gap-2">
-                  <Button onClick={() => handleAccept(f.id)} className="text-xs px-3 py-1.5 h-auto">Принять</Button>
-                  <Button variant="outline" onClick={() => handleRemove(f.id)} className="text-xs px-3 py-1.5 h-auto">Отклонить</Button>
+                  <Button
+                    onClick={() => handleAccept(f.id)}
+                    disabled={actionInFlightId === f.id}
+                    className="text-xs px-3 py-1.5 h-auto"
+                  >Принять</Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleRemove(f.id)}
+                    disabled={actionInFlightId === f.id}
+                    className="text-xs px-3 py-1.5 h-auto"
+                  >Отклонить</Button>
                 </div>
               </div>
             ))}
