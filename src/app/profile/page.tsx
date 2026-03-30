@@ -54,6 +54,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<{ experience_level: string | null; invite_token: string | null } | null>(null)
   const [friends, setFriends] = useState<Friend[]>([])
   const [copied, setCopied] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   // User search
   const [searchQuery, setSearchQuery] = useState('')
@@ -74,6 +75,7 @@ export default function ProfilePage() {
         .eq('id', data.user.id)
         .single()
       setProfile(prof ?? null)
+      setIsLoading(false)
 
       const { data: fs } = await supabase
         .from('friendships')
@@ -144,6 +146,19 @@ export default function ProfilePage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  if (isLoading) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="space-y-2">
+          <div className="h-8 w-48 rounded-lg bg-mountain-surface animate-pulse" />
+          <div className="h-4 w-32 rounded-lg bg-mountain-surface animate-pulse" />
+        </div>
+        <div className="h-24 rounded-xl bg-mountain-surface animate-pulse" />
+        <div className="h-24 rounded-xl bg-mountain-surface animate-pulse" />
+        <div className="h-24 rounded-xl bg-mountain-surface animate-pulse" />
+      </div>
+    )
+  }
   if (!user) return null
 
   const accepted = friends.filter(f => f.status === 'accepted')
