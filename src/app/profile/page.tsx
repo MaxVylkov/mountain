@@ -1,16 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Mountain, ChevronRight, Copy, Check, Users, UserCheck, Clock } from 'lucide-react'
+import { Mountain, ChevronRight, Copy, Check, Users, UserCheck, Clock, Search, UserPlus, X } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 
 type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced'
-
 const levelLabels: Record<ExperienceLevel, string> = {
   beginner: 'Новичок',
   intermediate: 'Значкист',
@@ -24,12 +23,44 @@ interface Friend {
   isRequester: boolean
 }
 
+interface SearchResult {
+  id: string
+  email: string
+  display_name: string | null
+}
+
+function copyToClipboard(text: string): boolean {
+  // Prefer modern API (requires HTTPS)
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).catch(() => {})
+    return true
+  }
+  // Fallback for HTTP
+  const ta = document.createElement('textarea')
+  ta.value = text
+  ta.style.position = 'fixed'
+  ta.style.left = '-9999px'
+  document.body.appendChild(ta)
+  ta.focus()
+  ta.select()
+  const ok = document.execCommand('copy')
+  document.body.removeChild(ta)
+  return ok
+}
+
 export default function ProfilePage() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<{ experience_level: string | null; invite_token: string | null } | null>(null)
   const [friends, setFriends] = useState<Friend[]>([])
   const [copied, setCopied] = useState(false)
+
+  // User search
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [searching, setSearching] = useState(false)
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set())
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -44,7 +75,6 @@ export default function ProfilePage() {
         .single()
       setProfile(prof ?? null)
 
-      // Load friendships
       const { data: fs } = await supabase
         .from('friendships')
         .select('id, status, requester_id, addressee_id, requester:profiles!friendships_requester_id_fkey(id, display_name), addressee:profiles!friendships_addressee_id_fkey(id, display_name)')
@@ -61,6 +91,31 @@ export default function ProfilePage() {
       }
     })
   }, [router])
+
+  // Debounced search
+  useEffect(() => {
+    if (searchTimeout.current) clearTimeout(searchTimeout.current)
+    if (searchQuery.length < 3) { setSearchResults([]); return }
+    setSearching(true)
+    searchTimeout.current = setTimeout(async () => {
+      const res = await fetch(`/api/users/search?email=${encodeURIComponent(searchQuery)}`)
+      const json = await res.json()
+      setSearchResults(json.users ?? [])
+      setSearching(false)
+    }, 400)
+    return () => { if (searchTimeout.current) clearTimeout(searchTimeout.current) }
+  }, [searchQuery])
+
+  async function handleSendRequest(targetId: string) {
+    if (!user) return
+    const supabase = createClient()
+    await supabase.from('friendships').insert({
+      requester_id: user.id,
+      addressee_id: targetId,
+      status: 'pending',
+    })
+    setAddedIds(prev => new Set([...prev, targetId]))
+  }
 
   async function handleAccept(friendshipId: string) {
     const supabase = createClient()
@@ -83,7 +138,8 @@ export default function ProfilePage() {
 
   function handleCopyInvite() {
     if (!profile?.invite_token) return
-    navigator.clipboard.writeText(`${window.location.origin}/invite/${profile.invite_token}`)
+    const link = `${window.location.origin}/invite/${profile.invite_token}`
+    copyToClipboard(link)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -94,6 +150,7 @@ export default function ProfilePage() {
   const pending = friends.filter(f => f.status === 'pending' && !f.isRequester)
   const sent = friends.filter(f => f.status === 'pending' && f.isRequester)
   const level = profile?.experience_level as ExperienceLevel | null
+  const existingFriendIds = new Set(friends.map(f => f.other?.id))
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -107,17 +164,69 @@ export default function ProfilePage() {
         )}
       </div>
 
-      {/* Invite link */}
-      {profile?.invite_token && (
-        <Card className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Users size={18} className="text-mountain-primary" />
-            <h2 className="font-semibold">Пригласить в друзья</h2>
+      {/* Find by email */}
+      <Card className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Search size={18} className="text-mountain-primary" />
+          <h2 className="font-semibold">Найти по email</h2>
+        </div>
+        <div className="relative">
+          <input
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Введи email (мин. 3 символа)..."
+            className="w-full pl-4 pr-9 py-2.5 bg-mountain-bg border border-mountain-border rounded-xl text-sm text-mountain-text placeholder:text-mountain-muted focus:outline-none focus:border-mountain-primary transition-colors"
+          />
+          {searchQuery && (
+            <button onClick={() => { setSearchQuery(''); setSearchResults([]) }} className="absolute right-3 top-1/2 -translate-y-1/2 text-mountain-muted hover:text-mountain-text">
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {searching && <p className="text-xs text-mountain-muted">Ищем...</p>}
+
+        {searchResults.length > 0 && (
+          <div className="space-y-2">
+            {searchResults.map(u => {
+              const alreadyFriend = existingFriendIds.has(u.id) || addedIds.has(u.id)
+              return (
+                <div key={u.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-mountain-bg border border-mountain-border">
+                  <div>
+                    <p className="text-sm font-medium">{u.display_name || 'Пользователь'}</p>
+                    <p className="text-xs text-mountain-muted">{u.email}</p>
+                  </div>
+                  {alreadyFriend ? (
+                    <span className="text-xs text-mountain-muted flex items-center gap-1">
+                      <Check size={12} /> Добавлен
+                    </span>
+                  ) : (
+                    <Button onClick={() => handleSendRequest(u.id)} className="text-xs px-3 py-1.5 h-auto shrink-0">
+                      <UserPlus size={12} className="mr-1" /> Добавить
+                    </Button>
+                  )}
+                </div>
+              )
+            })}
           </div>
-          <p className="text-sm text-mountain-muted">Поделись ссылкой — другой пользователь сможет добавить тебя</p>
+        )}
+
+        {searchQuery.length >= 3 && !searching && searchResults.length === 0 && (
+          <p className="text-xs text-mountain-muted">Пользователи не найдены</p>
+        )}
+      </Card>
+
+      {/* Invite link */}
+      <Card className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Users size={18} className="text-mountain-primary" />
+          <h2 className="font-semibold">Пригласить по ссылке</h2>
+        </div>
+        <p className="text-sm text-mountain-muted">Поделись ссылкой — другой пользователь добавит тебя в друзья</p>
+        {profile?.invite_token ? (
           <div className="flex items-center gap-2">
             <code className="flex-1 min-w-0 truncate text-xs bg-mountain-bg px-3 py-2 rounded-lg text-mountain-muted border border-mountain-border">
-              {`${typeof window !== 'undefined' ? window.location.origin : ''}/invite/${profile.invite_token}`}
+              {`${window.location.origin}/invite/${profile.invite_token}`}
             </code>
             <Button variant="outline" onClick={handleCopyInvite} className="shrink-0">
               {copied ? (
@@ -127,10 +236,12 @@ export default function ProfilePage() {
               )}
             </Button>
           </div>
-        </Card>
-      )}
+        ) : (
+          <p className="text-xs text-mountain-muted">Ссылка недоступна — требуется миграция БД 016</p>
+        )}
+      </Card>
 
-      {/* Incoming friend requests */}
+      {/* Incoming requests */}
       {pending.length > 0 && (
         <Card className="space-y-3">
           <div className="flex items-center gap-2">
@@ -151,14 +262,14 @@ export default function ProfilePage() {
         </Card>
       )}
 
-      {/* Friends list */}
+      {/* Friends */}
       <Card className="space-y-3">
         <div className="flex items-center gap-2">
           <UserCheck size={18} className="text-mountain-success" />
           <h2 className="font-semibold">Друзья {accepted.length > 0 && `(${accepted.length})`}</h2>
         </div>
         {accepted.length === 0 && sent.length === 0 ? (
-          <p className="text-sm text-mountain-muted">Пока нет друзей. Поделись своей ссылкой выше!</p>
+          <p className="text-sm text-mountain-muted">Пока нет друзей. Найди по email или поделись ссылкой.</p>
         ) : (
           <div className="space-y-2">
             {accepted.map(f => (
@@ -179,7 +290,7 @@ export default function ProfilePage() {
         )}
       </Card>
 
-      {/* Account info */}
+      {/* Account */}
       <Card className="space-y-3">
         <p className="text-sm text-mountain-muted">{user.email}</p>
         <Button variant="outline" onClick={handleLogout}>Выйти</Button>
