@@ -67,16 +67,19 @@ The current profile page renders 5 identical-weight cards with no visual hierarc
 
 ### Header block
 - No `<Card>` wrapper — plain `<div>`
+- Keep the existing uppercase eyebrow label `<p className="text-xs font-semibold tracking-[0.15em] uppercase text-mountain-muted mb-2">Профиль</p>` above the name
 - Layout: `flex items-start justify-between`
 - Left: `<h1>` name + level badge (if present) + `<p>` email (`text-sm text-mountain-muted`)
 - Right: ghost `<Button variant="outline">` → «Выйти»
 - Level badge: `inline-block text-xs px-2 py-0.5 rounded-full bg-mountain-primary/20 text-mountain-primary` (keep existing style)
+- **Remove the existing Account card entirely** — email and logout are now in the header, the separate Card at the bottom of the page is deleted
 
 ### Find friend card (large)
 - Title: «Найти альпиниста» (replaces «Найти по email»)
 - Input: `py-3` (larger than current `py-2.5`)
 - Placeholder: «Email или имя...» (removes «мин. 3 символа» from placeholder text)
-- Hint text below input: `<p className="text-xs text-mountain-muted">Введите минимум 3 символа</p>` — hidden when `searchQuery.length > 0`
+- Hint text below input: `<p className="text-xs text-mountain-muted">Введите минимум 3 символа</p>` — visible when `searchQuery.length < 3`, hidden when `searchQuery.length >= 3` (matches the debounce threshold)
+- Note: the search API currently queries by email only. The placeholder «Email или имя...» is intentionally forward-looking copy; no API change is made in this iteration.
 - Search results and empty state: no changes to logic, only text
 
 ### Invite link card (compact)
@@ -88,7 +91,7 @@ The current profile page renders 5 identical-weight cards with no visual hierarc
 ### Friend requests card
 - Conditional render: only when `pending.length > 0` (no change)
 - Button labels: «Принять» / «Отклонить» (no change)
-- Add `disabled` state on buttons while async action is in flight
+- Add `disabled` state on buttons while async action is in flight: use a `actionInFlightId: string | null` state; **both `handleAccept` and the decline handler** set `actionInFlightId` to `f.id` at the start of the async call and reset it to `null` in a `finally` block; buttons for that row are disabled while `actionInFlightId === f.id`
 
 ### Friends card
 - **Inline confirm for delete:**
@@ -101,7 +104,7 @@ The current profile page renders 5 identical-weight cards with no visual hierarc
 
 ### Skeleton loader
 - Replace `if (!user) return null` with loading state
-- `isLoading` boolean state, true until both `user` and `profile` are loaded
+- `isLoading` boolean state, initialised to `true`; set to `false` after `setProfile(...)` resolves (before the friends query runs) so the skeleton disappears as soon as the identity data is ready
 - Skeleton:
   - Header placeholder: two rects (`h-8 w-48` + `h-4 w-32`)
   - Three card placeholders: `h-24 rounded-xl animate-pulse bg-mountain-surface`
@@ -143,4 +146,4 @@ The current profile page renders 5 identical-weight cards with no visual hierarc
 
 ## Files to Change
 
-- `src/app/profile/page.tsx` — full rewrite of JSX and state
+- `src/app/profile/page.tsx` — full rewrite of JSX and state; also **delete the `<Link href="/onboard?view=true">` journey block** at the bottom of the current page (Design Goal 5: section removed entirely)
