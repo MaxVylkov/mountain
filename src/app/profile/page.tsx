@@ -169,14 +169,22 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <p className="text-xs font-semibold tracking-[0.15em] uppercase text-mountain-muted mb-2">Профиль</p>
-        <h1 className="text-3xl font-bold">{user.user_metadata?.display_name || 'Альпинист'}</h1>
-        {level && (
-          <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-mountain-primary/20 text-mountain-primary">
-            {levelLabels[level]}
-          </span>
-        )}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold tracking-[0.15em] uppercase text-mountain-muted mb-2">Профиль</p>
+          <h1 className="text-3xl font-bold">{user.user_metadata?.display_name || 'Альпинист'}</h1>
+          <div className="flex items-center gap-2 mt-1">
+            {level && (
+              <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-mountain-primary/20 text-mountain-primary">
+                {levelLabels[level]}
+              </span>
+            )}
+            <p className="text-sm text-mountain-muted">{user.email}</p>
+          </div>
+        </div>
+        <Button variant="outline" onClick={handleLogout} className="shrink-0 mt-1">
+          Выйти
+        </Button>
       </div>
 
       {/* Find by email */}
@@ -303,12 +311,6 @@ export default function ProfilePage() {
             ))}
           </div>
         )}
-      </Card>
-
-      {/* Account */}
-      <Card className="space-y-3">
-        <p className="text-sm text-mountain-muted">{user.email}</p>
-        <Button variant="outline" onClick={handleLogout}>Выйти</Button>
       </Card>
 
       <Link href="/onboard?view=true">
