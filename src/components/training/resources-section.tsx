@@ -14,6 +14,17 @@ interface ResourceCategory {
 
 const CATEGORIES: ResourceCategory[] = [
   {
+    label: 'Организации',
+    resources: [
+      {
+        title: 'Федерация альпинизма России (ФАР)',
+        description: 'Официальный сайт ФАР — разряды, соревнования, нормативы, новости российского альпинизма.',
+        url: 'https://alpfederation.ru/',
+        tags: ['Официальный', 'ФАР'],
+      },
+    ],
+  },
+  {
     label: 'Основы альпинизма',
     resources: [
       {
