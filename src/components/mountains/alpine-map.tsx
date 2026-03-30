@@ -101,11 +101,11 @@ export default function AlpineMap({ mountains }: { mountains: Mountain[] }) {
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-4 text-sm text-mountain-muted">
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-blue-500 inline-block" />
+            <span className="w-3 h-3 rounded-full bg-mountain-primary inline-block" />
             Горные районы
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-amber-500 inline-block" />
+            <span className="w-3 h-3 rounded-full bg-mountain-accent inline-block" />
             Альплагеря {!showCamps && <span className="text-xs">(приблизьте)</span>}
           </span>
         </div>
@@ -125,7 +125,7 @@ export default function AlpineMap({ mountains }: { mountains: Mountain[] }) {
       </div>
 
       {/* Map */}
-      <div className="rounded-xl overflow-hidden border border-mountain-border" style={{ height: '600px' }}>
+      <div className="rounded-xl overflow-hidden border border-mountain-border h-[400px] sm:h-[500px] lg:h-[600px]">
         <MapContainer
           center={[55.0, 50.0]}
           zoom={4}

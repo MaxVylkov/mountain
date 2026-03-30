@@ -41,10 +41,10 @@ function relativeTime(dateStr: string): string {
 }
 
 const TAG_COLORS: Record<string, string> = {
-  'впечатление': 'bg-blue-500/20 text-blue-400',
-  'описание': 'bg-green-500/20 text-green-400',
-  'альтернативное_описание': 'bg-amber-500/20 text-amber-400',
-  'снаряжение': 'bg-purple-500/20 text-purple-400',
+  'впечатление':             'bg-sky-500/15 text-sky-600 border-sky-500/30',
+  'описание':                'bg-mountain-success/15 text-mountain-success border-mountain-success/30',
+  'альтернативное_описание': 'bg-mountain-accent/15 text-mountain-accent border-mountain-accent/30',
+  'снаряжение':              'bg-purple-600/15 text-purple-600 border-purple-600/30',
 }
 
 export function CommentCard({

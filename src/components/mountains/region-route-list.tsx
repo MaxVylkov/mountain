@@ -114,8 +114,10 @@ export function RegionRouteList({ mountains, routes }: { mountains: Mountain[]; 
     <div className="space-y-4">
       {/* Search */}
       <div className="relative">
+        <label htmlFor="region-route-search" className="sr-only">Поиск маршрутов</label>
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mountain-muted pointer-events-none" />
         <input
+          id="region-route-search"
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Поиск маршрутов..."
@@ -127,6 +129,7 @@ export function RegionRouteList({ mountains, routes }: { mountains: Mountain[]; 
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setMountainFilter(null)}
+          aria-pressed={mountainFilter === null}
           className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
             mountainFilter === null
               ? 'bg-mountain-primary text-white'
@@ -139,6 +142,7 @@ export function RegionRouteList({ mountains, routes }: { mountains: Mountain[]; 
           <button
             key={m.id}
             onClick={() => setMountainFilter(mountainFilter === m.id ? null : m.id)}
+            aria-pressed={mountainFilter === m.id}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
               mountainFilter === m.id
                 ? 'bg-mountain-primary text-white'
@@ -156,6 +160,7 @@ export function RegionRouteList({ mountains, routes }: { mountains: Mountain[]; 
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setDiffFilter(null)}
+            aria-pressed={diffFilter === null}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
               diffFilter === null ? 'bg-mountain-primary text-white' : 'bg-mountain-surface text-mountain-muted hover:text-mountain-text'
             }`}
@@ -166,6 +171,7 @@ export function RegionRouteList({ mountains, routes }: { mountains: Mountain[]; 
             <button
               key={d}
               onClick={() => setDiffFilter(diffFilter === d ? null : d)}
+              aria-pressed={diffFilter === d}
               className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
                 diffFilter === d ? DIFFICULTY_COLORS[d] : 'bg-mountain-surface text-mountain-muted border-mountain-border hover:text-mountain-text'
               }`}
@@ -192,8 +198,17 @@ export function RegionRouteList({ mountains, routes }: { mountains: Mountain[]; 
           return (
             <Card key={route.id} className="space-y-0 p-0 overflow-hidden">
               <div
+                role="button"
+                tabIndex={0}
+                aria-expanded={isExpanded}
                 className="p-4 cursor-pointer hover:bg-mountain-border/30 transition-colors"
                 onClick={() => setExpandedRoute(isExpanded ? null : route.id)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setExpandedRoute(isExpanded ? null : route.id)
+                  }
+                }}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -215,36 +230,39 @@ export function RegionRouteList({ mountains, routes }: { mountains: Mountain[]; 
                       <>
                         <button
                           onClick={e => { e.stopPropagation(); toggleStatus(route.id, 'completed') }}
+                          aria-label={status?.completed ? 'Убрать отметку "Ходил"' : 'Отметить как пройденный'}
+                          aria-pressed={!!status?.completed}
                           className={`rounded-lg transition-colors p-1.5 sm:flex sm:items-center sm:gap-1 sm:px-2 sm:py-1.5 ${
                             status?.completed
                               ? 'bg-mountain-success/20 text-mountain-success'
                               : 'text-mountain-muted hover:text-mountain-success hover:bg-mountain-success/10'
                           }`}
-                          title="Я ходил"
                         >
                           <Check size={18} />
                           <span className="hidden sm:inline text-xs">Ходил</span>
                         </button>
                         <button
                           onClick={e => { e.stopPropagation(); toggleStatus(route.id, 'want_to_do') }}
+                          aria-label={status?.want_to_do ? 'Убрать из запланированных' : 'Добавить в запланированные'}
+                          aria-pressed={!!status?.want_to_do}
                           className={`rounded-lg transition-colors p-1.5 sm:flex sm:items-center sm:gap-1 sm:px-2 sm:py-1.5 ${
                             status?.want_to_do
                               ? 'bg-mountain-accent/20 text-mountain-accent'
                               : 'text-mountain-muted hover:text-mountain-accent hover:bg-mountain-accent/10'
                           }`}
-                          title="Хочу пройти"
                         >
                           <Target size={18} />
                           <span className="hidden sm:inline text-xs">Хочу</span>
                         </button>
                         <button
                           onClick={e => { e.stopPropagation(); toggleStatus(route.id, 'favorite') }}
+                          aria-label={status?.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+                          aria-pressed={!!status?.favorite}
                           className={`rounded-lg transition-colors p-1.5 sm:flex sm:items-center sm:gap-1 sm:px-2 sm:py-1.5 ${
                             status?.favorite
                               ? 'bg-mountain-danger/20 text-mountain-danger'
                               : 'text-mountain-muted hover:text-mountain-danger hover:bg-mountain-danger/10'
                           }`}
-                          title="Избранное"
                         >
                           <Heart size={18} fill={status?.favorite ? 'currentColor' : 'none'} />
                         </button>

@@ -99,9 +99,10 @@ export function RouteComments({ routeId, currentUserId }: RouteCommentsProps) {
     }
     setLikesMap(grouped)
 
-    const { data: adoptions } = await supabase
-      .from('adopted_descriptions')
-      .select('author_id')
+    const authorIds = [...new Set(data.map((c: any) => c.user_id))]
+    const { data: adoptions } = authorIds.length > 0
+      ? await supabase.from('adopted_descriptions').select('author_id').in('author_id', authorIds)
+      : { data: [] as { author_id: string }[] }
 
     const scores: Record<string, number> = {}
     if (adoptions) {

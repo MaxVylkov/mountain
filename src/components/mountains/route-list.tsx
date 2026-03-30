@@ -200,8 +200,10 @@ export function RouteList({ routes }: { routes: Route[]; mountainId?: string }) 
 
       {/* Search */}
       <div className="relative">
+        <label htmlFor="route-search" className="sr-only">Поиск маршрутов</label>
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mountain-muted pointer-events-none" />
         <input
+          id="route-search"
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Поиск маршрутов..."
@@ -241,6 +243,7 @@ export function RouteList({ routes }: { routes: Route[]; mountainId?: string }) 
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setFilter(null)}
+          aria-pressed={filter === null}
           className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
             filter === null
               ? 'bg-mountain-primary text-white'
@@ -253,6 +256,7 @@ export function RouteList({ routes }: { routes: Route[]; mountainId?: string }) 
           <button
             key={d}
             onClick={() => setFilter(d)}
+            aria-pressed={filter === d}
             className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
               filter === d
                 ? DIFFICULTY_COLORS[d]
@@ -275,11 +279,22 @@ export function RouteList({ routes }: { routes: Route[]; mountainId?: string }) 
           return (
             <Card key={route.id} className="space-y-0 p-0 overflow-hidden">
               <div
+                role="button"
+                tabIndex={0}
+                aria-expanded={isExpanded}
                 className="p-4 cursor-pointer hover:bg-mountain-border/30 transition-colors"
                 onClick={() => {
                   const next = isExpanded ? null : route.id
                   setExpandedRoute(next)
                   if (next) loadAdoptedDescriptions(next)
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    const next = isExpanded ? null : route.id
+                    setExpandedRoute(next)
+                    if (next) loadAdoptedDescriptions(next)
+                  }
                 }}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -305,36 +320,39 @@ export function RouteList({ routes }: { routes: Route[]; mountainId?: string }) 
                       <>
                         <button
                           onClick={(e) => { e.stopPropagation(); toggleStatus(route.id, 'completed') }}
+                          aria-label={status?.completed ? 'Убрать отметку "Ходил"' : 'Отметить как пройденный'}
+                          aria-pressed={!!status?.completed}
                           className={`rounded-lg transition-colors p-1.5 sm:flex sm:items-center sm:gap-1 sm:px-2 sm:py-1.5 ${
                             status?.completed
                               ? 'bg-mountain-success/20 text-mountain-success'
                               : 'text-mountain-muted hover:text-mountain-success hover:bg-mountain-success/10'
                           }`}
-                          title="Я ходил"
                         >
                           <Check size={18} />
                           <span className="hidden sm:inline text-xs">Ходил</span>
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); toggleStatus(route.id, 'want_to_do') }}
+                          aria-label={status?.want_to_do ? 'Убрать из запланированных' : 'Добавить в запланированные'}
+                          aria-pressed={!!status?.want_to_do}
                           className={`rounded-lg transition-colors p-1.5 sm:flex sm:items-center sm:gap-1 sm:px-2 sm:py-1.5 ${
                             status?.want_to_do
                               ? 'bg-mountain-accent/20 text-mountain-accent'
                               : 'text-mountain-muted hover:text-mountain-accent hover:bg-mountain-accent/10'
                           }`}
-                          title="Хочу пройти"
                         >
                           <Target size={18} />
                           <span className="hidden sm:inline text-xs">Хочу</span>
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); toggleStatus(route.id, 'favorite') }}
+                          aria-label={status?.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+                          aria-pressed={!!status?.favorite}
                           className={`rounded-lg transition-colors p-1.5 sm:flex sm:items-center sm:gap-1 sm:px-2 sm:py-1.5 ${
                             status?.favorite
                               ? 'bg-mountain-danger/20 text-mountain-danger'
                               : 'text-mountain-muted hover:text-mountain-danger hover:bg-mountain-danger/10'
                           }`}
-                          title="Избранное"
                         >
                           <Heart size={18} fill={status?.favorite ? 'currentColor' : 'none'} />
                         </button>
@@ -351,8 +369,8 @@ export function RouteList({ routes }: { routes: Route[]; mountainId?: string }) 
                     {route.description}
                   </p>
                   {adoptedDescs[route.id]?.map((ad: any) => (
-                    <div key={ad.id} className="mt-4 p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
-                      <p className="text-xs text-amber-400 font-medium mb-1">Альтернативное описание</p>
+                    <div key={ad.id} className="mt-4 p-3 bg-mountain-accent/5 border border-mountain-accent/20 rounded-lg">
+                      <p className="text-xs text-mountain-accent font-medium mb-1">Альтернативное описание</p>
                       <p className="text-sm text-mountain-text whitespace-pre-wrap">{ad.text}</p>
                       <p className="text-xs text-mountain-muted mt-2">— {ad.author?.display_name || 'Аноним'}</p>
                     </div>

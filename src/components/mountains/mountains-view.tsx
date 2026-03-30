@@ -28,6 +28,7 @@ export default function MountainsView({ mountains }: { mountains: Mountain[] }) 
       <div className="flex gap-2">
         <button
           onClick={() => setView('list')}
+          aria-pressed={view === 'list'}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
             view === 'list'
               ? 'bg-mountain-primary text-white'
@@ -39,6 +40,7 @@ export default function MountainsView({ mountains }: { mountains: Mountain[] }) 
         </button>
         <button
           onClick={() => setView('map')}
+          aria-pressed={view === 'map'}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
             view === 'map'
               ? 'bg-mountain-primary text-white'
