@@ -199,19 +199,7 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* Expert CTA */}
-          <div className="mt-6">
-            <Link
-              href="/trips/new"
-              className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-lg bg-mountain-primary text-white text-sm font-medium hover:bg-mountain-primary/90 transition-colors duration-150"
-            >
-              Собираюсь в горы
-              <ArrowRight size={14} />
-            </Link>
-            <p className="text-[12px] text-mountain-muted mt-2.5">
-              Создай поездку, собери команду и снаряжение
-            </p>
-          </div>
+          {/* Expert CTA — placeholder, to be added when user journey is defined */}
         </div>
       </section>
 
