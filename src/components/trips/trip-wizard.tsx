@@ -119,42 +119,52 @@ export function TripWizard({ mountains }: { mountains: MountainData[] }) {
   }, [selectedMountain])
 
   async function createTrip() {
-    if (!userId || !selectedMountain || !selectedTemplate) return
+    if (!userId || !selectedMountain) return
+    if (!selectedTemplate && !selectedPackingSet) return
     setCreating(true)
     const supabase = createClient()
 
     const mountainName = mountains.find(m => m.id === selectedMountain)?.name || 'Поездка'
-    const templateName = TEMPLATES.find(t => t.key === selectedTemplate)?.name || ''
+    // Determine which template key to store (only valid DB values or null)
+    const validTemplates = ['light_trek', 'np', 'sp3', 'sp2']
+    const templateKey = selectedTemplate && validTemplates.includes(selectedTemplate) ? selectedTemplate : null
+    const templateName = TEMPLATES.find(t => t.key === selectedTemplate)?.name
+      || userPackingSets.find((s: any) => s.id === selectedPackingSet)?.name
+      || 'Мои сборы'
 
-    // Create packing set
-    const { data: packingSet } = await supabase
-      .from('packing_sets')
-      .insert({ user_id: userId, name: `${mountainName} — ${templateName}`, route_id: null })
-      .select()
-      .single()
+    // Use existing packing set or create a new one
+    let packingSetId: string | null = selectedPackingSet || null
+
+    if (!selectedPackingSet) {
+      const { data: newSet } = await supabase
+        .from('packing_sets')
+        .insert({ user_id: userId, name: `${mountainName} — ${templateName}`, route_id: null })
+        .select()
+        .single()
+      packingSetId = newSet?.id || null
+    }
 
     // Create trip
     const { data: trip } = await supabase
       .from('trips')
       .insert({
         user_id: userId,
-        name: `${mountainName}`,
+        name: mountainName,
         mountain_id: selectedMountain,
-        template: selectedTemplate,
+        template: templateKey,
         status: 'packing',
-        packing_set_id: packingSet?.id,
+        packing_set_id: packingSetId,
       })
       .select()
       .single()
 
-    if (trip && packingSet) {
-      // Add ALL template gear to packing set (regardless of what's in user's closet)
-      const gearToAdd = templateGear.map(g => ({
-        packing_set_id: packingSet.id,
-        gear_id: g.id,
-      }))
-
-      if (gearToAdd.length > 0) {
+    if (trip) {
+      // Add gear to new packing set (not when reusing an existing set)
+      if (!selectedPackingSet && packingSetId && templateGear.length > 0) {
+        const gearToAdd = templateGear.map(g => ({
+          packing_set_id: packingSetId,
+          gear_id: g.id,
+        }))
         await supabase.from('packing_items').insert(gearToAdd)
       }
 
