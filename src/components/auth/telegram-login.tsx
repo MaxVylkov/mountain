@@ -23,34 +23,27 @@ export function TelegramLogin() {
   useEffect(() => {
     // Define the callback globally
     (window as any).onTelegramAuth = async (user: TelegramUser) => {
-      // Sign in or create account via Supabase
+      // Let server create/update the user with a stable password
+      const res = await fetch('/api/auth/telegram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(user),
+      })
+
+      if (!res.ok) {
+        console.error('Telegram auth error:', await res.text())
+        return
+      }
+
+      const { email, password } = await res.json()
+
+      // Sign in with the stable credentials
       const supabase = createClient()
-      const email = `tg_${user.id}@telegram.user`
-      const password = `tg_${user.id}_${user.hash.slice(0, 16)}`
-      const displayName = [user.first_name, user.last_name].filter(Boolean).join(' ')
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
 
-      // Try to sign in first
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-
-      if (signInError) {
-        // If sign in fails, create account
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              display_name: displayName,
-              telegram_id: user.id,
-              telegram_username: user.username,
-              avatar_url: user.photo_url,
-            },
-          },
-        })
-
-        if (signUpError) {
-          console.error('Telegram auth error:', signUpError)
-          return
-        }
+      if (error) {
+        console.error('Sign in error:', error)
+        return
       }
 
       router.push('/')
