@@ -2,11 +2,10 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Mountain, ChevronRight, Copy, Check, Users, UserCheck, Clock, Search, UserPlus, X } from 'lucide-react'
+import { Copy, Check, Users, UserCheck, Clock, Search, UserPlus, X } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 
 type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced'
@@ -357,15 +356,6 @@ export default function ProfilePage() {
         )}
       </Card>
 
-      <Link href="/onboard?view=true">
-        <div className="bg-mountain-surface border border-mountain-border rounded-xl p-4 hover:border-mountain-primary transition-colors flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Mountain size={24} className="text-mountain-primary" />
-            <span className="font-medium">Мой путь к вершине</span>
-          </div>
-          <ChevronRight size={20} className="text-mountain-muted" />
-        </div>
-      </Link>
     </div>
   )
 }
