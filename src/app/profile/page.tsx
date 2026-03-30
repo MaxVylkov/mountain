@@ -95,7 +95,7 @@ export default function ProfilePage() {
           }))
         }
       } finally {
-        setIsLoading(false)
+        setIsLoading(false) // safety net: dismisses skeleton if profile fetch throws before line 81
       }
     })
   }, [router])
