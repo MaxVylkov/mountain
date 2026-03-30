@@ -10,13 +10,20 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         with:
           host: 178.72.186.91
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: SUPABASE_SERVICE_ROLE_KEY
           script: |
             cd /var/www/mountaine
             git pull origin main
+            # Write service role key to .env.local if not already present
+            if ! grep -q "SUPABASE_SERVICE_ROLE_KEY" .env.local; then
+              echo "SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" >> .env.local
+            fi
             npm ci
             npm run build
             pm2 restart mountaine
