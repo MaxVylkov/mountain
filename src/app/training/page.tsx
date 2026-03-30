@@ -1,5 +1,6 @@
 import { Dumbbell } from 'lucide-react'
 import WorkoutsView from '@/components/training/workouts-view'
+import { ResourcesSection } from '@/components/training/resources-section'
 
 export default function TrainingPage() {
   return (
@@ -15,6 +16,8 @@ export default function TrainingPage() {
       </div>
 
       <WorkoutsView />
+
+      <ResourcesSection />
     </div>
   )
 }
