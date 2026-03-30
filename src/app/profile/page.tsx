@@ -243,29 +243,26 @@ export default function ProfilePage() {
       </Card>
 
       {/* Invite link */}
+      {profile?.invite_token && (
       <Card className="space-y-3">
         <div className="flex items-center gap-2">
           <Users size={18} className="text-mountain-primary" />
           <h2 className="font-semibold">Пригласить по ссылке</h2>
         </div>
-        <p className="text-sm text-mountain-muted">Поделись ссылкой — другой пользователь добавит тебя в друзья</p>
-        {profile?.invite_token ? (
-          <div className="flex items-center gap-2">
-            <code className="flex-1 min-w-0 truncate text-xs bg-mountain-bg px-3 py-2 rounded-lg text-mountain-muted border border-mountain-border">
-              {`${window.location.origin}/invite/${profile.invite_token}`}
-            </code>
-            <Button variant="outline" onClick={handleCopyInvite} className="shrink-0">
-              {copied ? (
-                <><Check size={14} className="mr-1 text-mountain-success" /><span className="text-xs">Скопировано</span></>
-              ) : (
-                <><Copy size={14} className="mr-1" /><span className="text-xs">Копировать</span></>
-              )}
-            </Button>
-          </div>
-        ) : (
-          <p className="text-xs text-mountain-muted">Ссылка недоступна — требуется миграция БД 016</p>
-        )}
+        <div className="flex items-center gap-2">
+          <code className="flex-1 min-w-0 truncate text-xs bg-mountain-bg px-3 py-2 rounded-lg text-mountain-muted border border-mountain-border">
+            {`${window.location.origin}/invite/${profile!.invite_token}`}
+          </code>
+          <Button variant="outline" onClick={handleCopyInvite} className="shrink-0">
+            {copied ? (
+              <><Check size={14} className="mr-1 text-mountain-success" /><span className="text-xs">Скопировано</span></>
+            ) : (
+              <><Copy size={14} className="mr-1" /><span className="text-xs">Скопировать</span></>
+            )}
+          </Button>
+        </div>
       </Card>
+      )}
 
       {/* Incoming requests */}
       {pending.length > 0 && (
