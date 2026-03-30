@@ -86,6 +86,7 @@ export default async function ForumPostPage({ params }: Props) {
   const routeIds = (attachments ?? []).filter((a: any) => a.type === 'route').map((a: any) => a.ref_id)
   const packingIds = (attachments ?? []).filter((a: any) => a.type === 'packing_set').map((a: any) => a.ref_id)
   const gearIds = (attachments ?? []).filter((a: any) => a.type === 'gear_item').map((a: any) => a.ref_id)
+  const workoutIds = (attachments ?? []).filter((a: any) => a.type === 'workout').map((a: any) => a.ref_id)
 
   // Resolve route attachments
   const routeData = routeIds.length > 0
@@ -132,6 +133,7 @@ export default async function ForumPostPage({ params }: Props) {
       routeData={routeData}
       packingData={packingData}
       gearChips={gearChips}
+      workoutIds={workoutIds}
       currentUserId={user?.id ?? null}
     />
   )

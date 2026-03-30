@@ -4,7 +4,21 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ForumCategory, PostType } from './forum-types'
-import { X, MapPin, Search, Package } from 'lucide-react'
+import { X, MapPin, Search, Package, ChefHat, Dumbbell } from 'lucide-react'
+import templates from '@/lib/data/ration-templates.json'
+
+const WORKOUTS_SUMMARY = [
+  { id: '1', title: 'Тренировка пальцев на хангборде' },
+  { id: '2', title: 'Длинный бег в горах' },
+  { id: '3', title: 'Интервальный бег' },
+  { id: '4', title: 'Силовая на турнике' },
+  { id: '5', title: 'Тренировка кора' },
+  { id: '6', title: 'Тренировка ног' },
+  { id: '7', title: 'Скалолазание на стенде' },
+  { id: '8', title: 'Поход с рюкзаком' },
+  { id: '9', title: 'Тренировка равновесия и проприоцепции' },
+  { id: '10', title: 'Растяжка и восстановление' },
+]
 
 interface PreAttached {
   type: 'route'
@@ -46,6 +60,10 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
   const [packingSets, setPackingSets] = useState<{ id: string; name: string }[]>([])
   const [packingLoaded, setPackingLoaded] = useState(false)
   const [selectedPackingId, setSelectedPackingId] = useState<string | null>(null)
+
+  // Ration and workout pickers
+  const [selectedRationId, setSelectedRationId] = useState<string | null>(null)
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState<string | null>(null)
 
   const searchRoutes = (q: string) => {
     setRouteQuery(q)
@@ -128,6 +146,7 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
       if (!preAttached && routeMode === 'custom' && routeNote.trim()) {
         insertData.route_note = routeNote.trim()
       }
+      if (selectedRationId) insertData.ration_template_id = selectedRationId
 
       const { data: post, error } = await supabase
         .from('forum_posts')
@@ -148,6 +167,7 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
         attachments.push({ post_id: post.id, type: 'route', ref_id: selectedRoute.id, position: 0 })
       }
       if (selectedPackingId) attachments.push({ post_id: post.id, type: 'packing_set', ref_id: selectedPackingId, position: attachments.length })
+      if (selectedWorkoutId) attachments.push({ post_id: post.id, type: 'workout', ref_id: selectedWorkoutId, position: attachments.length })
       if (attachments.length > 0) await supabase.from('forum_attachments').insert(attachments)
 
       onClose()
@@ -318,6 +338,42 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
             ) : (
               <p className="text-xs text-mountain-muted">У вас пока нет сборок в кладовке</p>
             )}
+          </div>
+
+          {/* Ration picker */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-1.5 text-xs font-medium text-mountain-muted">
+              <ChefHat className="w-3.5 h-3.5" />
+              Раскладка питания
+            </label>
+            <select
+              value={selectedRationId ?? ''}
+              onChange={e => setSelectedRationId(e.target.value || null)}
+              className="w-full rounded-xl border border-mountain-border bg-mountain-bg px-3 py-2 text-sm text-mountain-text focus:outline-none focus:border-mountain-primary"
+            >
+              <option value="">— Не прикреплять —</option>
+              {(templates as any[]).map(t => (
+                <option key={t.id} value={t.id}>{t.name} · {t.caloriesPerDay} ккал/день</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Workout picker */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-1.5 text-xs font-medium text-mountain-muted">
+              <Dumbbell className="w-3.5 h-3.5" />
+              Тренировка
+            </label>
+            <select
+              value={selectedWorkoutId ?? ''}
+              onChange={e => setSelectedWorkoutId(e.target.value || null)}
+              className="w-full rounded-xl border border-mountain-border bg-mountain-bg px-3 py-2 text-sm text-mountain-text focus:outline-none focus:border-mountain-primary"
+            >
+              <option value="">— Не прикреплять —</option>
+              {WORKOUTS_SUMMARY.map(w => (
+                <option key={w.id} value={w.id}>{w.title}</option>
+              ))}
+            </select>
           </div>
         </div>
 

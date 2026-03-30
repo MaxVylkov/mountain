@@ -8,6 +8,7 @@ import { AttachmentRouteCard } from './attachment-route-card'
 import { AttachmentPackingCard } from './attachment-packing-card'
 import { AttachmentGearChips } from './attachment-gear-chips'
 import { AttachmentRationCard } from './attachment-ration-card'
+import { AttachmentWorkoutCard } from './attachment-workout-card'
 import { ForumReplyList } from './forum-reply-list'
 import { ThumbsUp, ArrowLeft, MapPin, Pencil, X, Check, Package, ChefHat } from 'lucide-react'
 import Link from 'next/link'
@@ -23,10 +24,11 @@ interface Props {
   routeData: RouteData[]
   packingData: PackingData[]
   gearChips: GearChip[]
+  workoutIds: string[]
   currentUserId: string | null
 }
 
-export function ForumPostDetail({ post, replies, routeData, packingData, gearChips, currentUserId }: Props) {
+export function ForumPostDetail({ post, replies, routeData, packingData, gearChips, workoutIds, currentUserId }: Props) {
   const router = useRouter()
   const [liked, setLiked] = useState(post.liked_by_me ?? false)
   const [likeCount, setLikeCount] = useState(post.like_count ?? 0)
@@ -269,7 +271,7 @@ export function ForumPostDetail({ post, replies, routeData, packingData, gearChi
         )}
 
         {/* View: attachments */}
-        {!editing && (routeData.length > 0 || packingData.length > 0 || gearChips.length > 0 || rationTemplateId) && (
+        {!editing && (routeData.length > 0 || packingData.length > 0 || gearChips.length > 0 || rationTemplateId || workoutIds.length > 0) && (
           <div className="space-y-3 border-t border-mountain-border/40 pt-4">
             {routeData.map(r => (
               <AttachmentRouteCard key={r.routeId} data={r} currentUserId={currentUserId} />
@@ -279,6 +281,9 @@ export function ForumPostDetail({ post, replies, routeData, packingData, gearChi
             ))}
             <AttachmentGearChips chips={gearChips} />
             {rationTemplateId && <AttachmentRationCard templateId={rationTemplateId} />}
+            {workoutIds.map(wId => (
+              <AttachmentWorkoutCard key={wId} workoutId={wId} />
+            ))}
           </div>
         )}
       </div>

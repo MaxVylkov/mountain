@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Plus, MessageSquare } from 'lucide-react'
+import { Plus, MessageSquare, Search, X } from 'lucide-react'
 import { ForumPost, ForumCategory } from './forum-types'
 import { ForumPostCard } from './forum-post-card'
 import { CreatePostModal } from './create-post-modal'
@@ -18,6 +18,11 @@ export function ForumPostList({ posts, category, currentUserId }: Props) {
   const searchParams = useSearchParams()
   const sort = searchParams.get('sort') ?? 'new'
   const [showModal, setShowModal] = useState(false)
+  const [routeFilter, setRouteFilter] = useState('')
+
+  const filteredPosts = routeFilter.trim()
+    ? posts.filter(p => p.route_note?.toLowerCase().includes(routeFilter.toLowerCase()))
+    : posts
 
   return (
     <div className="space-y-4">
@@ -48,6 +53,27 @@ export function ForumPostList({ posts, category, currentUserId }: Props) {
         </button>
       </div>
 
+      {/* Route filter */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-mountain-muted pointer-events-none" />
+        <input
+          type="text"
+          value={routeFilter}
+          onChange={e => setRouteFilter(e.target.value)}
+          placeholder="Фильтр по маршруту..."
+          className="w-full rounded-xl border border-mountain-border bg-mountain-surface/40 pl-9 pr-8 py-2 text-sm text-mountain-text focus:outline-none focus:border-mountain-primary placeholder:text-mountain-muted"
+        />
+        {routeFilter && (
+          <button
+            onClick={() => setRouteFilter('')}
+            aria-label="Очистить фильтр"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-mountain-muted hover:text-mountain-text"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
       {/* Posts */}
       {posts.length === 0 ? (
         <EmptyState
@@ -60,9 +86,13 @@ export function ForumPostList({ posts, category, currentUserId }: Props) {
               : { label: 'Войти и написать', href: '/login' }
           }
         />
+      ) : filteredPosts.length === 0 ? (
+        <div className="text-center py-8 text-sm text-mountain-muted">
+          Постов с маршрутом «{routeFilter}» не найдено
+        </div>
       ) : (
         <div className="space-y-3">
-          {posts.map(post => <ForumPostCard key={post.id} post={post} />)}
+          {filteredPosts.map(post => <ForumPostCard key={post.id} post={post} />)}
         </div>
       )}
 
