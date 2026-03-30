@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { ArrowLeft, Users, Wrench, UtensilsCrossed, CheckSquare, Crown, Edit2, Check, X } from 'lucide-react'
+import { ArrowLeft, Users, Wrench, UtensilsCrossed, CheckSquare, Crown, Edit2, Check, X, Send } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { TeamMembers } from '@/components/teams/team-members'
 import { TeamGearTab } from '@/components/teams/team-gear-tab'
@@ -21,6 +21,7 @@ interface TeamDetailProps {
     end_date: string | null
     leader_id: string
     invite_token: string
+    telegram_link: string | null
     mountain: { name: string } | null
     route: { name: string } | null
   }
@@ -56,6 +57,7 @@ export function TeamDetail({ teamId, team, currentUserId }: TeamDetailProps) {
     description: team.description ?? '',
     start_date: team.start_date ?? '',
     end_date: team.end_date ?? '',
+    telegram_link: team.telegram_link ?? '',
   })
 
   const isLeader = currentUserId === team.leader_id
@@ -66,6 +68,7 @@ export function TeamDetail({ teamId, team, currentUserId }: TeamDetailProps) {
       description: team.description ?? '',
       start_date: team.start_date ?? '',
       end_date: team.end_date ?? '',
+      telegram_link: team.telegram_link ?? '',
     })
     setIsEditing(true)
   }
@@ -83,6 +86,7 @@ export function TeamDetail({ teamId, team, currentUserId }: TeamDetailProps) {
         description: editData.description.trim() || null,
         start_date: editData.start_date || null,
         end_date: editData.end_date || null,
+        telegram_link: editData.telegram_link.trim() || null,
       })
       .eq('id', teamId)
     setSaving(false)
@@ -177,6 +181,16 @@ export function TeamDetail({ teamId, team, currentUserId }: TeamDetailProps) {
                 />
               </label>
             </div>
+            <label className="flex flex-col gap-1 text-xs text-mountain-muted">
+              Ссылка на беседу в Telegram
+              <input
+                type="url"
+                value={editData.telegram_link}
+                onChange={e => setEditData(d => ({ ...d, telegram_link: e.target.value }))}
+                placeholder="https://t.me/joinchat/..."
+                className="rounded-lg border border-mountain-border bg-mountain-bg px-3 py-1.5 text-mountain-text text-sm focus:outline-none focus:border-mountain-primary placeholder:text-mountain-muted font-normal"
+              />
+            </label>
             {(team.mountain || team.route) && (
               <p className="text-xs text-mountain-muted">
                 Гора и маршрут задаются при создании отделения.
@@ -223,6 +237,18 @@ export function TeamDetail({ teamId, team, currentUserId }: TeamDetailProps) {
                 </span>
               )}
             </div>
+
+            {team.telegram_link && (
+              <a
+                href={team.telegram_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#229ED9]/15 text-[#229ED9] border border-[#229ED9]/25 text-sm font-medium hover:bg-[#229ED9]/25 transition-colors w-fit"
+              >
+                <Send className="w-4 h-4" />
+                Открыть беседу в Telegram
+              </a>
+            )}
           </div>
         )}
       </Card>
