@@ -191,14 +191,14 @@ export default function ProfilePage() {
       <Card className="space-y-3">
         <div className="flex items-center gap-2">
           <Search size={18} className="text-mountain-primary" />
-          <h2 className="font-semibold">Найти по email</h2>
+          <h2 className="font-semibold">Найти альпиниста</h2>
         </div>
         <div className="relative">
           <input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Введи email (мин. 3 символа)..."
-            className="w-full pl-4 pr-9 py-2.5 bg-mountain-bg border border-mountain-border rounded-xl text-sm text-mountain-text placeholder:text-mountain-muted focus:outline-none focus:border-mountain-primary transition-colors"
+            placeholder="Email или имя..."
+            className="w-full pl-4 pr-9 py-3 bg-mountain-bg border border-mountain-border rounded-xl text-sm text-mountain-text placeholder:text-mountain-muted focus:outline-none focus:border-mountain-primary transition-colors"
           />
           {searchQuery && (
             <button onClick={() => { setSearchQuery(''); setSearchResults([]) }} className="absolute right-3 top-1/2 -translate-y-1/2 text-mountain-muted hover:text-mountain-text">
@@ -206,6 +206,9 @@ export default function ProfilePage() {
             </button>
           )}
         </div>
+        {searchQuery.length < 3 && (
+          <p className="text-xs text-mountain-muted">Введите минимум 3 символа</p>
+        )}
 
         {searching && <p className="text-xs text-mountain-muted">Ищем...</p>}
 
