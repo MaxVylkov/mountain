@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { ArrowLeft, Users, Wrench, UtensilsCrossed, CheckSquare, Crown, Edit2, Check, X, Send } from 'lucide-react'
+import { ArrowLeft, Users, Wrench, UtensilsCrossed, CheckSquare, Crown, Edit2, Check, X, Send, UserPlus } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { TeamMembers } from '@/components/teams/team-members'
 import { TeamGearTab } from '@/components/teams/team-gear-tab'
@@ -61,6 +61,26 @@ export function TeamDetail({ teamId, team, currentUserId }: TeamDetailProps) {
   })
 
   const isLeader = currentUserId === team.leader_id
+  const [inviteCopied, setInviteCopied] = useState(false)
+
+  const handleCopyInvite = () => {
+    const link = `${window.location.origin}/teams/join/${team.invite_token}`
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(link).catch(() => {})
+    } else {
+      const ta = document.createElement('textarea')
+      ta.value = link
+      ta.style.position = 'fixed'
+      ta.style.left = '-9999px'
+      document.body.appendChild(ta)
+      ta.focus()
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+    }
+    setInviteCopied(true)
+    setTimeout(() => setInviteCopied(false), 2000)
+  }
 
   const startEdit = () => {
     setEditData({
@@ -204,6 +224,20 @@ export function TeamDetail({ teamId, team, currentUserId }: TeamDetailProps) {
               <div className="flex items-center gap-2 shrink-0">
                 {isLeader && (
                   <>
+                    <button
+                      onClick={handleCopyInvite}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        inviteCopied
+                          ? 'bg-mountain-success/20 text-mountain-success border border-mountain-success/30'
+                          : 'bg-mountain-primary text-white hover:bg-mountain-primary/80'
+                      }`}
+                    >
+                      {inviteCopied ? (
+                        <><Check className="w-3.5 h-3.5" />Ссылка скопирована</>
+                      ) : (
+                        <><UserPlus className="w-3.5 h-3.5" />Пригласить</>
+                      )}
+                    </button>
                     <button
                       onClick={startEdit}
                       className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-mountain-border text-mountain-muted text-xs hover:text-mountain-text hover:border-mountain-primary transition-colors"
