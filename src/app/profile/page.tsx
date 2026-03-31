@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Copy, Check, Users, UserCheck, Clock, Search, UserPlus, X, BarChart2 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
+import { DocumentsSection } from '@/components/profile/documents-section'
 
 type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced'
 const levelLabels: Record<ExperienceLevel, string> = {
@@ -414,6 +415,8 @@ export default function ProfilePage() {
           </div>
         )}
       </Card>
+
+      <DocumentsSection userId={user.id} />
 
     </div>
   )
