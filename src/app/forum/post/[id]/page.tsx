@@ -83,6 +83,12 @@ export default async function ForumPostPage({ params }: Props) {
     .eq('post_id', id)
     .order('position', { ascending: true })
 
+  const { data: fileAttachments } = await supabase
+    .from('forum_file_attachments')
+    .select('id, file_name, storage_path, mime_type, file_size')
+    .eq('post_id', id)
+    .order('created_at', { ascending: true })
+
   const routeIds = (attachments ?? []).filter((a: any) => a.type === 'route').map((a: any) => a.ref_id)
   const packingIds = (attachments ?? []).filter((a: any) => a.type === 'packing_set').map((a: any) => a.ref_id)
   const gearIds = (attachments ?? []).filter((a: any) => a.type === 'gear_item').map((a: any) => a.ref_id)
@@ -135,6 +141,7 @@ export default async function ForumPostPage({ params }: Props) {
       gearChips={gearChips}
       workoutIds={workoutIds}
       currentUserId={user?.id ?? null}
+      fileAttachments={fileAttachments ?? []}
     />
   )
 }
