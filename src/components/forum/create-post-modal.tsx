@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ForumCategory, PostType } from './forum-types'
-import { X, MapPin, Search, Package, ChefHat, Dumbbell, Paperclip, ChevronDown, AlertCircle } from 'lucide-react'
+import { X, MapPin, Search, Package, ChefHat, Dumbbell, Paperclip, ChevronDown, AlertCircle, Image as ImageIcon } from 'lucide-react'
 import templates from '@/lib/data/ration-templates.json'
 
 const WORKOUTS_SUMMARY = [
@@ -69,13 +69,18 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
   const [selectedRationId, setSelectedRationId] = useState<string | null>(null)
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<string | null>(null)
 
+  // File attachments
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [fileError, setFileError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   // Count of active attachments for badge
   const attachmentCount = [
     !preAttached && (selectedRoute || routeNote.trim()),
     selectedPackingId,
     selectedRationId,
     selectedWorkoutId,
-  ].filter(Boolean).length
+  ].filter(Boolean).length + pendingFiles.length
 
   const searchRoutes = (q: string) => {
     setRouteQuery(q)
@@ -141,6 +146,31 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = Array.from(e.target.files ?? [])
+    if (!selected.length) return
+
+    const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
+    const valid = selected.filter(f => ACCEPTED.includes(f.type) && f.size <= 10 * 1024 * 1024)
+    const invalidCount = selected.length - valid.length
+    const newFiles = [...pendingFiles, ...valid]
+
+    if (newFiles.length > 5) {
+      setFileError(`Максимум 5 файлов на пост`)
+      const allowed = valid.slice(0, 5 - pendingFiles.length)
+      setPendingFiles([...pendingFiles, ...allowed])
+    } else {
+      setPendingFiles(newFiles)
+      setFileError(invalidCount > 0 ? `${invalidCount} файл(а) пропущено: превышен размер или неверный тип` : null)
+    }
+    e.target.value = ''
+  }
+
+  function removeFile(index: number) {
+    setPendingFiles(prev => prev.filter((_, i) => i !== index))
+    setFileError(null)
+  }
+
   const submit = async () => {
     if (!title.trim()) return
     setError(null)
@@ -181,6 +211,29 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
       if (selectedPackingId) attachments.push({ post_id: post.id, type: 'packing_set', ref_id: selectedPackingId, position: attachments.length })
       if (selectedWorkoutId) attachments.push({ post_id: post.id, type: 'workout', ref_id: selectedWorkoutId, position: attachments.length })
       if (attachments.length > 0) await supabase.from('forum_attachments').insert(attachments)
+
+      // Upload files if any were selected
+      if (pendingFiles.length > 0) {
+        const uploadResults = await Promise.all(
+          pendingFiles.map(async (file) => {
+            const sanitized = file.name.replace(/[^a-zA-Z0-9-]/g, '_').replace(/_+/g, '_').toLowerCase()
+            const path = `${currentUserId}/${post.id}/${Date.now()}_${sanitized}`
+            const { error } = await supabase.storage.from('forum-attachments').upload(path, file)
+            if (error) return null
+            return { file_name: file.name, storage_path: path, file_size: file.size, mime_type: file.type }
+          })
+        )
+        const successfulUploads = uploadResults.filter(Boolean) as { file_name: string; storage_path: string; file_size: number; mime_type: string }[]
+        if (successfulUploads.length > 0) {
+          const { error: dbError } = await supabase.from('forum_file_attachments').insert(
+            successfulUploads.map(u => ({ post_id: post.id, user_id: currentUserId, ...u }))
+          )
+          if (dbError) {
+            // DB insert failed — clean up uploaded files to avoid orphans
+            await supabase.storage.from('forum-attachments').remove(successfulUploads.map(u => u.storage_path))
+          }
+        }
+      }
 
       onClose()
       router.push(`/forum/post/${post.id}`)
@@ -408,6 +461,50 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
                       <option key={w.id} value={w.id}>{w.title}</option>
                     ))}
                   </select>
+                </div>
+
+                {/* File attachments */}
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-mountain-muted">
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    Файлы и фото
+                  </label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+                    className="hidden"
+                    onChange={handleFileSelect}
+                  />
+                  {pendingFiles.length < 5 && (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl border border-dashed border-mountain-border text-mountain-muted hover:text-mountain-text hover:border-mountain-primary transition-colors w-full"
+                    >
+                      <Paperclip className="w-3.5 h-3.5" />
+                      Добавить файлы (макс. 5, до 10 МБ)
+                    </button>
+                  )}
+                  {pendingFiles.length > 0 && (
+                    <div className="space-y-1">
+                      {pendingFiles.map((file, i) => (
+                        <div key={i} className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-mountain-surface text-xs">
+                          <span className="truncate text-mountain-text">{file.name}</span>
+                          <div className="flex items-center gap-2 shrink-0 text-mountain-muted">
+                            <span>{(file.size / (1024 * 1024)).toFixed(1)} МБ</span>
+                            <button onClick={() => removeFile(i)} className="hover:text-mountain-danger transition-colors">
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {fileError && (
+                    <p className="text-xs text-mountain-danger">{fileError}</p>
+                  )}
                 </div>
 
               </div>
