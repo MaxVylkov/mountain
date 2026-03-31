@@ -36,7 +36,7 @@ const beginnerSteps = [
 ]
 
 const expertTools = [
-  { href: '/mountains', label: 'Маршруты', sub: 'КГ, ТС, 1А–6А' },
+  { href: '/mountains', label: 'Маршруты', sub: 'КГ, ТС, 1Б–6Б' },
   { href: '/trips', label: 'Поездки', sub: 'Планирование выхода' },
   { href: '/teams', label: 'Отделения', sub: 'Состав, снаряжение' },
   { href: '/gear', label: 'Кладовка', sub: 'Учёт и сборы' },
@@ -353,7 +353,7 @@ export default async function HomePage() {
       <section className="mt-16 pt-8 border-t border-mountain-border">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <p className="text-sm text-mountain-muted">
-            Горы Кавказа, Крыма и других регионов · Маршруты 1А–6А · Команды и снаряжение
+            Горы Кавказа, Крыма и других регионов · Маршруты 1Б–6Б · Команды и снаряжение
           </p>
           <Link
             href="/mountains"
