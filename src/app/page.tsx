@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ArrowRight, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { BeginnerDashboard } from '@/components/beginner-dashboard'
+import { OnboardingGuide } from '@/components/onboarding-guide'
 
 const beginnerSteps = [
   {
@@ -135,6 +136,7 @@ export default async function HomePage() {
               <p className="text-sm text-mountain-muted mt-1">
                 Пройди их последовательно — это фундамент каждого альпиниста
               </p>
+              <OnboardingGuide level="beginner" />
             </div>
 
             <ol className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -202,6 +204,7 @@ export default async function HomePage() {
               </span>
               <h2 className="text-xl font-semibold text-mountain-text">Быстрый доступ</h2>
               <p className="text-sm text-mountain-muted mt-1">Всё нужное перед выходом</p>
+              <OnboardingGuide level={experienceLevel as 'intermediate' | 'advanced'} />
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-mountain-border rounded-lg overflow-hidden border border-mountain-border">
               {expertTools.map((tool) => (
@@ -263,6 +266,7 @@ export default async function HomePage() {
               <p className="text-sm text-mountain-muted mt-1">
                 Три шага, с которых начинает каждый альпинист
               </p>
+              <OnboardingGuide level="beginner" />
             </div>
 
             <ol className="relative">
@@ -319,6 +323,7 @@ export default async function HomePage() {
               <p className="text-sm text-mountain-muted mt-1">
                 Быстрый доступ ко всему нужному перед выходом
               </p>
+              <OnboardingGuide level="advanced" />
             </div>
 
             <div className="grid grid-cols-2 gap-px bg-mountain-border rounded-lg overflow-hidden border border-mountain-border">
