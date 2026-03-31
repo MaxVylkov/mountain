@@ -10,9 +10,10 @@ import { AttachmentGearChips } from './attachment-gear-chips'
 import { AttachmentRationCard } from './attachment-ration-card'
 import { AttachmentWorkoutCard } from './attachment-workout-card'
 import { ForumReplyList } from './forum-reply-list'
-import { ThumbsUp, ArrowLeft, MapPin, Pencil, X, Check, Package, ChefHat } from 'lucide-react'
+import { ThumbsUp, ArrowLeft, MapPin, Pencil, X, Check, Package, ChefHat, File, Download } from 'lucide-react'
 import Link from 'next/link'
 import templates from '@/lib/data/ration-templates.json'
+import { storageUrl } from '@/lib/storage-url'
 
 interface RouteData { routeId: string; routeName: string; mountainName: string; difficulty: number | null; season: string | null }
 interface PackingData { setId: string; setName: string; itemCount: number; totalWeightG: number; items: { gear_name: string; backpack_name: string | null }[] }
@@ -26,9 +27,10 @@ interface Props {
   gearChips: GearChip[]
   workoutIds: string[]
   currentUserId: string | null
+  fileAttachments: { id: string; file_name: string; storage_path: string; mime_type: string; file_size: number }[]
 }
 
-export function ForumPostDetail({ post, replies, routeData, packingData, gearChips, workoutIds, currentUserId }: Props) {
+export function ForumPostDetail({ post, replies, routeData, packingData, gearChips, workoutIds, currentUserId, fileAttachments }: Props) {
   const router = useRouter()
   const [liked, setLiked] = useState(post.liked_by_me ?? false)
   const [likeCount, setLikeCount] = useState(post.like_count ?? 0)
@@ -51,6 +53,7 @@ export function ForumPostDetail({ post, replies, routeData, packingData, gearChi
   const [editRationId, setEditRationId] = useState<string | null>(null)
 
   const isAuthor = !!(currentUserId && currentUserId === post.author_id)
+  const [localFileAttachments, setLocalFileAttachments] = useState(fileAttachments)
 
   const enterEditMode = async () => {
     setEditTitle(title)
@@ -80,6 +83,13 @@ export function ForumPostDetail({ post, replies, routeData, packingData, gearChi
     setEditTitle(title)
     setEditBody(body)
     setEditing(false)
+  }
+
+  async function handleDeleteFile(fileId: string, storagePath: string) {
+    const supabase = createClient()
+    await supabase.from('forum_file_attachments').delete().eq('id', fileId)
+    await supabase.storage.from('forum-attachments').remove([storagePath])
+    setLocalFileAttachments(prev => prev.filter(f => f.id !== fileId))
   }
 
   const saveEdit = async () => {
