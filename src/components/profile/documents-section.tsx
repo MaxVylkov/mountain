@@ -48,15 +48,20 @@ export function DocumentsSection({ userId }: Props) {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase
-      .from('user_documents')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
+    async function fetchDocs() {
+      const { data, error } = await supabase
+        .from('user_documents')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+      if (error) {
+        setUploadError('Не удалось загрузить список документов')
+      } else {
         setDocuments((data as UserDocument[]) ?? [])
-        setIsLoading(false)
-      })
+      }
+      setIsLoading(false)
+    }
+    fetchDocs()
   }, [userId])
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -123,14 +128,21 @@ export function DocumentsSection({ userId }: Props) {
     const { data, error } = await supabase.storage
       .from('user-documents')
       .createSignedUrl(doc.storage_path, 60)
-    if (!error && data?.signedUrl) {
-      window.open(data.signedUrl, '_blank')
+    if (error || !data?.signedUrl) {
+      setUploadError('Не удалось получить ссылку для скачивания')
+      return
     }
+    window.open(data.signedUrl, '_blank')
   }
 
   async function handleDelete(doc: UserDocument) {
     const supabase = createClient()
-    await supabase.from('user_documents').delete().eq('id', doc.id)
+    const { error: dbError } = await supabase.from('user_documents').delete().eq('id', doc.id)
+    if (dbError) {
+      setUploadError('Не удалось удалить документ')
+      setConfirmDeleteId(null)
+      return
+    }
     await supabase.storage.from('user-documents').remove([doc.storage_path])
     setDocuments(prev => prev.filter(d => d.id !== doc.id))
     setConfirmDeleteId(null)
@@ -154,7 +166,7 @@ export function DocumentsSection({ userId }: Props) {
         <input
           ref={fileInputRef}
           type="file"
-          accept="*"
+          accept="*/*"
           className="hidden"
           onChange={handleFileChange}
         />
@@ -223,7 +235,7 @@ export function DocumentsSection({ userId }: Props) {
                 <p className="text-sm text-mountain-text truncate">{doc.file_name}</p>
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-mountain-primary/15 text-mountain-primary">
-                    {CATEGORY_LABELS[doc.category]}
+                    {CATEGORY_LABELS[doc.category] ?? doc.category}
                   </span>
                   <span className="text-xs text-mountain-muted">{formatBytes(doc.file_size)}</span>
                   <span className="text-xs text-mountain-muted">{formatDate(doc.created_at)}</span>
