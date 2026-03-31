@@ -19,6 +19,7 @@ export interface ForumPost {
   route_note?: string | null
   ration_template_id?: string | null
   attached_route?: { name: string; mountainName: string } | null
+  image_attachments?: { storage_path: string }[]
 }
 
 export interface ForumReply {
