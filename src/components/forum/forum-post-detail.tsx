@@ -87,7 +87,8 @@ export function ForumPostDetail({ post, replies, routeData, packingData, gearChi
 
   async function handleDeleteFile(fileId: string, storagePath: string) {
     const supabase = createClient()
-    await supabase.from('forum_file_attachments').delete().eq('id', fileId)
+    const { error: dbError } = await supabase.from('forum_file_attachments').delete().eq('id', fileId)
+    if (dbError) return
     await supabase.storage.from('forum-attachments').remove([storagePath])
     setLocalFileAttachments(prev => prev.filter(f => f.id !== fileId))
   }
@@ -299,7 +300,7 @@ export function ForumPostDetail({ post, replies, routeData, packingData, gearChi
                       {editing && isAuthor && (
                         <button
                           onClick={() => handleDeleteFile(f.id, f.storage_path)}
-                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center transition-opacity"
                           aria-label="Удалить"
                         >
                           <X className="w-3 h-3" />
