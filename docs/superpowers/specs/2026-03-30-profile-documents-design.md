@@ -240,7 +240,7 @@ In `src/app/profile/page.tsx`:
 
 | File | Change | Note |
 |------|--------|------|
-| `supabase/migrations/018_storage.sql` | Create bucket, table, RLS policies | The project has a pre-existing `005_*` numbering collision — verify migrations are applied manually (not via `supabase db push` auto-runner) before running |
+| `supabase/migrations/019_user_documents.sql` | Create bucket, table, RLS policies | `018_team_telegram_link.sql` already exists — 019 is the correct next number. Apply manually (project has a pre-existing `005_*` numbering collision and does not use supabase db push auto-runner). |
 | `src/components/profile/documents-section.tsx` | New component | Create `src/components/profile/` directory |
 | `src/app/profile/page.tsx` | Import and render DocumentsSection | |
 

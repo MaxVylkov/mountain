@@ -329,7 +329,7 @@ When `editing === true` and `isAuthor`:
 
 | File | Change |
 |------|--------|
-| `supabase/migrations/019_forum_attachments.sql` | Bucket, table, RLS policies |
+| `supabase/migrations/020_forum_attachments.sql` | Bucket, table, RLS policies |
 | `src/lib/storage-url.ts` | Public URL helper (new file) |
 | `src/components/forum/forum-types.ts` | Add `image_attachments` to `ForumPost` |
 | `src/components/forum/create-post-modal.tsx` | File picker section + upload in submit() |
