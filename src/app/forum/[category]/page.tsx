@@ -39,7 +39,7 @@ export default async function ForumCategoryPage({ params, searchParams }: Props)
   const postIds = postList.map((p: any) => p.id)
 
   // Batch: counts + route attachments
-  const [likeCounts, replyCounts, routeAttachments] = await Promise.all([
+  const [likeCounts, replyCounts, routeAttachments, imageAttachments] = await Promise.all([
     postIds.length > 0
       ? supabase.from('forum_likes').select('post_id').in('post_id', postIds)
           .then(({ data }) => {
@@ -81,6 +81,22 @@ export default async function ForumCategoryPage({ params, searchParams }: Props)
             return postRouteMap
           })
       : Promise.resolve({} as Record<string, { name: string; mountainName: string }>),
+    // Fetch image attachments for card thumbnail strips
+    postIds.length > 0
+      ? supabase
+          .from('forum_file_attachments')
+          .select('post_id, storage_path')
+          .in('post_id', postIds)
+          .like('mime_type', 'image/%')
+          .then(({ data }) => {
+            const map: Record<string, { storage_path: string }[]> = {}
+            ;(data ?? []).forEach((a: any) => {
+              if (!map[a.post_id]) map[a.post_id] = []
+              if (map[a.post_id].length < 4) map[a.post_id].push({ storage_path: a.storage_path })
+            })
+            return map
+          })
+      : Promise.resolve({} as Record<string, { storage_path: string }[]>),
   ])
 
   const posts: ForumPost[] = postList.map((p: any) => ({
@@ -90,6 +106,7 @@ export default async function ForumCategoryPage({ params, searchParams }: Props)
     reply_count: replyCounts[p.id] ?? 0,
     liked_by_me: false,
     attached_route: routeAttachments[p.id] ?? null,
+    image_attachments: imageAttachments[p.id] ?? [],
   }))
 
   // Apply sort after counts are fetched
