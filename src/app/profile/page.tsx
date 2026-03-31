@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Copy, Check, Users, UserCheck, Clock, Search, UserPlus, X } from 'lucide-react'
+import { Copy, Check, Users, UserCheck, Clock, Search, UserPlus, X, BarChart2 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 
 type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced'
@@ -57,6 +57,8 @@ export default function ProfilePage() {
   const [actionInFlightId, setActionInFlightId] = useState<string | null>(null)
 
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [savingLevel, setSavingLevel] = useState(false)
+  const [levelSaved, setLevelSaved] = useState(false)
 
   // User search
   const [searchQuery, setSearchQuery] = useState('')
@@ -147,6 +149,17 @@ export default function ProfilePage() {
     }
   }
 
+  async function handleLevelChange(newLevel: ExperienceLevel) {
+    if (!user || savingLevel) return
+    setSavingLevel(true)
+    const supabase = createClient()
+    await supabase.from('profiles').update({ experience_level: newLevel }).eq('id', user.id)
+    setProfile(prev => prev ? { ...prev, experience_level: newLevel } : prev)
+    setSavingLevel(false)
+    setLevelSaved(true)
+    setTimeout(() => setLevelSaved(false), 2000)
+  }
+
   async function handleLogout() {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -202,6 +215,48 @@ export default function ProfilePage() {
           Выйти
         </Button>
       </div>
+
+      {/* Experience level */}
+      <Card className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <BarChart2 size={18} className="text-mountain-primary" />
+            <h2 className="font-semibold">Уровень опыта</h2>
+          </div>
+          {levelSaved && (
+            <span className="text-xs text-mountain-success flex items-center gap-1">
+              <Check size={12} /> Сохранено
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {([
+            { key: 'beginner' as ExperienceLevel, label: 'Новичок', sub: 'Только начинаю' },
+            { key: 'intermediate' as ExperienceLevel, label: 'Значкист', sub: 'Есть опыт походов' },
+            { key: 'advanced' as ExperienceLevel, label: 'Разрядник', sub: '2–1 разряд и выше' },
+          ]).map((l) => (
+            <button
+              key={l.key}
+              type="button"
+              onClick={() => handleLevelChange(l.key)}
+              disabled={savingLevel}
+              className={`
+                flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-lg border text-center transition-colors disabled:opacity-60
+                ${level === l.key
+                  ? 'border-mountain-primary bg-mountain-primary/10 text-mountain-primary'
+                  : 'border-mountain-border text-mountain-muted hover:border-mountain-primary/50 hover:text-mountain-text'
+                }
+              `}
+            >
+              <span className="text-xs font-semibold">{l.label}</span>
+              <span className="text-[10px] leading-tight opacity-70">{l.sub}</span>
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-mountain-muted">
+          Влияет на отображение главной страницы
+        </p>
+      </Card>
 
       {/* Find friend */}
       <Card className="space-y-3">
