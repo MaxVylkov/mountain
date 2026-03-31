@@ -168,7 +168,6 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
 
   function removeFile(index: number) {
     setPendingFiles(prev => prev.filter((_, i) => i !== index))
-    setFileError(null)
   }
 
   const submit = async () => {
@@ -215,9 +214,9 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
       // Upload files if any were selected
       if (pendingFiles.length > 0) {
         const uploadResults = await Promise.all(
-          pendingFiles.map(async (file) => {
+          pendingFiles.map(async (file, i) => {
             const sanitized = file.name.replace(/[^a-zA-Z0-9-]/g, '_').replace(/_+/g, '_').toLowerCase()
-            const path = `${currentUserId}/${post.id}/${Date.now()}_${sanitized}`
+            const path = `${currentUserId}/${post.id}/${Date.now()}_${i}_${sanitized}`
             const { error } = await supabase.storage.from('forum-attachments').upload(path, file)
             if (error) return null
             return { file_name: file.name, storage_path: path, file_size: file.size, mime_type: file.type }
