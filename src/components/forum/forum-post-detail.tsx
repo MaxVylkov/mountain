@@ -281,8 +281,72 @@ export function ForumPostDetail({ post, replies, routeData, packingData, gearChi
         )}
 
         {/* View: attachments */}
-        {!editing && (routeData.length > 0 || packingData.length > 0 || gearChips.length > 0 || rationTemplateId || workoutIds.length > 0) && (
+        {!editing && (localFileAttachments.length > 0 || routeData.length > 0 || packingData.length > 0 || gearChips.length > 0 || rationTemplateId || workoutIds.length > 0) && (
           <div className="space-y-3 border-t border-mountain-border/40 pt-4">
+            {/* File attachments: images */}
+            {localFileAttachments.some(f => f.mime_type.startsWith('image/')) && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {localFileAttachments
+                  .filter(f => f.mime_type.startsWith('image/'))
+                  .map(f => (
+                    <div key={f.id} className="relative group">
+                      <img
+                        src={storageUrl('forum-attachments', f.storage_path)}
+                        alt={f.file_name}
+                        className="aspect-square w-full object-cover rounded-xl cursor-pointer"
+                        onClick={() => window.open(storageUrl('forum-attachments', f.storage_path), '_blank')}
+                      />
+                      {editing && isAuthor && (
+                        <button
+                          onClick={() => handleDeleteFile(f.id, f.storage_path)}
+                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          aria-label="Удалить"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            {/* File attachments: documents */}
+            {localFileAttachments.some(f => f.mime_type === 'application/pdf') && (
+              <div className="space-y-1">
+                {localFileAttachments
+                  .filter(f => f.mime_type === 'application/pdf')
+                  .map(f => (
+                    <div key={f.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-mountain-surface border border-mountain-border">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <File className="w-4 h-4 text-mountain-muted shrink-0" />
+                        <span className="text-sm text-mountain-text truncate">{f.file_name}</span>
+                        <span className="text-xs text-mountain-muted shrink-0">{(f.file_size / (1024 * 1024)).toFixed(1)} МБ</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <a
+                          href={storageUrl('forum-attachments', f.storage_path)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-mountain-primary hover:underline flex items-center gap-1"
+                        >
+                          <Download className="w-3 h-3" />
+                          Скачать
+                        </a>
+                        {editing && isAuthor && (
+                          <button
+                            onClick={() => handleDeleteFile(f.id, f.storage_path)}
+                            className="text-mountain-muted hover:text-mountain-danger transition-colors"
+                            aria-label="Удалить"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+
             {routeData.map(r => (
               <AttachmentRouteCard key={r.routeId} data={r} currentUserId={currentUserId} />
             ))}
