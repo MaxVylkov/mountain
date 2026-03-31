@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight, ChevronRight } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
+import { BeginnerDashboard } from '@/components/beginner-dashboard'
 
 // Beginner path: curriculum-style vertical progression
 const beginnerSteps = [
@@ -60,9 +62,28 @@ const expertTools = [
   },
 ]
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  let showBeginner = false
+  let userId = ''
+
+  if (user) {
+    userId = user.id
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('experience_level, onboarded')
+      .eq('id', user.id)
+      .single()
+
+    showBeginner = profile?.experience_level === 'beginner' && !profile?.onboarded
+  }
+
   return (
     <div className="min-h-[calc(100vh-4rem)]">
+
+      {showBeginner && <BeginnerDashboard userId={userId} />}
 
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="pt-14 pb-12 border-b border-mountain-border">
