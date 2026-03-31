@@ -46,24 +46,6 @@ const WORKOUTS = [
   { id: 'altitude', name: 'Высотная адаптация', desc: 'Что нужно знать до первого выхода' },
 ]
 
-const FAQ = [
-  {
-    q: 'С какого разряда начинать?',
-    a: 'Первый поход — это значок «Альпинист России» (НП1). Никакого разряда не нужно — только желание и базовая физподготовка.',
-  },
-  {
-    q: 'Нужно ли покупать всё снаряжение сразу?',
-    a: 'Нет. На первых сборах можно брать снаряжение у клуба. Покупай постепенно, начни с хороших ботинок и системы.',
-  },
-  {
-    q: 'Как найти отделение / тренера?',
-    a: 'Обратись в ФАР (alpfederation.ru) — там есть реестр клубов и ближайшие сборы.',
-  },
-  {
-    q: 'Сколько времени нужно на подготовку?',
-    a: '3–6 месяцев базовой физподготовки + летние сборы 2–3 недели. Первые маршруты — 1Б.',
-  },
-]
 
 interface Props {
   userId: string
@@ -71,7 +53,6 @@ interface Props {
 
 export function BeginnerDashboard({ userId }: Props) {
   const [dismissed, setDismissed] = useState(false)
-  const [openFaq, setOpenFaq] = useState<number | null>(null)
 
   async function dismiss() {
     setDismissed(true)
@@ -214,29 +195,16 @@ export function BeginnerDashboard({ userId }: Props) {
             <HelpCircle size={15} className="text-mountain-accent shrink-0" />
             <span className="text-sm font-semibold text-mountain-text">Частые вопросы новичка</span>
           </div>
-          <div className="space-y-1">
-            {FAQ.map((item, idx) => (
-              <div key={idx} className="border border-mountain-border rounded-lg overflow-hidden">
-                <button
-                  type="button"
-                  aria-expanded={openFaq === idx}
-                  onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                  className="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-mountain-text hover:bg-mountain-border/40 transition-colors"
-                >
-                  {item.q}
-                  <ChevronRight
-                    size={14}
-                    className={`shrink-0 text-mountain-muted transition-transform duration-200 ${openFaq === idx ? 'rotate-90' : ''}`}
-                  />
-                </button>
-                {openFaq === idx && (
-                  <div className="px-4 pb-3 text-sm text-mountain-muted leading-relaxed border-t border-mountain-border bg-mountain-bg/40">
-                    <div className="pt-3">{item.a}</div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+          <p className="text-sm text-mountain-muted leading-relaxed mb-4">
+            Собрали ответы на самые частые вопросы — снаряжение, первые сборы, физподготовка, разряды и не только.
+          </p>
+          <Link
+            href="/forum/beginners"
+            className="inline-flex items-center gap-1.5 text-xs text-mountain-primary hover:text-mountain-primary/80 transition-colors"
+          >
+            Читать на форуме в разделе «Новичкам»
+            <ChevronRight size={12} />
+          </Link>
         </section>
 
       </div>
