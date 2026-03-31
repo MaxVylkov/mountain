@@ -51,6 +51,31 @@ const learningTools = [
   { href: '/resources', label: 'Ресурсы', sub: 'Статьи и организации' },
 ]
 
+function ToolGrid({ tools, cols = '3' }: { tools: typeof expertTools; cols?: '2' | '3' | '4' }) {
+  const colClass = cols === '2' ? 'grid-cols-2' : cols === '4' ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'
+  return (
+    <div className={`grid ${colClass} gap-px bg-mountain-border rounded-lg overflow-hidden border border-mountain-border`}>
+      {tools.map((tool) => (
+        <Link
+          key={tool.href + tool.label}
+          href={tool.href}
+          className="group bg-mountain-surface px-4 py-4 hover:bg-mountain-border/60 transition-colors duration-150"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="font-semibold text-mountain-text text-sm group-hover:text-mountain-text transition-colors">
+                {tool.label}
+              </div>
+              <div className="text-xs text-mountain-muted mt-0.5">{tool.sub}</div>
+            </div>
+            <ChevronRight size={13} className="text-mountain-border group-hover:text-mountain-primary mt-0.5 shrink-0 transition-colors" />
+          </div>
+        </Link>
+      ))}
+    </div>
+  )
+}
+
 export default async function HomePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -80,7 +105,7 @@ export default async function HomePage() {
       {showBeginner && <BeginnerDashboard userId={userId} />}
 
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="pt-14 pb-12 border-b border-mountain-border">
+      <section aria-label="Заголовок" className="pt-14 pb-12 border-b border-mountain-border">
         <div className="max-w-2xl">
           <p className="text-xs font-medium tracking-[0.2em] uppercase text-mountain-accent mb-5">
             Платформа для альпинистов
@@ -125,12 +150,12 @@ export default async function HomePage() {
       {/* ── BEGINNER layout ───────────────────────────────────── */}
       {isBeginner && (
         <>
-          <section className="pt-12">
+          <section aria-labelledby="beginner-heading" className="pt-12">
             <div className="mb-8">
-              <span className="inline-block text-[11px] font-semibold tracking-[0.18em] uppercase text-mountain-accent mb-3">
+              <span className="inline-block text-xs font-semibold tracking-[0.18em] uppercase text-mountain-accent mb-3">
                 Путь обучения
               </span>
-              <h2 className="text-xl font-semibold text-mountain-text">
+              <h2 id="beginner-heading" className="text-xl font-semibold text-mountain-text">
                 Четыре шага для старта
               </h2>
               <p className="text-sm text-mountain-muted mt-1">
@@ -147,14 +172,14 @@ export default async function HomePage() {
                     className="group flex gap-4 items-start p-5 rounded-xl border border-mountain-border bg-mountain-surface hover:border-mountain-accent/50 hover:bg-mountain-accent/5 transition-colors duration-200"
                   >
                     <div className="flex-shrink-0 w-9 h-9 rounded-full border border-mountain-accent/40 bg-mountain-bg flex items-center justify-center group-hover:border-mountain-accent group-hover:bg-mountain-accent/10 transition-colors">
-                      <span className="text-[11px] font-bold text-mountain-accent">{item.step}</span>
+                      <span className="text-xs font-bold text-mountain-accent">{item.step}</span>
                     </div>
                     <div className="min-w-0">
-                      <span className="text-[10px] font-semibold tracking-[0.14em] uppercase text-mountain-muted block mb-1">
+                      <span className="text-xs font-semibold tracking-[0.14em] uppercase text-mountain-muted block mb-1">
                         {item.tag}
                       </span>
                       <div className="flex items-center gap-1 mb-1">
-                        <span className="font-semibold text-mountain-text group-hover:text-white transition-colors text-sm">
+                        <span className="font-semibold text-mountain-text group-hover:text-mountain-text transition-colors text-sm">
                           {item.title}
                         </span>
                         <ChevronRight size={13} className="text-mountain-border group-hover:text-mountain-accent transition-colors shrink-0" />
@@ -170,26 +195,11 @@ export default async function HomePage() {
           </section>
 
           {/* Secondary: tools */}
-          <section className="mt-12 pt-8 border-t border-mountain-border">
-            <div className="mb-5">
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-mountain-muted">
-                Инструменты платформы
-              </span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-mountain-border rounded-lg overflow-hidden border border-mountain-border">
-              {expertTools.map((tool) => (
-                <Link
-                  key={tool.href}
-                  href={tool.href}
-                  className="group bg-mountain-surface px-4 py-3 hover:bg-mountain-border/60 transition-colors duration-150"
-                >
-                  <div className="font-medium text-mountain-text text-sm group-hover:text-white transition-colors">
-                    {tool.label}
-                  </div>
-                  <div className="text-[11px] text-mountain-muted mt-0.5">{tool.sub}</div>
-                </Link>
-              ))}
-            </div>
+          <section aria-label="Инструменты платформы" className="mt-12 pt-8 border-t border-mountain-border">
+            <p className="text-xs font-semibold tracking-[0.18em] uppercase text-mountain-muted mb-5">
+              Инструменты платформы
+            </p>
+            <ToolGrid tools={expertTools} />
           </section>
         </>
       )}
@@ -197,57 +207,24 @@ export default async function HomePage() {
       {/* ── EXPERT layout ─────────────────────────────────────── */}
       {isExpert && (
         <>
-          <section className="pt-12">
+          <section aria-labelledby="expert-heading" className="pt-12">
             <div className="mb-8">
-              <span className="inline-block text-[11px] font-semibold tracking-[0.18em] uppercase text-mountain-primary mb-3">
+              <span className="inline-block text-xs font-semibold tracking-[0.18em] uppercase text-mountain-primary mb-3">
                 Инструменты
               </span>
-              <h2 className="text-xl font-semibold text-mountain-text">Быстрый доступ</h2>
+              <h2 id="expert-heading" className="text-xl font-semibold text-mountain-text">Быстрый доступ</h2>
               <p className="text-sm text-mountain-muted mt-1">Всё нужное перед выходом</p>
               <OnboardingGuide level={experienceLevel as 'intermediate' | 'advanced'} />
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-mountain-border rounded-lg overflow-hidden border border-mountain-border">
-              {expertTools.map((tool) => (
-                <Link
-                  key={tool.href}
-                  href={tool.href}
-                  className="group bg-mountain-surface px-5 py-5 hover:bg-mountain-border/60 transition-colors duration-150"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="font-semibold text-mountain-text text-sm group-hover:text-white transition-colors">
-                        {tool.label}
-                      </div>
-                      <div className="text-[12px] text-mountain-muted mt-0.5">{tool.sub}</div>
-                    </div>
-                    <ChevronRight size={13} className="text-mountain-border group-hover:text-mountain-primary mt-0.5 shrink-0 transition-colors" />
-                  </div>
-                </Link>
-              ))}
-            </div>
+            <ToolGrid tools={expertTools} />
           </section>
 
           {/* Secondary: learning */}
-          <section className="mt-12 pt-8 border-t border-mountain-border">
-            <div className="mb-5">
-              <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-mountain-muted">
-                Обучение
-              </span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-mountain-border rounded-lg overflow-hidden border border-mountain-border">
-              {learningTools.map((tool) => (
-                <Link
-                  key={tool.href}
-                  href={tool.href}
-                  className="group bg-mountain-surface px-4 py-3 hover:bg-mountain-border/60 transition-colors duration-150"
-                >
-                  <div className="font-medium text-mountain-text text-sm group-hover:text-white transition-colors">
-                    {tool.label}
-                  </div>
-                  <div className="text-[11px] text-mountain-muted mt-0.5">{tool.sub}</div>
-                </Link>
-              ))}
-            </div>
+          <section aria-label="Обучение" className="mt-12 pt-8 border-t border-mountain-border">
+            <p className="text-xs font-semibold tracking-[0.18em] uppercase text-mountain-muted mb-5">
+              Обучение
+            </p>
+            <ToolGrid tools={learningTools} cols="4" />
           </section>
         </>
       )}
@@ -259,7 +236,7 @@ export default async function HomePage() {
           {/* Beginner path */}
           <div className="pb-12 lg:pb-0 lg:pr-12">
             <div className="mb-8">
-              <span className="inline-block text-[11px] font-semibold tracking-[0.18em] uppercase text-mountain-accent mb-3">
+              <span className="inline-block text-xs font-semibold tracking-[0.18em] uppercase text-mountain-accent mb-3">
                 Начинаю ходить в горы
               </span>
               <h2 className="text-xl font-semibold text-mountain-text">Учись последовательно</h2>
@@ -273,21 +250,21 @@ export default async function HomePage() {
               {beginnerSteps.slice(0, 3).map((item, idx) => (
                 <li key={item.href} className="relative">
                   {idx < 2 && (
-                    <div className="absolute left-[19px] top-[40px] bottom-0 w-px bg-mountain-border" />
+                    <div className="absolute left-5 top-[40px] bottom-0 w-px bg-mountain-border" />
                   )}
                   <Link
                     href={item.href}
                     className="group flex gap-5 items-start py-5 transition-opacity duration-150 hover:opacity-100 opacity-95"
                   >
                     <div className="relative z-10 flex-shrink-0 w-10 h-10 rounded-full border border-mountain-accent/40 bg-mountain-surface flex items-center justify-center group-hover:border-mountain-accent group-hover:bg-mountain-accent/10 transition-colors duration-200">
-                      <span className="text-[11px] font-bold text-mountain-accent">{item.step}</span>
+                      <span className="text-xs font-bold text-mountain-accent">{item.step}</span>
                     </div>
                     <div className="pt-1 flex-1 min-w-0">
-                      <span className="text-[10px] font-semibold tracking-[0.15em] uppercase text-mountain-muted block mb-1">
+                      <span className="text-xs font-semibold tracking-[0.15em] uppercase text-mountain-muted block mb-1">
                         {item.tag}
                       </span>
                       <div className="flex items-center gap-1.5">
-                        <span className="font-semibold text-mountain-text group-hover:text-white transition-colors">
+                        <span className="font-semibold text-mountain-text group-hover:text-mountain-text transition-colors">
                           {item.title}
                         </span>
                         <ChevronRight size={14} className="text-mountain-border group-hover:text-mountain-accent group-hover:translate-x-0.5 transition-all duration-200" />
@@ -316,7 +293,7 @@ export default async function HomePage() {
           {/* Expert path */}
           <div className="lg:pl-12">
             <div className="mb-8">
-              <span className="inline-block text-[11px] font-semibold tracking-[0.18em] uppercase text-mountain-primary mb-3">
+              <span className="inline-block text-xs font-semibold tracking-[0.18em] uppercase text-mountain-primary mb-3">
                 Планирую маршрут / команду
               </span>
               <h2 className="text-xl font-semibold text-mountain-text">Инструменты под рукой</h2>
@@ -326,25 +303,7 @@ export default async function HomePage() {
               <OnboardingGuide level="advanced" />
             </div>
 
-            <div className="grid grid-cols-2 gap-px bg-mountain-border rounded-lg overflow-hidden border border-mountain-border">
-              {expertTools.map((tool) => (
-                <Link
-                  key={tool.href}
-                  href={tool.href}
-                  className="group bg-mountain-surface px-5 py-4 hover:bg-mountain-border/60 transition-colors duration-150"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="font-semibold text-mountain-text text-sm group-hover:text-white transition-colors">
-                        {tool.label}
-                      </div>
-                      <div className="text-[12px] text-mountain-muted mt-0.5">{tool.sub}</div>
-                    </div>
-                    <ChevronRight size={13} className="text-mountain-border group-hover:text-mountain-primary mt-0.5 shrink-0 transition-colors duration-150" />
-                  </div>
-                </Link>
-              ))}
-            </div>
+            <ToolGrid tools={expertTools} cols="2" />
           </div>
         </section>
       )}

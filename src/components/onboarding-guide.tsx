@@ -213,9 +213,10 @@ export function OnboardingGuide({ level }: Props) {
     <div className="mt-5">
       <button
         type="button"
+        aria-expanded={open}
         onClick={() => setOpen(v => !v)}
         className={`
-          inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors
+          inline-flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm font-medium transition-colors
           ${open
             ? 'border-mountain-accent/60 bg-mountain-accent/10 text-mountain-accent'
             : 'border-mountain-border bg-mountain-surface text-mountain-text hover:border-mountain-accent/50 hover:text-mountain-accent'
@@ -285,8 +286,9 @@ export function OnboardingGuide({ level }: Props) {
                 <div key={idx}>
                   <button
                     type="button"
+                    aria-expanded={openFaq === idx}
                     onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                    className="w-full flex items-start justify-between gap-3 px-5 py-3.5 text-left hover:bg-mountain-border/30 transition-colors"
+                    className="w-full flex items-start justify-between gap-3 px-5 py-4 text-left hover:bg-mountain-border/30 transition-colors"
                   >
                     <span className="text-sm text-mountain-text leading-snug">{item.q}</span>
                     <ChevronDown

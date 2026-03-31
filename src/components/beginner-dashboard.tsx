@@ -95,7 +95,7 @@ export function BeginnerDashboard({ userId }: Props) {
         </div>
         <button
           onClick={dismiss}
-          title="Скрыть раздел навсегда"
+          aria-label="Скрыть раздел навсегда"
           className="p-1.5 rounded-lg text-mountain-muted hover:text-mountain-text hover:bg-mountain-border/60 transition-colors shrink-0 ml-4"
         >
           <X size={16} />
@@ -113,7 +113,7 @@ export function BeginnerDashboard({ userId }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
             {GEAR_SECTIONS.map((section) => (
               <div key={section.title}>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-mountain-muted mb-1.5">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-mountain-muted mb-1.5">
                   {section.title}
                 </p>
                 <ul className="space-y-1">
@@ -219,6 +219,7 @@ export function BeginnerDashboard({ userId }: Props) {
               <div key={idx} className="border border-mountain-border rounded-lg overflow-hidden">
                 <button
                   type="button"
+                  aria-expanded={openFaq === idx}
                   onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
                   className="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-mountain-text hover:bg-mountain-border/40 transition-colors"
                 >
