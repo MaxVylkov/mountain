@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { ArrowLeft, Users, Wrench, UtensilsCrossed, CheckSquare, Crown, Edit2, Check, X, Send, UserPlus } from 'lucide-react'
+import { InviteFriendsModal } from '@/components/teams/invite-friends-modal'
 import { Card } from '@/components/ui/card'
 import { TeamMembers } from '@/components/teams/team-members'
 import { TeamGearTab } from '@/components/teams/team-gear-tab'
@@ -61,26 +62,7 @@ export function TeamDetail({ teamId, team, currentUserId }: TeamDetailProps) {
   })
 
   const isLeader = currentUserId === team.leader_id
-  const [inviteCopied, setInviteCopied] = useState(false)
-
-  const handleCopyInvite = () => {
-    const link = `${window.location.origin}/teams/join/${team.invite_token}`
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(link).catch(() => {})
-    } else {
-      const ta = document.createElement('textarea')
-      ta.value = link
-      ta.style.position = 'fixed'
-      ta.style.left = '-9999px'
-      document.body.appendChild(ta)
-      ta.focus()
-      ta.select()
-      document.execCommand('copy')
-      document.body.removeChild(ta)
-    }
-    setInviteCopied(true)
-    setTimeout(() => setInviteCopied(false), 2000)
-  }
+  const [showInviteModal, setShowInviteModal] = useState(false)
 
   const startEdit = () => {
     setEditData({
@@ -225,18 +207,11 @@ export function TeamDetail({ teamId, team, currentUserId }: TeamDetailProps) {
                 {isLeader && (
                   <>
                     <button
-                      onClick={handleCopyInvite}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                        inviteCopied
-                          ? 'bg-mountain-success/20 text-mountain-success border border-mountain-success/30'
-                          : 'bg-mountain-primary text-white hover:bg-mountain-primary/80'
-                      }`}
+                      onClick={() => setShowInviteModal(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-mountain-primary text-white hover:bg-mountain-primary/80 transition-colors"
                     >
-                      {inviteCopied ? (
-                        <><Check className="w-3.5 h-3.5" />Ссылка скопирована</>
-                      ) : (
-                        <><UserPlus className="w-3.5 h-3.5" />Пригласить</>
-                      )}
+                      <UserPlus className="w-3.5 h-3.5" />
+                      Пригласить
                     </button>
                     <button
                       onClick={startEdit}
@@ -307,6 +282,14 @@ export function TeamDetail({ teamId, team, currentUserId }: TeamDetailProps) {
           </button>
         ))}
       </div>
+
+      {showInviteModal && (
+        <InviteFriendsModal
+          teamId={teamId}
+          currentUserId={currentUserId}
+          onClose={() => setShowInviteModal(false)}
+        />
+      )}
 
       {/* Tab content */}
       <div>
