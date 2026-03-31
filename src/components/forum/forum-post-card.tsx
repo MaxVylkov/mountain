@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ThumbsUp, MessageCircle, MapPin } from 'lucide-react'
 import { ForumPost, typeLabel, formatRelativeTime } from './forum-types'
+import { storageUrl } from '@/lib/storage-url'
 
 interface Props {
   post: ForumPost
@@ -31,6 +32,24 @@ export function ForumPostCard({ post }: Props) {
 
         {post.body && (
           <p className="text-xs text-mountain-muted line-clamp-2 leading-relaxed pl-0">{post.body}</p>
+        )}
+
+        {post.image_attachments && post.image_attachments.length > 0 && (
+          <div className="flex items-center gap-1.5 pt-0.5">
+            {post.image_attachments.slice(0, 3).map((att, i) => (
+              <img
+                key={i}
+                src={storageUrl('forum-attachments', att.storage_path)}
+                alt=""
+                className="w-10 h-10 rounded-md object-cover shrink-0"
+              />
+            ))}
+            {post.image_attachments.length > 3 && (
+              <span className="w-10 h-10 rounded-md bg-mountain-surface border border-mountain-border flex items-center justify-center text-xs text-mountain-muted font-medium shrink-0">
+                +{post.image_attachments.length - 3}
+              </span>
+            )}
+          </div>
         )}
 
         <div className="flex items-center gap-3 text-xs text-mountain-muted pt-1">
