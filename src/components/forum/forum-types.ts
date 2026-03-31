@@ -1,6 +1,6 @@
 // src/components/forum/forum-types.ts
 
-export type ForumCategory = 'routes' | 'gear' | 'learning' | 'training' | 'rations'
+export type ForumCategory = 'routes' | 'gear' | 'learning' | 'training' | 'rations' | 'beginners'
 export type PostType = 'thread' | 'report'
 
 export interface ForumPost {
@@ -49,6 +49,7 @@ export function categoryLabel(category: ForumCategory): string {
     learning: 'Обучение',
     training: 'Тренировки',
     rations: 'Раскладка',
+    beginners: 'Новичкам',
   }
   return labels[category]
 }
@@ -70,5 +71,5 @@ export function formatRelativeTime(isoString: string): string {
 }
 
 export function isValidCategory(s: string): s is ForumCategory {
-  return ['routes', 'gear', 'learning', 'training', 'rations'].includes(s)
+  return ['routes', 'gear', 'learning', 'training', 'rations', 'beginners'].includes(s)
 }

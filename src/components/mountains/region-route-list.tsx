@@ -48,8 +48,11 @@ function extractGrade(description: string | null): string | null {
   return match ? match[1].replace('.', '') : null
 }
 
+type Tab = 'all' | 'favorites' | 'want_to_do' | 'completed'
+
 export function RegionRouteList({ mountains, routes }: { mountains: Mountain[]; routes: Route[] }) {
   const [search, setSearch] = useState('')
+  const [tab, setTab] = useState<Tab>('all')
   const [mountainFilter, setMountainFilter] = useState<string | null>(null)
   const [diffFilter, setDiffFilter] = useState<number | null>(null)
   const [statuses, setStatuses] = useState<Record<string, RouteStatus>>({})
@@ -96,7 +99,20 @@ export function RegionRouteList({ mountains, routes }: { mountains: Mountain[]; 
   const mountainMap = Object.fromEntries(mountains.map(m => [m.id, m]))
   const difficulties = [...new Set(routes.map(r => r.difficulty).filter(Boolean))].sort()
 
+  const tabCounts = {
+    favorites: Object.values(statuses).filter(s => s.favorite).length,
+    want_to_do: Object.values(statuses).filter(s => s.want_to_do).length,
+    completed: Object.values(statuses).filter(s => s.completed).length,
+  }
+
   const filtered = routes.filter(r => {
+    if (tab !== 'all') {
+      const s = statuses[r.id]
+      if (!s) return false
+      if (tab === 'favorites' && !s.favorite) return false
+      if (tab === 'want_to_do' && !s.want_to_do) return false
+      if (tab === 'completed' && !s.completed) return false
+    }
     if (mountainFilter && r.mountain_id !== mountainFilter) return false
     if (diffFilter !== null && r.difficulty !== diffFilter) return false
     if (search) {
@@ -108,7 +124,7 @@ export function RegionRouteList({ mountains, routes }: { mountains: Mountain[]; 
     return true
   })
 
-  const hasActiveFilters = mountainFilter !== null || diffFilter !== null || !!search
+  const hasActiveFilters = tab !== 'all' || mountainFilter !== null || diffFilter !== null || !!search
 
   return (
     <div className="space-y-4">
@@ -124,6 +140,34 @@ export function RegionRouteList({ mountains, routes }: { mountains: Mountain[]; 
           className="w-full pl-9 pr-4 py-2.5 bg-mountain-surface border border-mountain-border rounded-xl text-sm text-mountain-text placeholder:text-mountain-muted focus:outline-none focus:border-mountain-primary transition-colors"
         />
       </div>
+
+      {/* Tabs */}
+      {userId && (
+        <div className="flex border-b border-mountain-border">
+          {([
+            { key: 'all' as Tab, label: 'Все', icon: null, count: routes.length },
+            { key: 'favorites' as Tab, label: 'Избранное', icon: Heart, count: tabCounts.favorites },
+            { key: 'want_to_do' as Tab, label: 'Хочу пройти', icon: Target, count: tabCounts.want_to_do },
+            { key: 'completed' as Tab, label: 'Пройденные', icon: Check, count: tabCounts.completed },
+          ]).map(({ key, label, icon: Icon, count }) => (
+            <button
+              key={key}
+              onClick={() => { setTab(key); setMountainFilter(null); setDiffFilter(null) }}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                tab === key
+                  ? 'border-mountain-primary text-mountain-primary'
+                  : 'border-transparent text-mountain-muted hover:text-mountain-text'
+              }`}
+            >
+              {Icon && <Icon size={15} />}
+              <span className="hidden sm:inline">{label}</span>
+              {count > 0 && key !== 'all' && (
+                <span className="text-xs bg-mountain-surface px-1.5 py-0.5 rounded-full">{count}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Mountain filters */}
       <div className="flex flex-wrap gap-2">

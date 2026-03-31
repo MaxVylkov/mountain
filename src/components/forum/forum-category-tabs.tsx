@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { categoryLabel, type ForumCategory } from './forum-types'
 
-const CATEGORIES: ForumCategory[] = ['routes', 'gear', 'learning', 'training', 'rations']
+const CATEGORIES: ForumCategory[] = ['routes', 'gear', 'learning', 'training', 'rations', 'beginners']
 
 export function ForumCategoryTabs() {
   const pathname = usePathname()
