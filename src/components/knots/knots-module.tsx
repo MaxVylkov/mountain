@@ -41,6 +41,8 @@ export function KnotsModule({ knots }: { knots: Knot[] }) {
   const [mode, setMode] = useState<'map' | 'learn' | 'practice'>('map')
   const [currentStep, setCurrentStep] = useState(0)
   const [hintVisible, setHintVisible] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -57,7 +59,10 @@ export function KnotsModule({ knots }: { knots: Knot[] }) {
               progressData.forEach((p: any) => { map[p.knot_id] = p })
               setProgress(map)
             }
+            setLoading(false)
           })
+      } else {
+        setLoading(false)
       }
     })
   }, [])
@@ -69,10 +74,9 @@ export function KnotsModule({ knots }: { knots: Knot[] }) {
 
     if (knot.difficulty_level === 1 && isFirst) return 'available'
 
-    const sameLevel = knots.filter(k => k.difficulty_level === knot.difficulty_level)
-    const knotIndex = sameLevel.findIndex(k => k.id === knot.id)
+    const knotIndex = levelKnots.findIndex(k => k.id === knot.id)
     if (knotIndex > 0) {
-      const prevKnot = sameLevel[knotIndex - 1]
+      const prevKnot = levelKnots[knotIndex - 1]
       const prevStatus = progress[prevKnot.id]?.status
       if (prevStatus === 'learning' || prevStatus === 'mastered') return 'available'
     }
@@ -121,6 +125,23 @@ export function KnotsModule({ knots }: { knots: Knot[] }) {
 
   // LEVEL MAP VIEW
   if (mode === 'map') {
+    if (loading) {
+      return (
+        <div className="space-y-6">
+          <div className="h-3 bg-mountain-surface rounded-full animate-pulse" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="surface-card p-4 space-y-3">
+                <div className="h-5 w-2/3 bg-mountain-surface rounded animate-pulse" />
+                <div className="h-3 w-full bg-mountain-surface rounded animate-pulse" />
+                <div className="h-3 w-1/2 bg-mountain-surface rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="space-y-8">
         {/* Progress */}
@@ -187,13 +208,13 @@ export function KnotsModule({ knots }: { knots: Knot[] }) {
                         <div className="flex gap-2 mt-3">
                           <button
                             onClick={() => startLearn(knot)}
-                            className="text-xs px-3 py-1.5 rounded bg-mountain-primary/20 text-mountain-primary hover:bg-mountain-primary/30 transition-colors"
+                            className="text-sm px-4 py-2.5 min-h-[44px] rounded-lg bg-mountain-primary/20 text-mountain-primary hover:bg-mountain-primary/30 transition-colors"
                           >
                             Изучить
                           </button>
                           <button
                             onClick={() => startPractice(knot)}
-                            className="text-xs px-3 py-1.5 rounded bg-mountain-accent/20 text-mountain-accent hover:bg-mountain-accent/30 transition-colors"
+                            className="text-sm px-4 py-2.5 min-h-[44px] rounded-lg bg-mountain-accent/20 text-mountain-accent hover:bg-mountain-accent/30 transition-colors"
                           >
                             Практика
                           </button>
@@ -225,6 +246,7 @@ export function KnotsModule({ knots }: { knots: Knot[] }) {
 
     return (
       <div className="max-w-2xl mx-auto space-y-6">
+        <h1 className="sr-only">Узлы</h1>
         <button onClick={backToMap} className="flex items-center gap-2 text-sm text-mountain-muted hover:text-mountain-text transition-colors">
           <ArrowLeft size={16} /> Карта узлов
         </button>
@@ -283,6 +305,7 @@ export function KnotsModule({ knots }: { knots: Knot[] }) {
 
     return (
       <div className="max-w-2xl mx-auto space-y-6">
+        <h1 className="sr-only">Узлы</h1>
         <button onClick={backToMap} className="flex items-center gap-2 text-sm text-mountain-muted hover:text-mountain-text transition-colors">
           <ArrowLeft size={16} /> Карта узлов
         </button>
@@ -336,12 +359,15 @@ export function KnotsModule({ knots }: { knots: Knot[] }) {
                 Повторить теорию
               </Button>
               <Button
+                disabled={saving}
                 onClick={async () => {
+                  setSaving(true)
                   await updateKnotProgress(selectedKnot.id, 'mastered', 100)
+                  setSaving(false)
                   backToMap()
                 }}
               >
-                <Trophy size={16} className="mr-2" /> Узел освоен
+                <Trophy size={16} className="mr-2" /> {saving ? 'Сохраняю...' : 'Узел освоен'}
               </Button>
             </div>
           )}
