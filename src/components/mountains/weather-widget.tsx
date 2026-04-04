@@ -133,7 +133,7 @@ export function WeatherWidget({ latitude, longitude, height }: Props) {
     return (
       <div className="rounded-xl border border-mountain-border bg-mountain-surface/30 p-4 flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold tracking-widest uppercase text-mountain-muted">⛅ Погода</span>
+          <span className="text-xs font-semibold tracking-widest uppercase text-mountain-muted"><span aria-hidden="true">⛅</span>{' '}Погода</span>
         </div>
         <p className="text-sm text-mountain-muted">Не удалось получить прогноз</p>
         {linkRow}
@@ -145,7 +145,7 @@ export function WeatherWidget({ latitude, longitude, height }: Props) {
     return (
       <div className="rounded-xl border border-mountain-border bg-mountain-surface/30 p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold tracking-widest uppercase text-mountain-muted">⛅ Погода</span>
+          <span className="text-xs font-semibold tracking-widest uppercase text-mountain-muted"><span aria-hidden="true">⛅</span>{' '}Погода</span>
         </div>
         <div className="space-y-2">
           <div className="h-5 w-3/4 rounded bg-mountain-surface animate-pulse" />
@@ -209,8 +209,8 @@ export function WeatherWidget({ latitude, longitude, height }: Props) {
       {/* Wind + humidity + condition */}
       <div className="border-t border-mountain-border/50 pt-2 space-y-1">
         <div className="flex items-center gap-4 text-xs text-mountain-muted">
-          <span>💨 <span className="text-mountain-text font-medium">{d.base.windSpeed}</span> км/ч {windCompass(d.base.windDir)}</span>
-          <span>💧 <span className="text-mountain-text font-medium">{d.base.humidity}</span>%</span>
+          <span><span aria-hidden="true">💨</span> <span className="text-mountain-text font-medium">{d.base.windSpeed}</span> км/ч {windCompass(d.base.windDir)}</span>
+          <span><span aria-hidden="true">💧</span> <span className="text-mountain-text font-medium">{d.base.humidity}</span>%</span>
         </div>
         <div className="text-[11px] text-mountain-muted">{label}</div>
       </div>
@@ -226,7 +226,7 @@ export function WeatherWidget({ latitude, longitude, height }: Props) {
               className="bg-mountain-surface/50 border border-mountain-border/50 rounded-lg p-2 text-center space-y-0.5"
             >
               <div className="text-[10px] text-mountain-muted uppercase tracking-wider">{weekday}</div>
-              <div className="text-base leading-none">{dayEmoji}</div>
+              <div className="text-base leading-none" aria-hidden="true">{dayEmoji}</div>
               <div className="text-[11px]">
                 <span className="text-mountain-text font-semibold">
                   {day.tempMax > 0 ? `+${day.tempMax}` : day.tempMax}°
