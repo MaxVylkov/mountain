@@ -7,7 +7,6 @@ interface Props {
   latitude: number
   longitude: number
   height: number
-  name: string
 }
 
 type WeatherState = 'loading' | 'loaded' | 'error'
@@ -32,7 +31,7 @@ interface WeatherData {
   updatedAt: string
 }
 
-export function WeatherWidget({ latitude, longitude, height, name }: Props) {
+export function WeatherWidget({ latitude, longitude, height }: Props) {
   const [state, setState] = useState<WeatherState>('loading')
   const [data, setData] = useState<WeatherData | null>(null)
 
@@ -45,6 +44,9 @@ export function WeatherWidget({ latitude, longitude, height, name }: Props) {
   ]
 
   useEffect(() => {
+    setState('loading')
+    const controller = new AbortController()
+
     const baseUrl =
       `https://api.open-meteo.com/v1/forecast` +
       `?latitude=${latitude}&longitude=${longitude}` +
@@ -60,13 +62,14 @@ export function WeatherWidget({ latitude, longitude, height, name }: Props) {
       `&timezone=auto&forecast_days=1`
 
     const fetches = [
-      fetch(baseUrl).then(r => r.json()),
-      height > 0 ? fetch(summitUrl).then(r => r.json()) : Promise.resolve(null),
+      fetch(baseUrl, { signal: controller.signal }).then(r => { if (!r.ok) throw new Error(r.statusText); return r.json() }),
+      height > 0 ? fetch(summitUrl, { signal: controller.signal }).then(r => { if (!r.ok) throw new Error(r.statusText); return r.json() }) : Promise.resolve(null),
     ]
 
     Promise.all(fetches)
-      .then((results: any[]) => {
-        const [base, summit] = results
+      .then((results) => {
+        const [base, summit] = results as [any, any]
+        if (controller.signal.aborted) return
         if (!base?.current) { setState('error'); return }
 
         const c = base.current
@@ -98,7 +101,12 @@ export function WeatherWidget({ latitude, longitude, height, name }: Props) {
         })
         setState('loaded')
       })
-      .catch(() => setState('error'))
+      .catch((err) => {
+        if (err instanceof Error && err.name === 'AbortError') return
+        setState('error')
+      })
+
+    return () => controller.abort()
   }, [latitude, longitude, height])
 
   const linkRow = (
@@ -167,7 +175,7 @@ export function WeatherWidget({ latitude, longitude, height, name }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold tracking-widest uppercase text-mountain-muted">
-          {emoji} Погода
+          <span aria-hidden="true">{emoji}</span>{' '}Погода
         </span>
         <span className="text-[10px] text-mountain-muted/50">{d.updatedAt}</span>
       </div>
@@ -186,7 +194,7 @@ export function WeatherWidget({ latitude, longitude, height, name }: Props) {
         {d.summit && (
           <div className="flex items-baseline gap-3">
             <span className="text-[10px] text-mountain-muted w-14 shrink-0">
-              {height > 0 ? `${height} м` : 'Вершина'}
+              {height} м
             </span>
             <span className="text-xl font-bold text-blue-400 leading-none">
               {d.summit.temp > 0 ? `+${d.summit.temp}` : d.summit.temp}°
@@ -211,7 +219,7 @@ export function WeatherWidget({ latitude, longitude, height, name }: Props) {
       <div className="grid grid-cols-3 gap-1.5">
         {d.forecast.map(day => {
           const { emoji: dayEmoji } = weatherLabel(day.weatherCode)
-          const weekday = new Date(day.date).toLocaleDateString('ru-RU', { weekday: 'short' })
+          const weekday = new Date(day.date + 'T12:00:00').toLocaleDateString('ru-RU', { weekday: 'short' })
           return (
             <div
               key={day.date}
