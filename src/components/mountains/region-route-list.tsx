@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { createClient } from '@/lib/supabase/client'
-import { Heart, Check, Target, ChevronDown, ChevronUp, Search, LogIn } from 'lucide-react'
+import { Heart, Check, Target, ChevronDown, ChevronUp, Search, LogIn, ExternalLink } from 'lucide-react'
 import { RouteComments } from './route-comments'
 
 interface Mountain {
@@ -20,6 +20,7 @@ interface Route {
   difficulty: number
   description: string | null
   season: string | null
+  far_url: string | null
 }
 
 interface RouteStatus {
@@ -323,6 +324,18 @@ export function RegionRouteList({ mountains, routes }: { mountains: Mountain[]; 
                     <p className="text-sm text-mountain-muted leading-relaxed whitespace-pre-line">{route.description}</p>
                   ) : (
                     <p className="text-sm text-mountain-muted italic">Описание не добавлено.</p>
+                  )}
+                  {route.far_url && (
+                    <a
+                      href={route.far_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 mt-3 text-xs text-mountain-primary hover:text-mountain-primary/80 transition-colors"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <ExternalLink size={13} />
+                      Описание на сайте ФАР
+                    </a>
                   )}
                   <RouteComments routeId={route.id} currentUserId={userId} />
                 </div>

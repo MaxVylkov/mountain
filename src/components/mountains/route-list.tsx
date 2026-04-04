@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { createClient } from '@/lib/supabase/client'
-import { Heart, Check, Target, ChevronDown, ChevronUp, Search, LogIn } from 'lucide-react'
+import { Heart, Check, Target, ChevronDown, ChevronUp, Search, LogIn, ExternalLink } from 'lucide-react'
 import { RouteComments } from './route-comments'
 
 interface Route {
@@ -14,6 +14,7 @@ interface Route {
   duration_days: number | null
   description: string
   season: string | null
+  far_url: string | null
 }
 
 interface RouteStatus {
@@ -368,6 +369,18 @@ export function RouteList({ routes }: { routes: Route[]; mountainId?: string }) 
                   <p className="text-sm text-mountain-muted leading-relaxed whitespace-pre-line">
                     {route.description}
                   </p>
+                  {route.far_url && (
+                    <a
+                      href={route.far_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 mt-3 text-xs text-mountain-primary hover:text-mountain-primary/80 transition-colors"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <ExternalLink size={13} />
+                      Описание на сайте ФАР
+                    </a>
+                  )}
                   {adoptedDescs[route.id]?.map((ad: any) => (
                     <div key={ad.id} className="mt-4 p-3 bg-mountain-accent/5 border border-mountain-accent/20 rounded-lg">
                       <p className="text-xs text-mountain-accent font-medium mb-1">Альтернативное описание</p>

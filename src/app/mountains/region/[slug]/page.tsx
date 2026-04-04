@@ -21,7 +21,7 @@ export default async function RegionPage({ params }: { params: Promise<{ slug: s
   const mountainIds = mountains.map(m => m.id)
   const { data: routes } = await supabase
     .from('routes')
-    .select('id, mountain_id, name, difficulty, description, season')
+    .select('id, mountain_id, name, difficulty, description, season, far_url')
     .in('mountain_id', mountainIds)
     .order('difficulty', { ascending: true })
     .order('name', { ascending: true })
