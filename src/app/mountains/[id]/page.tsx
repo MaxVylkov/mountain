@@ -66,23 +66,16 @@ export default async function MountainDetailPage({ params }: { params: Promise<{
 
       </div>
 
-      {(mountain.description || (mountain.latitude && mountain.longitude)) && (
-        <div className={`grid gap-3 items-start ${
-          mountain.description && mountain.latitude && mountain.longitude
+      {(mountain.description?.trim() || (mountain.latitude && mountain.longitude)) && (
+        <div className={`grid gap-4 items-start ${
+          mountain.description?.trim() && mountain.latitude && mountain.longitude
             ? 'md:grid-cols-[3fr_2fr]'
             : 'grid-cols-1'
         }`}>
-          {mountain.description && (
+          {mountain.description?.trim() && (
             <div className="rounded-xl border border-mountain-border bg-mountain-surface/30 p-4 space-y-3">
               <p className="text-xs font-semibold tracking-widest uppercase text-mountain-muted">О горе</p>
               <p className="text-sm text-mountain-muted leading-relaxed">{mountain.description}</p>
-              {mountain.region && (
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-mountain-surface border border-mountain-border text-mountain-muted">
-                    {mountain.region}
-                  </span>
-                </div>
-              )}
             </div>
           )}
           {mountain.latitude && mountain.longitude && (
