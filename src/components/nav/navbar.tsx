@@ -17,6 +17,7 @@ import {
   MessageCircle,
   ChevronDown,
   Globe,
+  CloudSun,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { MobileMenu } from './mobile-menu'
@@ -40,11 +41,13 @@ const navLinks: NavLink[] = [
   { href: '/resources', label: 'Ресурсы', icon: Globe },
   { href: '/gear', label: 'Кладовка', icon: Backpack },
   { href: '/rations', label: 'Раскладка', icon: UtensilsCrossed },
+  { href: '/weather', label: 'Погода', icon: CloudSun },
   { href: '/forum', label: 'Форум', icon: MessageCircle },
 ]
 
 const primaryLinks: NavLink[] = [
   { href: '/mountains', label: 'Маршруты', icon: Mountain },
+  { href: '/weather', label: 'Погода', icon: CloudSun },
   { href: '/trips', label: 'Поездки', icon: Navigation },
   { href: '/teams', label: 'Отделения', icon: UsersRound },
 ]
