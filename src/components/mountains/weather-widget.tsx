@@ -157,11 +157,7 @@ export function WeatherWidget({ latitude, longitude, height }: Props) {
             <div key={i} className="h-14 rounded-lg bg-mountain-surface animate-pulse" />
           ))}
         </div>
-        <div className="flex gap-1.5 flex-wrap">
-          {links.map(l => (
-            <div key={l.label} className="h-6 w-14 rounded-md bg-mountain-surface animate-pulse" />
-          ))}
-        </div>
+        {linkRow}
       </div>
     )
   }
