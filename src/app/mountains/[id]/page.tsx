@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { RouteList } from '@/components/mountains/route-list'
 import { RouteDiscussionsBlock } from '@/components/forum/route-discussions-block'
-import { WeatherSection } from '@/components/mountains/weather-section'
+import { WeatherWidget } from '@/components/mountains/weather-widget'
 
 export default async function MountainDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -64,20 +64,35 @@ export default async function MountainDetailPage({ params }: { params: Promise<{
           </div>
         </div>
 
-        {mountain.description && (
-          <p className="text-sm text-mountain-muted leading-relaxed max-w-2xl border-l-2 border-mountain-border pl-4">
-            {mountain.description}
-          </p>
-        )}
       </div>
 
-      {mountain.latitude && mountain.longitude && (
-        <WeatherSection
-          name={mountain.name}
-          latitude={mountain.latitude}
-          longitude={mountain.longitude}
-          height={mountain.height}
-        />
+      {(mountain.description || (mountain.latitude && mountain.longitude)) && (
+        <div className={`grid gap-3 items-start ${
+          mountain.description && mountain.latitude && mountain.longitude
+            ? 'md:grid-cols-[3fr_2fr]'
+            : 'grid-cols-1'
+        }`}>
+          {mountain.description && (
+            <div className="rounded-xl border border-mountain-border bg-mountain-surface/30 p-4 space-y-3">
+              <p className="text-xs font-semibold tracking-widest uppercase text-mountain-muted">О горе</p>
+              <p className="text-sm text-mountain-muted leading-relaxed">{mountain.description}</p>
+              {mountain.region && (
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-mountain-surface border border-mountain-border text-mountain-muted">
+                    {mountain.region}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+          {mountain.latitude && mountain.longitude && (
+            <WeatherWidget
+              latitude={mountain.latitude}
+              longitude={mountain.longitude}
+              height={mountain.height ?? 0}
+            />
+          )}
+        </div>
       )}
 
       <RouteList routes={routes || []} mountainId={id} />

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { WeatherSection } from './weather-section'
+import { WeatherWidget } from './weather-widget'
 import { Mountain, MapPin } from 'lucide-react'
 
 interface MountainItem {
@@ -78,8 +78,7 @@ export function WeatherPageClient({ regions }: WeatherPageClientProps) {
       {/* Погода для выбранной вершины */}
       {selectedMountain ? (
         <div className="pt-2 border-t border-mountain-border">
-          <WeatherSection
-            name={selectedMountain.name}
+          <WeatherWidget
             latitude={selectedMountain.latitude}
             longitude={selectedMountain.longitude}
             height={selectedMountain.height}
@@ -87,7 +86,7 @@ export function WeatherPageClient({ regions }: WeatherPageClientProps) {
         </div>
       ) : (
         <div className="text-center py-12 text-mountain-muted text-sm">
-          Выбери вершину, чтобы увидеть ссылки на погоду
+          Выбери вершину, чтобы увидеть погоду
         </div>
       )}
     </div>
