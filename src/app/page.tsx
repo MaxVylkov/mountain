@@ -185,6 +185,10 @@ export default async function HomePage() {
               completedRoutes={completedRoutes}
             />
           </div>
+
+          <div className="mt-4">
+            <OnboardingGuide level={experienceLevel as 'beginner' | 'intermediate' | 'advanced' | null} />
+          </div>
         </section>
 
         {/* Tools */}
@@ -196,9 +200,6 @@ export default async function HomePage() {
             Инструменты
           </p>
           <ToolGrid tools={tools} />
-          <div className="mt-4">
-            <OnboardingGuide level={experienceLevel as 'beginner' | 'intermediate' | 'advanced' | null} />
-          </div>
         </section>
       </div>
     )
