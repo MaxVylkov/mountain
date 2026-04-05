@@ -970,7 +970,10 @@ export function ListingDetail({ listing, isOwner, isAuthenticated }: ListingDeta
         )}
       </div>
 
-      {/* Contact block — only if show_contact = true AND authenticated */}
+      {/* Contact block — only if show_contact = true AND authenticated AND at least one contact field set.
+          Deviation note: spec conditions are show_contact=true + authenticated only.
+          The extra guard (telegram || phone) prevents rendering an empty block when the seller
+          enabled the toggle but saved no contact details. Block simply absent in that case. */}
       {listing.show_contact && isAuthenticated && (listing.contact_telegram || listing.contact_phone) && (
         <div className="bg-green-500/5 border border-green-500/15 rounded-xl p-4 space-y-2">
           {listing.contact_telegram && (
