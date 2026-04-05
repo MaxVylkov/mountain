@@ -51,12 +51,12 @@ Responsive: `grid-cols-2` on all sizes (cards are compact enough). Filters scrol
 
 ```
 ┌─────────────────┐
-│   [photo/emoji] │  ← 52px tall, type badge top-left
+│   [photo/emoji] │  ← ~120px tall photo area, type badge top-left
 │ [tag: Продам]   │
 ├─────────────────┤
 │ Title           │
 │ 3 500 ₽         │
-│ М · 2р · Москва │  ← seller bar (blue tint)
+│ М · Значкист · Москва │  ← seller bar (blue tint)
 └─────────────────┘
 ```
 
@@ -64,6 +64,7 @@ Responsive: `grid-cols-2` on all sizes (cards are compact enough). Filters scrol
 - `transaction_type = swap` → "обмен", amber tag
 - `transaction_type = free` → "бесплатно", indigo tag
 - Seller bar always shown: first initial · level label · city
+- Level label mapping (same as dashboard): `beginner → "Новичок"`, `intermediate → "Значкист"`, `advanced → "Разрядник"`, `null → omitted`
 
 ### Listing detail page (`/marketplace/[id]`)
 
@@ -77,17 +78,17 @@ Top to bottom:
 [Description]
 ─────────────────────────────
 [Seller card — blue tint]
-  Avatar · Name · Level · N восхождений · on platform N months
-  [Recent routes chips]
+  Avatar · Name · Level label · N восхождений · "на платформе N месяцев"
+  [Recent routes chips — up to 3, from routes.name via user_route_status]
 ─────────────────────────────
-[Contact block — only if show_contact = true]
+[Contact block — only shown to authenticated users when show_contact = true]
   Telegram: @username  OR  Phone: +7...
-[Write message button — links to /messages/[listingId] in phase 2]
+  (if show_contact = false: contact block is completely absent — no placeholder)
 ```
 
-Contact block is visible to all authenticated users if `show_contact = true`. If `show_contact = false`, only the "Написать сообщение" button is shown (phase 2 feature — in v1 this button is disabled with label "Скоро").
+In v1 there is no "Написать сообщение" button. Contact is the only way to reach the seller.
 
-Owner sees: Edit · Mark as sold · Archive buttons instead of contact/message.
+Owner sees: Edit · Mark as sold · Archive buttons instead of contact block.
 
 ### Create listing (`/marketplace/new`)
 
@@ -134,13 +135,13 @@ create table marketplace_listings (
   transaction_type text not null, -- 'sell' | 'swap' | 'free'
   price           integer,        -- null for swap/free
 
-  city            text not null,
+  city            text not null default '',  -- required in form; pre-filled from profiles.city if set
   contact_telegram text,
   contact_phone   text,
   show_contact    boolean not null default false,
 
   images          text[] not null default '{}',
-  status          text not null default 'active', -- 'active' | 'reserved' | 'sold' | 'archived'
+  status          text not null default 'active', -- 'active' | 'sold' | 'archived'
 
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now()
@@ -197,7 +198,20 @@ Button **"Выставить на продажу"** added to each gear item deta
 
 Behaviour:
 - Navigates to `/marketplace/new?gear_id=[id]`
-- Form pre-fills `title` from `user_gear.name` (brand + model), `category` mapped from gear tags
+- Form pre-fills `title` from `user_gear.name` (brand + model); `category` mapped from gear tags using the first matching rule below — falls back to "Разное" if no match:
+
+  | Tag contains (case-insensitive) | Category |
+  |--------------------------------|----------|
+  | страховочн / harness / обвязка | Страховочные системы |
+  | верёвка / rope / cord | Верёвки и оттяжки |
+  | ледоруб / айс / crampon / кошк / ice | Ледовый инструмент |
+  | каска / helmet | Каски |
+  | ботинки / boots / shoe / обувь | Обувь |
+  | куртка / штаны / jacket / pants / одежда | Одежда (верхняя) |
+  | рюкзак / backpack / bag | Рюкзаки |
+  | палатка / tent / спальник | Палатки и бивак |
+  | закладка / якорь / крюк / cam / nut / piton | Железо (закладки, якоря, крюки) |
+  | (no match) | Разное |
 - After submission: gear item shows **"На продаже"** badge (derived query, no schema change)
 - When listing status changes to `sold` or `archived`: badge disappears automatically
 - No forced removal from Кладовка — user decides independently
@@ -211,10 +225,15 @@ Fetched from `profiles` + aggregates:
 ```ts
 {
   displayName: profiles.display_name,
-  experienceLevel: profiles.experience_level,   // → level label
-  completedRoutes: count(user_route_status where completed = true),
-  memberSince: profiles.created_at,             // → "на платформе N месяцев"
-  recentRoutes: last 3 route names from user_route_status joined routes
+  levelLabel: getLevelLabel(profiles.experience_level),
+  // getLevelLabel: beginner → "Новичок", intermediate → "Значкист", advanced → "Разрядник", null → null
+  completedRoutes: count(user_route_status where completed = true and user_id = seller_id),
+  memberSince: profiles.created_at,  // displayed as "на платформе N месяцев"
+  recentRoutes: SELECT r.name FROM user_route_status urs
+                JOIN routes r ON r.id = urs.route_id
+                WHERE urs.user_id = seller_id AND urs.completed = true
+                ORDER BY urs.updated_at DESC LIMIT 3
+  // routes.name exists (text NOT NULL, see 001_initial_schema.sql:71)
 }
 ```
 
@@ -231,6 +250,10 @@ Fetched from `profiles` + aggregates:
 | Сортировка | `created_at DESC` (default) |
 
 All filters applied server-side via URL search params (`?type=sell&category=...&city=...&q=...`).
+
+### Pagination
+
+20 listings per page. Cursor-based: `?cursor=[created_at ISO string]` — query adds `WHERE created_at < cursor ORDER BY created_at DESC LIMIT 21` (fetch 21, if 21 returned there is a next page). First page omits cursor. "Загрузить ещё" button at bottom of feed.
 
 ---
 
@@ -249,12 +272,16 @@ Added after Форум in beginner list; after Кладовка in expert list.
 
 | Case | Behaviour |
 |------|-----------|
-| `show_contact = false` | Contact block hidden; "Написать" button shown as disabled ("Скоро") |
+| `show_contact = false` | Contact block completely absent from detail page — no button, no placeholder |
+| `show_contact = true`, unauthenticated | Contact block hidden — shown only to logged-in users |
 | No photos uploaded | Placeholder emoji based on category shown in card and detail |
+| `profiles.city` is null | City field in create form starts empty; user must fill it (required field) |
 | `gear_id` set but gear deleted | `on delete set null` — listing stays, no badge on gear |
 | User deletes account | `on delete cascade` — all listings removed |
 | `price` with swap/free | Ignored at read time; form hides price field |
 | Unauthenticated visitor | Can browse feed and detail, cannot see contact, cannot create listing |
+| Feed empty state | "Объявлений пока нет. Будь первым — выставь снаряжение." with "+ Объявление" link |
+| "Куплю" listings | Not supported in v1; no UI affordance. Feed pills have no "Куплю" option. |
 
 ---
 
