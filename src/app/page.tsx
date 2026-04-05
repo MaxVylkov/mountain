@@ -38,6 +38,7 @@ const expertTools = [
 ]
 
 // ─── Landing page tool grid (reused for logged-out visitors) ─────────────────
+// Order differs from expertTools intentionally: landing page prioritises Маршруты+Поездки first
 
 const landingExpertTools = [
   { href: '/mountains', label: 'Маршруты', sub: 'КГ, ТС, 1Б–6Б' },
@@ -46,13 +47,6 @@ const landingExpertTools = [
   { href: '/gear', label: 'Кладовка', sub: 'Учёт и сборы' },
   { href: '/rations', label: 'Раскладка', sub: 'Питание на маршруте' },
   { href: '/forum', label: 'Форум', sub: 'Вопросы и опыт' },
-]
-
-const learningTools = [
-  { href: '/knowledge', label: 'Граф знаний', sub: 'Основы и теория' },
-  { href: '/knots', label: 'Узлы', sub: 'Пошаговое изучение' },
-  { href: '/training', label: 'Тренировки', sub: 'Физподготовка' },
-  { href: '/resources', label: 'Ресурсы', sub: 'Статьи и организации' },
 ]
 
 const beginnerLandingSteps = [
