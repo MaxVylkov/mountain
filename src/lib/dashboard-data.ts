@@ -82,6 +82,7 @@ export interface ActiveTrip {
 export async function fetchKGStats(supabase: SupabaseClient, userId: string): Promise<KGStats> {
   try {
     const [{ count: total }, { count: studied }] = await Promise.all([
+      // kg_nodes is a global catalog — no user_id filter intended
       supabase.from('kg_nodes').select('*', { count: 'exact', head: true }),
       supabase.from('kg_progress').select('*', { count: 'exact', head: true })
         .eq('user_id', userId).eq('studied', true),
@@ -95,6 +96,7 @@ export async function fetchKGStats(supabase: SupabaseClient, userId: string): Pr
 export async function fetchKnotStats(supabase: SupabaseClient, userId: string): Promise<KnotStats> {
   try {
     const [{ count: total }, { count: mastered }] = await Promise.all([
+      // knots is a global catalog — no user_id filter intended
       supabase.from('knots').select('*', { count: 'exact', head: true }),
       supabase.from('knot_progress').select('*', { count: 'exact', head: true })
         .eq('user_id', userId).eq('status', 'mastered'),
@@ -138,7 +140,9 @@ export async function fetchLastActivity(
       { module: 'Маршруты', href: '/mountains', updatedAt: routeRow.data?.updated_at ?? null, progressPercent: null },
     ]
 
-    return pickLastActivity(candidates)
+    const picked = pickLastActivity(candidates)
+    if (!picked) return null
+    return { module: picked.module, href: picked.href, progressPercent: picked.progressPercent }
   } catch {
     return null
   }
