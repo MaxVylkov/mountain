@@ -513,6 +513,8 @@ export function FeedFilters() {
 
   const type = params.get('type') ?? 'all'
   const category = params.get('category') ?? ''
+  const city = params.get('city') ?? ''
+  const q = params.get('q') ?? ''
 
   const typeOptions = [
     { value: 'all', label: 'Все' },
@@ -522,30 +524,51 @@ export function FeedFilters() {
   ]
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-      {typeOptions.map((opt) => (
-        <button
-          key={opt.value}
-          onClick={() => setParam('type', opt.value)}
-          className={`flex-shrink-0 text-[10px] font-semibold px-3 py-1.5 rounded-full border transition-colors ${
-            type === opt.value
-              ? 'border-mountain-primary/50 bg-mountain-primary/10 text-blue-300'
-              : 'border-mountain-border text-mountain-muted hover:border-mountain-border/80'
-          }`}
-        >
-          {opt.label}
-        </button>
-      ))}
-      <select
-        value={category}
-        onChange={(e) => setParam('category', e.target.value || null)}
-        className="flex-shrink-0 text-[10px] font-semibold px-3 py-1.5 rounded-full border border-mountain-border bg-mountain-surface text-mountain-muted focus:outline-none"
-      >
-        <option value="">Категория</option>
-        {MARKETPLACE_CATEGORIES.map((cat) => (
-          <option key={cat} value={cat}>{cat}</option>
+    <div className="space-y-2">
+      {/* Search bar */}
+      <input
+        type="text"
+        placeholder="Поиск по названию..."
+        defaultValue={q}
+        onBlur={(e) => setParam('q', e.target.value || null)}
+        onKeyDown={(e) => e.key === 'Enter' && setParam('q', (e.target as HTMLInputElement).value || null)}
+        className="w-full text-sm px-3 py-2 rounded-xl border border-mountain-border bg-mountain-surface text-mountain-text placeholder:text-mountain-muted focus:outline-none focus:border-mountain-primary/50 transition-colors"
+      />
+
+      {/* Pill filters row */}
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        {typeOptions.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => setParam('type', opt.value)}
+            className={`flex-shrink-0 text-[10px] font-semibold px-3 py-1.5 rounded-full border transition-colors ${
+              type === opt.value
+                ? 'border-mountain-primary/50 bg-mountain-primary/10 text-blue-300'
+                : 'border-mountain-border text-mountain-muted hover:border-mountain-border/80'
+            }`}
+          >
+            {opt.label}
+          </button>
         ))}
-      </select>
+        <select
+          value={category}
+          onChange={(e) => setParam('category', e.target.value || null)}
+          className="flex-shrink-0 text-[10px] font-semibold px-3 py-1.5 rounded-full border border-mountain-border bg-mountain-surface text-mountain-muted focus:outline-none"
+        >
+          <option value="">Категория</option>
+          {MARKETPLACE_CATEGORIES.map((cat) => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
+        <input
+          type="text"
+          placeholder="Город"
+          defaultValue={city}
+          onBlur={(e) => setParam('city', e.target.value || null)}
+          onKeyDown={(e) => e.key === 'Enter' && setParam('city', (e.target as HTMLInputElement).value || null)}
+          className="flex-shrink-0 text-[10px] font-semibold px-3 py-1.5 rounded-full border border-mountain-border bg-mountain-surface text-mountain-muted focus:outline-none placeholder:text-mountain-muted w-24"
+        />
+      </div>
     </div>
   )
 }
@@ -695,10 +718,88 @@ git commit -m "feat(marketplace): feed page with listing cards and filters"
 
 ```tsx
 // src/components/marketplace/listing-detail.tsx
+'use client' // PhotoGallery and OwnerActions are client sub-components in the same file;
+             // mark the whole module as client to avoid mixing boundaries.
+             // The data-fetching for this page is done in the server page component
+             // (src/app/marketplace/[id]/page.tsx) — this component receives all props.
+import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, MapPin, Calendar } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { getCategoryEmoji, transactionTypeLabel, marketplaceConditionLabel, formatPrice } from '@/lib/marketplace-data'
 import { getLevelLabel } from '@/lib/dashboard-data'
+
+// --- PhotoGallery ---
+function PhotoGallery({ images, alt, emoji }: { images: string[]; alt: string; emoji: string }) {
+  const [idx, setIdx] = useState(0)
+  if (images.length === 0) {
+    return (
+      <div className="rounded-xl border border-mountain-border bg-gradient-to-br from-[#1a2535] to-[#0f1923] h-52 flex items-center justify-center">
+        <span className="text-5xl">{emoji}</span>
+      </div>
+    )
+  }
+  return (
+    <div className="space-y-2">
+      <div className="rounded-xl border border-mountain-border bg-gradient-to-br from-[#1a2535] to-[#0f1923] h-52 overflow-hidden">
+        <img src={images[idx]} alt={alt} className="w-full h-full object-cover" />
+      </div>
+      {images.length > 1 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {images.map((src, i) => (
+            <button
+              key={i}
+              onClick={() => setIdx(i)}
+              className={`flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border transition-colors ${i === idx ? 'border-mountain-primary' : 'border-mountain-border'}`}
+            >
+              <img src={src} alt={`фото ${i + 1}`} className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// --- OwnerActions ---
+function OwnerActions({ listingId }: { listingId: string }) {
+  const router = useRouter()
+  const supabase = createClient()
+  const [updating, setUpdating] = useState(false)
+
+  async function setStatus(status: 'sold' | 'archived') {
+    setUpdating(true)
+    await supabase.from('marketplace_listings').update({ status }).eq('id', listingId)
+    router.refresh()
+    setUpdating(false)
+  }
+
+  return (
+    <div className="flex gap-2 pt-2">
+      <Link
+        href={`/marketplace/${listingId}/edit`}
+        className="flex-1 text-center text-xs font-semibold py-2.5 rounded-lg border border-mountain-primary/30 text-mountain-primary hover:border-mountain-primary transition-colors"
+      >
+        Изменить
+      </Link>
+      <button
+        onClick={() => setStatus('sold')}
+        disabled={updating}
+        className="flex-1 text-xs font-semibold py-2.5 rounded-lg border border-mountain-border text-mountain-muted hover:border-mountain-primary/40 transition-colors disabled:opacity-40"
+      >
+        Продано
+      </button>
+      <button
+        onClick={() => setStatus('archived')}
+        disabled={updating}
+        className="flex-1 text-xs font-semibold py-2.5 rounded-lg border border-mountain-border text-mountain-muted hover:border-mountain-primary/40 transition-colors disabled:opacity-40"
+      >
+        Снять
+      </button>
+    </div>
+  )
+}
 
 interface Listing {
   id: string
@@ -770,13 +871,7 @@ export function ListingDetail({ listing, isOwner, isAuthenticated }: ListingDeta
       </div>
 
       {/* Photo gallery */}
-      <div className="rounded-xl border border-mountain-border bg-gradient-to-br from-[#1a2535] to-[#0f1923] h-52 flex items-center justify-center overflow-hidden">
-        {listing.images.length > 0 ? (
-          <img src={listing.images[0]} alt={listing.title} className="w-full h-full object-cover" />
-        ) : (
-          <span className="text-5xl">{emoji}</span>
-        )}
-      </div>
+      <PhotoGallery images={listing.images} alt={listing.title} emoji={emoji} />
 
       {/* Title + price */}
       <div>
@@ -856,17 +951,8 @@ export function ListingDetail({ listing, isOwner, isAuthenticated }: ListingDeta
         </div>
       )}
 
-      {/* Owner actions — manage status from My Listings page */}
-      {isOwner && (
-        <div className="pt-2">
-          <Link
-            href="/marketplace/my"
-            className="flex items-center justify-center gap-2 w-full text-xs font-semibold py-2.5 rounded-lg border border-mountain-border text-mountain-muted hover:border-mountain-primary/40 hover:text-mountain-text transition-colors"
-          >
-            Управлять объявлением →
-          </Link>
-        </div>
-      )}
+      {/* Owner actions — Edit / Mark as sold / Archive */}
+      {isOwner && <OwnerActions listingId={listing.id} />}
     </div>
   )
 }
@@ -1417,6 +1503,8 @@ git commit -m "feat(marketplace): create and edit listing pages"
 - Create: `src/app/marketplace/my/page.tsx`
 - Create: `src/components/marketplace/my-listings.tsx`
 
+Note: The spec says "Edit / Закрыть actions." This plan splits "Закрыть" into two explicit actions — "Продано" and "Снять" (archive) — so sellers can accurately record the outcome. Both set non-active status; the spec's intent is satisfied.
+
 - [ ] **Step 1: Create my-listings client component**
 
 ```tsx
@@ -1507,8 +1595,19 @@ export function MyListings({ listings }: MyListingsProps) {
               className="flex items-center gap-3 p-3 rounded-xl border border-mountain-border bg-mountain-surface"
             >
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-mountain-text truncate">{listing.title}</div>
-                <div className="text-[10px] text-mountain-muted mt-0.5">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className="text-sm font-semibold text-mountain-text truncate">{listing.title}</div>
+                  <span className={`flex-shrink-0 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                    listing.status === 'active'
+                      ? 'bg-green-500/10 text-green-400'
+                      : listing.status === 'sold'
+                      ? 'bg-mountain-primary/10 text-blue-300'
+                      : 'bg-mountain-surface text-mountain-muted'
+                  }`}>
+                    {listing.status === 'active' ? 'Активно' : listing.status === 'sold' ? 'Продано' : 'Снято'}
+                  </span>
+                </div>
+                <div className="text-[10px] text-mountain-muted">
                   {transactionTypeLabel(listing.transaction_type)} · {formatPrice(listing.transaction_type, listing.price)} · {new Date(listing.created_at).toLocaleDateString('ru-RU')}
                 </div>
               </div>
