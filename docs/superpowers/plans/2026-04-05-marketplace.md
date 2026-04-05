@@ -20,6 +20,7 @@
 | Create | `src/app/marketplace/page.tsx` | Feed — server, reads searchParams |
 | Create | `src/app/marketplace/[id]/page.tsx` | Detail — server |
 | Create | `src/app/marketplace/new/page.tsx` | Create wrapper — server, auth check |
+| Create | `src/app/marketplace/[id]/edit/page.tsx` | Edit wrapper — server, auth + ownership check |
 | Create | `src/app/marketplace/my/page.tsx` | My listings — server |
 | Create | `src/components/marketplace/listing-card.tsx` | Card in 2×N grid |
 | Create | `src/components/marketplace/feed-filters.tsx` | Pill filters — client (URL navigation) |
@@ -1279,12 +1280,133 @@ npx vitest run
 
 Expected: PASS.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 4: Add edit page (reuses ListingForm)**
+
+The `ListingForm` component already handles all fields. Add an `initialValues` prop and an `editId` prop so it can update an existing listing instead of inserting a new one.
+
+Add to `ListingForm` props interface:
+```ts
+interface ListingFormProps {
+  prefill?: { gearId: string; title: string; category: string; condition: string } | null
+  defaultCity: string
+  editId?: string           // if set, form updates this listing instead of inserting
+  initialValues?: {         // pre-fill all fields from existing listing
+    type: 'sell' | 'swap' | 'free'
+    title: string
+    category: string
+    condition: string
+    price: string
+    city: string
+    description: string
+    telegram: string
+    phone: string
+    showContact: boolean
+  }
+}
+```
+
+In `ListingForm`, initialise all `useState` calls from `initialValues` if present:
+```ts
+const [type, setType] = useState<'sell' | 'swap' | 'free'>(initialValues?.type ?? 'sell')
+const [title, setTitle] = useState(initialValues?.title ?? prefill?.title ?? '')
+// ... same pattern for all fields
+```
+
+In `handleSubmit`, branch on `editId`:
+```ts
+if (editId) {
+  const { error } = await supabase
+    .from('marketplace_listings')
+    .update({
+      title: title.trim(),
+      description: description.trim() || null,
+      category,
+      condition,
+      transaction_type: type,
+      price: type === 'sell' ? (parseInt(price) || 0) : null,
+      city: city.trim(),
+      contact_telegram: telegram.trim() || null,
+      contact_phone: phone.trim() || null,
+      show_contact: showContact,
+      // images not changed on edit (keep existing) — photo editing is out of v1 scope
+    })
+    .eq('id', editId)
+  if (error) throw error
+  router.push(`/marketplace/${editId}`)
+  return
+}
+// existing insert logic below...
+```
+
+Create the edit server page:
+
+```tsx
+// src/app/marketplace/[id]/edit/page.tsx
+import { redirect, notFound } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { ListingForm } from '@/components/marketplace/listing-form'
+
+interface PageProps {
+  params: Promise<{ id: string }>
+}
+
+export default async function EditListingPage({ params }: PageProps) {
+  const { id } = await params
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: listing } = await supabase
+    .from('marketplace_listings')
+    .select('id, user_id, title, category, condition, transaction_type, price, city, description, contact_telegram, contact_phone, show_contact')
+    .eq('id', id)
+    .single()
+
+  if (!listing) notFound()
+  if (listing.user_id !== user.id) redirect(`/marketplace/${id}`)
+
+  return (
+    <div className="max-w-lg space-y-4">
+      <div>
+        <p className="text-xs font-semibold tracking-[0.15em] uppercase text-mountain-muted mb-1">Барахолка</p>
+        <h1 className="text-2xl font-bold text-mountain-text">Редактировать объявление</h1>
+      </div>
+      <ListingForm
+        editId={id}
+        defaultCity={listing.city}
+        initialValues={{
+          type: listing.transaction_type as 'sell' | 'swap' | 'free',
+          title: listing.title,
+          category: listing.category,
+          condition: listing.condition,
+          price: listing.price?.toString() ?? '',
+          city: listing.city,
+          description: listing.description ?? '',
+          telegram: listing.contact_telegram ?? '',
+          phone: listing.contact_phone ?? '',
+          showContact: listing.show_contact,
+        }}
+      />
+    </div>
+  )
+}
+```
+
+- [ ] **Step 5: Run full test suite**
+
+```bash
+npx vitest run
+```
+
+Expected: PASS.
+
+- [ ] **Step 6: Commit**
 
 ```bash
 git add src/app/marketplace/new/page.tsx \
+        src/app/marketplace/[id]/edit/page.tsx \
         src/components/marketplace/listing-form.tsx
-git commit -m "feat(marketplace): create listing page with photo upload"
+git commit -m "feat(marketplace): create and edit listing pages"
 ```
 
 ---
@@ -1392,6 +1514,14 @@ export function MyListings({ listings }: MyListingsProps) {
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
+                {tab === 'active' && (
+                  <Link
+                    href={`/marketplace/${listing.id}/edit`}
+                    className="text-[10px] font-semibold text-mountain-primary border border-mountain-primary/30 rounded px-2 py-1 hover:border-mountain-primary transition-colors"
+                  >
+                    Изменить
+                  </Link>
+                )}
                 {tab === 'active' && (
                   <button
                     onClick={() => setStatus(listing.id, 'sold')}
