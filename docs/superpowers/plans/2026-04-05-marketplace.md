@@ -190,6 +190,7 @@ import {
   marketplaceConditionLabel,
   userGearConditionToMarketplace,
   formatPrice,
+  getConditionSeasons,
 } from '@/lib/marketplace-data'
 
 describe('gearCategoryToMarketplace', () => {
@@ -280,7 +281,23 @@ describe('formatPrice', () => {
     expect(formatPrice('free', null)).toBe('бесплатно')
   })
   it('returns 0 ₽ if sell with null price', () => {
+    // Note: (0).toLocaleString('ru-RU') returns '0' on Node.js — result is '0 ₽'
     expect(formatPrice('sell', null)).toBe('0 ₽')
+  })
+})
+
+describe('getConditionSeasons', () => {
+  it('extracts seasons from Отличное (1 сезон)', () => {
+    expect(getConditionSeasons('Отличное (1 сезон)')).toBe('1 сезон')
+  })
+  it('extracts seasons from Хорошее (2–3 сезона)', () => {
+    expect(getConditionSeasons('Хорошее (2–3 сезона)')).toBe('2–3 сезона')
+  })
+  it('returns null for Новое (не использовалось)', () => {
+    expect(getConditionSeasons('Новое (не использовалось)')).toBe(null)
+  })
+  it('returns null for Удовлетворительное', () => {
+    expect(getConditionSeasons('Удовлетворительное (видны следы использования)')).toBe(null)
   })
 })
 ```
@@ -379,6 +396,13 @@ export function formatPrice(transactionType: string, price: number | null): stri
   if (transactionType === 'free') return 'бесплатно'
   const amount = price ?? 0
   return `${amount.toLocaleString('ru-RU')} ₽`
+}
+
+// Extracts the season count from the condition string for the "seasons of use" meta chip.
+// Returns null for conditions without a parseable season count (Новое, Удовлетворительное).
+export function getConditionSeasons(condition: string): string | null {
+  const match = condition.match(/\((\d[^)]*сезон[а-я]*)\)/)
+  return match ? match[1] : null
 }
 ```
 
@@ -722,17 +746,30 @@ git commit -m "feat(marketplace): feed page with listing cards and filters"
              // mark the whole module as client to avoid mixing boundaries.
              // The data-fetching for this page is done in the server page component
              // (src/app/marketplace/[id]/page.tsx) — this component receives all props.
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, MapPin, Calendar } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { getCategoryEmoji, transactionTypeLabel, marketplaceConditionLabel, formatPrice } from '@/lib/marketplace-data'
+import { getCategoryEmoji, transactionTypeLabel, marketplaceConditionLabel, formatPrice, getConditionSeasons } from '@/lib/marketplace-data'
 import { getLevelLabel } from '@/lib/dashboard-data'
 
 // --- PhotoGallery ---
 function PhotoGallery({ images, alt, emoji }: { images: string[]; alt: string; emoji: string }) {
   const [idx, setIdx] = useState(0)
+  const touchStartX = useRef<number | null>(null)
+
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX
+  }
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return
+    const delta = e.changedTouches[0].clientX - touchStartX.current
+    if (delta > 40 && idx > 0) setIdx(idx - 1)
+    else if (delta < -40 && idx < images.length - 1) setIdx(idx + 1)
+    touchStartX.current = null
+  }
+
   if (images.length === 0) {
     return (
       <div className="rounded-xl border border-mountain-border bg-gradient-to-br from-[#1a2535] to-[#0f1923] h-52 flex items-center justify-center">
@@ -742,8 +779,12 @@ function PhotoGallery({ images, alt, emoji }: { images: string[]; alt: string; e
   }
   return (
     <div className="space-y-2">
-      <div className="rounded-xl border border-mountain-border bg-gradient-to-br from-[#1a2535] to-[#0f1923] h-52 overflow-hidden">
-        <img src={images[idx]} alt={alt} className="w-full h-full object-cover" />
+      <div
+        className="rounded-xl border border-mountain-border bg-gradient-to-br from-[#1a2535] to-[#0f1923] h-52 overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        <img src={images[idx]} alt={alt} className="w-full h-full object-cover select-none" draggable={false} />
       </div>
       {images.length > 1 && (
         <div className="flex gap-1.5 overflow-x-auto pb-1">
@@ -881,7 +922,7 @@ export function ListingDetail({ listing, isOwner, isAuthenticated }: ListingDeta
         </div>
       </div>
 
-      {/* Meta chips */}
+      {/* Meta chips: category · condition · seasons of use */}
       <div className="flex flex-wrap gap-2">
         <span className="text-[10px] text-mountain-muted bg-mountain-surface border border-mountain-border rounded px-2 py-1">
           {listing.category}
@@ -889,6 +930,11 @@ export function ListingDetail({ listing, isOwner, isAuthenticated }: ListingDeta
         <span className="text-[10px] text-mountain-muted bg-mountain-surface border border-mountain-border rounded px-2 py-1">
           {marketplaceConditionLabel(listing.condition)}
         </span>
+        {getConditionSeasons(listing.condition) && (
+          <span className="text-[10px] text-mountain-muted bg-mountain-surface border border-mountain-border rounded px-2 py-1">
+            {getConditionSeasons(listing.condition)}
+          </span>
+        )}
       </div>
 
       {/* Description */}
@@ -1331,17 +1377,15 @@ export function ListingForm({ prefill, defaultCity }: ListingFormProps) {
         <label className={labelClass}>Контакт (необязательно)</label>
         <input value={telegram} onChange={(e) => setTelegram(e.target.value)} className={inputClass} placeholder="@username в Telegram" />
         <input value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} placeholder="+7 900 000-00-00" />
-        {(telegram || phone) && (
-          <label className="flex items-center gap-2 text-xs text-mountain-muted cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showContact}
-              onChange={(e) => setShowContact(e.target.checked)}
-              className="rounded"
-            />
-            Показывать контакт посетителям
-          </label>
-        )}
+        <label className="flex items-center gap-2 text-xs text-mountain-muted cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showContact}
+            onChange={(e) => setShowContact(e.target.checked)}
+            className="rounded"
+          />
+          Показывать контакт посетителям
+        </label>
       </div>
 
       {error && <p className="text-xs text-red-400">{error}</p>}
@@ -1504,6 +1548,10 @@ git commit -m "feat(marketplace): create and edit listing pages"
 - Create: `src/components/marketplace/my-listings.tsx`
 
 Note: The spec says "Edit / Закрыть actions." This plan splits "Закрыть" into two explicit actions — "Продано" and "Снять" (archive) — so sellers can accurately record the outcome. Both set non-active status; the spec's intent is satisfied.
+
+Note: Edit link is shown only for `tab === 'active'`. Sold and archived listings are read-only — reactivation is not a supported v1 flow.
+
+Note: Storage upload path uses `{user_id}/{timestamp}-{random}.{ext}` instead of spec's `{user_id}/{listing_id}/{filename}` because the listing ID does not exist at upload time. Orphaned uploads from abandoned creates are acceptable for v1.
 
 - [ ] **Step 1: Create my-listings client component**
 
