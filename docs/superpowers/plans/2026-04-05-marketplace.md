@@ -27,6 +27,7 @@
 | Create | `src/components/marketplace/listing-form.tsx` | Create/edit form — client |
 | Create | `src/components/marketplace/my-listings.tsx` | Tabs + status actions — client |
 | Modify | `src/components/gear/gear-detail-modal.tsx` | Add "Выставить" link + "На продаже" badge |
+| Modify | `src/components/gear/gear-inventory.tsx` | Fetch on-sale map, pass to GearDetailModal |
 | Modify | `src/app/page.tsx` | Add Барахолка to beginnerTools + expertTools |
 
 ---
@@ -257,6 +258,8 @@ describe('userGearConditionToMarketplace', () => {
   it('good → Хорошее (2–3 сезона)', () => {
     expect(userGearConditionToMarketplace('good')).toBe('Хорошее (2–3 сезона)')
   })
+  // Note: 'Отличное (1 сезон)' has no corresponding user_gear.condition value.
+  // It is intentionally unreachable from the pre-fill — users select it manually in the form.
   it('worn → Удовлетворительное', () => {
     expect(userGearConditionToMarketplace('worn')).toBe('Удовлетворительное (видны следы использования)')
   })
@@ -314,7 +317,11 @@ export const MARKETPLACE_CONDITIONS = [
   'Удовлетворительное (видны следы использования)',
 ] as const
 
-// Maps gear catalog category → marketplace listing category
+// Maps gear catalog category → marketplace listing category.
+// gear.category values: clothing | footwear | hardware | ropes | bivouac | electronics | other
+// Note: alpinist-specific categories (Каски, Ледовый инструмент, Рюкзаки, Страховочные системы)
+// have no corresponding gear.category enum value. Users must select these manually in the form.
+// The form pre-fill is a starting suggestion, not an authoritative mapping.
 export function gearCategoryToMarketplace(gearCategory: string): string {
   const map: Record<string, string> = {
     hardware: 'Железо (закладки, якоря, крюки)',
@@ -627,10 +634,10 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
 
       {displayListings.length === 0 ? (
         <div className="py-16 text-center">
-          <p className="text-mountain-muted text-sm mb-3">Объявлений пока нет.</p>
+          <p className="text-mountain-muted text-sm mb-3">Объявлений пока нет. Будь первым — выставь снаряжение.</p>
           {user && (
-            <Link href="/marketplace/new" className="text-sm text-mountain-primary hover:underline">
-              Будь первым — выставь снаряжение
+            <Link href="/marketplace/new" className="text-sm font-semibold text-mountain-primary hover:underline">
+              + Создать объявление
             </Link>
           )}
         </div>
@@ -848,24 +855,20 @@ export function ListingDetail({ listing, isOwner, isAuthenticated }: ListingDeta
         </div>
       )}
 
-      {/* Owner actions */}
+      {/* Owner actions — manage status from My Listings page */}
       {isOwner && (
-        <div className="flex gap-2 pt-2">
+        <div className="pt-2">
           <Link
-            href={`/marketplace/${listing.id}/edit`}
-            className="flex-1 text-center text-xs font-semibold py-2.5 rounded-lg border border-mountain-border text-mountain-muted hover:border-mountain-primary/40 hover:text-mountain-text transition-colors"
+            href="/marketplace/my"
+            className="flex items-center justify-center gap-2 w-full text-xs font-semibold py-2.5 rounded-lg border border-mountain-border text-mountain-muted hover:border-mountain-primary/40 hover:text-mountain-text transition-colors"
           >
-            Редактировать
+            Управлять объявлением →
           </Link>
-          <MarkSoldButton listingId={listing.id} />
         </div>
       )}
     </div>
   )
 }
-
-// Small client component for the mark-as-sold action
-// (kept here for colocation; extracted if it grows)
 ```
 
 - [ ] **Step 2: Create detail page**
@@ -1069,7 +1072,9 @@ export function ListingForm({ prefill, defaultCity }: ListingFormProps) {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Необходима авторизация')
 
-      // Upload photos
+      // Upload photos first (listing ID not yet known).
+      // Path: {user_id}/{timestamp}-{random}.{ext} — groups by user in Storage.
+      // If the insert below fails, these orphaned files are not cleaned up (acceptable for v1).
       const imagePaths: string[] = []
       for (const file of images) {
         const ext = file.name.split('.').pop()
