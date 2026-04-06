@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, MapPin, Calendar } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -136,9 +136,11 @@ export function ListingDetail({ listing, isOwner, isAuthenticated }: ListingDeta
   const typeStyle = TYPE_TAG_STYLES[listing.transaction_type as keyof typeof TYPE_TAG_STYLES] ?? TYPE_TAG_STYLES.sell
   const levelLabel = getLevelLabel(listing.profiles?.experience_level ?? null)
   const sellerInitial = listing.profiles?.display_name?.[0]?.toUpperCase() ?? '?'
-  const memberMonths = listing.profiles?.created_at
-    ? Math.max(1, Math.round((Date.now() - new Date(listing.profiles.created_at).getTime()) / (1000 * 60 * 60 * 24 * 30)))
-    : null
+  const [memberMonths, setMemberMonths] = useState<number | null>(null)
+  useEffect(() => {
+    if (!listing.profiles?.created_at) return
+    setMemberMonths(Math.max(1, Math.round((Date.now() - new Date(listing.profiles.created_at).getTime()) / (1000 * 60 * 60 * 24 * 30))))
+  }, [listing.profiles?.created_at])
   const dateLabel = new Date(listing.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
 
   return (
