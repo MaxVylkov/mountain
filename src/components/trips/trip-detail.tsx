@@ -5,10 +5,11 @@ import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   ArrowLeft, Map, Package, CheckSquare, Phone, Navigation,
   Plus, Check, X, Weight, Mountain, Flag, ChevronDown, ChevronUp,
-  Backpack, AlertTriangle
+  Backpack, AlertTriangle, Trash2
 } from 'lucide-react'
 
 const TEMPLATE_LABELS: Record<string, string> = {
@@ -28,6 +29,8 @@ const ROUTE_STATUS_LABELS: Record<string, { label: string; color: string }> = {
 }
 
 export function TripDetail({ trip }: { trip: any }) {
+  const router = useRouter()
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [tab, setTab] = useState<'routes' | 'gear' | 'checklist' | 'emergency'>('routes')
   const [tripRoutes, setTripRoutes] = useState<any[]>([])
   const [packingItems, setPackingItems] = useState<any[]>([])
@@ -153,6 +156,12 @@ export function TripDetail({ trip }: { trip: any }) {
     window.location.reload()
   }
 
+  async function deleteTrip() {
+    const supabase = createClient()
+    await supabase.from('trips').delete().eq('id', trip.id)
+    router.push('/trips')
+  }
+
   const totalWeight = packingItems.reduce((sum: number, i: any) => sum + (i.gear?.weight || 0), 0)
 
   function getRouteWeight(tripRouteId: string): number {
@@ -184,11 +193,32 @@ export function TripDetail({ trip }: { trip: any }) {
             <span className="px-2 py-0.5 rounded bg-mountain-primary/20 text-mountain-primary">{STATUS_LABELS[trip.status]}</span>
           </div>
         </div>
-        {trip.status !== 'completed' && (
-          <Button variant="outline" onClick={() => updateTripStatus('completed')}>
-            <Flag size={16} className="mr-2" /> Закончить мероприятие
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {trip.status !== 'completed' && (
+            <Button variant="outline" onClick={() => updateTripStatus('completed')}>
+              <Flag size={16} className="mr-2" /> Закончить мероприятие
+            </Button>
+          )}
+          {confirmDelete ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-mountain-danger">Удалить поездку?</span>
+              <Button variant="outline" onClick={deleteTrip} className="border-mountain-danger text-mountain-danger hover:bg-mountain-danger/10">
+                Да
+              </Button>
+              <Button variant="outline" onClick={() => setConfirmDelete(false)}>
+                Нет
+              </Button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="p-2 rounded-lg text-mountain-muted hover:text-mountain-danger hover:bg-mountain-danger/10 transition-colors"
+              aria-label="Удалить поездку"
+            >
+              <Trash2 size={18} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stats */}

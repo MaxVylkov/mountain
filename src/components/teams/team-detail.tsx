@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { ArrowLeft, Users, Wrench, UtensilsCrossed, CheckSquare, Crown, Edit2, Check, X, Send, UserPlus } from 'lucide-react'
+import { ArrowLeft, Users, Wrench, UtensilsCrossed, CheckSquare, Crown, Edit2, Check, X, Send, UserPlus, Trash2 } from 'lucide-react'
 import { InviteFriendsModal } from '@/components/teams/invite-friends-modal'
 import { Card } from '@/components/ui/card'
 import { TeamMembers } from '@/components/teams/team-members'
@@ -63,6 +63,13 @@ export function TeamDetail({ teamId, team, currentUserId }: TeamDetailProps) {
 
   const isLeader = currentUserId === team.leader_id
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  async function deleteTeam() {
+    const supabase = createClient()
+    await supabase.from('teams').delete().eq('id', teamId)
+    router.push('/teams')
+  }
 
   const startEdit = () => {
     setEditData({
@@ -220,6 +227,21 @@ export function TeamDetail({ teamId, team, currentUserId }: TeamDetailProps) {
                       <Edit2 className="w-3.5 h-3.5" />
                       Изменить
                     </button>
+                    {confirmDelete ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-mountain-danger">Удалить?</span>
+                        <button onClick={deleteTeam} className="px-2.5 py-1 rounded-lg border border-mountain-danger text-mountain-danger text-xs hover:bg-mountain-danger/10 transition-colors">Да</button>
+                        <button onClick={() => setConfirmDelete(false)} className="px-2.5 py-1 rounded-lg border border-mountain-border text-mountain-muted text-xs hover:text-mountain-text transition-colors">Нет</button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmDelete(true)}
+                        className="p-1.5 rounded-lg text-mountain-muted hover:text-mountain-danger hover:bg-mountain-danger/10 transition-colors"
+                        aria-label="Удалить отделение"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-400 text-xs font-medium">
                       <Crown className="w-3.5 h-3.5" />
                       Руководитель
