@@ -48,7 +48,6 @@ export default async function ListingPage({ params }: PageProps) {
     <ListingDetail
       listing={{
         ...listing,
-        seller_id: listing.user_id,
         completed_routes: completedRoutes ?? 0,
         recent_routes: recentRoutes,
       } as any}

@@ -13,6 +13,7 @@ function PhotoGallery({ images, alt, emoji }: { images: string[]; alt: string; e
   const touchStartX = useRef<number | null>(null)
 
   function handleTouchStart(e: React.TouchEvent) {
+    if (!e.touches[0]) return
     touchStartX.current = e.touches[0].clientX
   }
   function handleTouchEnd(e: React.TouchEvent) {
@@ -64,8 +65,8 @@ function OwnerActions({ listingId }: { listingId: string }) {
 
   async function setStatus(status: 'sold' | 'archived') {
     setUpdating(true)
-    await supabase.from('marketplace_listings').update({ status }).eq('id', listingId)
-    router.refresh()
+    const { error } = await supabase.from('marketplace_listings').update({ status }).eq('id', listingId)
+    if (!error) router.refresh()
     setUpdating(false)
   }
 
@@ -114,7 +115,6 @@ interface Listing {
     experience_level: string | null
     created_at: string
   } | null
-  seller_id: string
   completed_routes: number
   recent_routes: string[]
 }
