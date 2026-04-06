@@ -49,7 +49,8 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
     query = query.lt('created_at', params.cursor)
   }
 
-  const { data: rows } = await query
+  const { data: rows, error: queryError } = await query
+  if (queryError) console.error('[marketplace] query error:', queryError)
   const listings = rows ?? []
   const hasMore = listings.length > PAGE_SIZE
   const displayListings = hasMore ? listings.slice(0, PAGE_SIZE) : listings
