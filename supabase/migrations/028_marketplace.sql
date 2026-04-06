@@ -63,9 +63,9 @@ CREATE POLICY "Owner deletes listings"
   ON marketplace_listings FOR DELETE
   USING (auth.uid() = user_id);
 
--- Storage bucket for marketplace photos
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('marketplace', 'marketplace', true)
+-- Storage bucket for marketplace photos (max 5 MB per file, images only)
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('marketplace', 'marketplace', true, 5242880, '{image/jpeg,image/png,image/webp}')
 ON CONFLICT DO NOTHING;
 
 CREATE POLICY "Public read marketplace images"

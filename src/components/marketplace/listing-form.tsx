@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { MARKETPLACE_CATEGORIES, MARKETPLACE_CONDITIONS } from '@/lib/marketplace-data'
@@ -46,6 +46,9 @@ export function ListingForm({ prefill, defaultCity, editId, initialValues }: Lis
   const [images, setImages] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const previewUrls = useMemo(() => images.map((f) => URL.createObjectURL(f)), [images])
+  useEffect(() => () => previewUrls.forEach((url) => URL.revokeObjectURL(url)), [previewUrls])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -233,7 +236,7 @@ export function ListingForm({ prefill, defaultCity, editId, initialValues }: Lis
             <div className="flex gap-2 mt-2 flex-wrap">
               {images.map((f, i) => (
                 <div key={i} className="relative">
-                  <img src={URL.createObjectURL(f)} className="w-16 h-16 object-cover rounded-lg" alt="" />
+                  <img src={previewUrls[i]} className="w-16 h-16 object-cover rounded-lg" alt="" />
                   <button
                     type="button"
                     onClick={() => setImages(images.filter((_, j) => j !== i))}

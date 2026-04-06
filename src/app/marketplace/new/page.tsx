@@ -36,13 +36,6 @@ export default async function NewListingPage({ searchParams }: PageProps) {
     }
   }
 
-  // Pre-fill city from profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('city')
-    .eq('id', user.id)
-    .single()
-
   return (
     <div className="max-w-lg space-y-4">
       <div>
@@ -51,7 +44,7 @@ export default async function NewListingPage({ searchParams }: PageProps) {
       </div>
       <ListingForm
         prefill={prefill}
-        defaultCity={profile?.city ?? ''}
+        defaultCity=""
       />
     </div>
   )
