@@ -457,7 +457,7 @@ export function GearInventory({ catalog, userId }: { catalog: GearItem[]; userId
           onClose={() => setSelectedItem(null)}
           onUpdate={() => { loadUserGear(); setSelectedItem(null) }}
           onRemove={(id) => { removeItem(id); setSelectedItem(null) }}
-          onSaleListingId={onSaleMap.get(selectedItem.gear_id) ?? null}
+          onSaleListingId={onSaleMap.get(selectedItem.id) ?? null}
         />
       )}
 
