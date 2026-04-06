@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { X, Weight, Plus, Tag, Save, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -47,9 +48,10 @@ interface GearDetailModalProps {
   onClose: () => void
   onUpdate: () => void
   onRemove: (id: string) => void
+  onSaleListingId?: string | null
 }
 
-export function GearDetailModal({ item, onClose, onUpdate, onRemove }: GearDetailModalProps) {
+export function GearDetailModal({ item, onClose, onUpdate, onRemove, onSaleListingId }: GearDetailModalProps) {
   const [condition, setCondition] = useState(item.condition)
   const [brand, setBrand] = useState(item.gear?.brand || '')
   const [showBrandSuggestions, setShowBrandSuggestions] = useState(false)
@@ -113,6 +115,29 @@ export function GearDetailModal({ item, onClose, onUpdate, onRemove }: GearDetai
               {CATEGORY_LABELS[item.gear?.category] || item.gear?.category}
               {item.gear?.weight && ` • ${item.gear.weight} г`}
             </p>
+            <div className="mt-2">
+              {/* On-sale badge */}
+              {onSaleListingId && (
+                <Link
+                  href={`/marketplace/${onSaleListingId}`}
+                  className="inline-flex items-center gap-1 text-[10px] font-semibold text-green-400 bg-green-500/10 border border-green-500/20 rounded px-2 py-0.5"
+                >
+                  <Tag size={10} />
+                  На продаже
+                </Link>
+              )}
+
+              {/* List for sale button */}
+              {!onSaleListingId && (
+                <Link
+                  href={`/marketplace/new?gear_id=${item.id}`}
+                  className="inline-flex items-center gap-1 text-[10px] font-semibold text-mountain-muted border border-mountain-border rounded px-2 py-0.5 hover:border-mountain-primary/40 hover:text-mountain-text transition-colors"
+                >
+                  <Tag size={10} />
+                  Выставить на продажу
+                </Link>
+              )}
+            </div>
           </div>
           <button onClick={onClose} className="text-mountain-muted hover:text-mountain-text">
             <X size={20} />

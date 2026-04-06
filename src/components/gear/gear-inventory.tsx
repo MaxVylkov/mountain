@@ -87,6 +87,7 @@ export const POPULAR_BRANDS = [
 
 export function GearInventory({ catalog, userId }: { catalog: GearItem[]; userId: string }) {
   const [userGear, setUserGear] = useState<UserGearItem[]>([])
+  const [onSaleMap, setOnSaleMap] = useState<Map<string, string>>(new Map())
   const [showAddModal, setShowAddModal] = useState(false)
   const [showCustomModal, setShowCustomModal] = useState(false)
   const [selectedItem, setSelectedItem] = useState<UserGearItem | null>(null)
@@ -110,6 +111,17 @@ export function GearInventory({ catalog, userId }: { catalog: GearItem[]; userId
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
     if (data) setUserGear(data as any)
+
+    // Fetch on-sale listings for this user's gear
+    const { data: onSaleRows } = await supabase
+      .from('marketplace_listings')
+      .select('gear_id, id')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .not('gear_id', 'is', null)
+    setOnSaleMap(new Map(
+      (onSaleRows ?? []).map((r) => [r.gear_id as string, r.id as string])
+    ))
   }, [userId])
 
   useEffect(() => { loadUserGear() }, [loadUserGear])
@@ -445,6 +457,7 @@ export function GearInventory({ catalog, userId }: { catalog: GearItem[]; userId
           onClose={() => setSelectedItem(null)}
           onUpdate={() => { loadUserGear(); setSelectedItem(null) }}
           onRemove={(id) => { removeItem(id); setSelectedItem(null) }}
+          onSaleListingId={onSaleMap.get(selectedItem.gear_id) ?? null}
         />
       )}
 
