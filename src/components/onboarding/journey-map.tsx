@@ -107,8 +107,10 @@ const stages = [
   },
 ]
 
-function isStageCompleted(_stageId: string, _level: string): boolean {
-  return false
+function isStageCompleted(stageId: string, progress?: StageProgress[]): boolean {
+  if (!progress) return false
+  const found = progress.find(p => p.id === stageId)
+  return found ? found.overallProgress >= 100 : false
 }
 
 const containerVariants = {
@@ -156,7 +158,7 @@ export function JourneyMap({ level, onComplete, viewMode, progress }: JourneyMap
         >
           <div className="relative flex flex-col gap-6" style={{ zIndex: 1 }}>
             {stages.map((stage, index) => {
-              const completed = isStageCompleted(stage.id, level)
+              const completed = isStageCompleted(stage.id, progress)
               const stageProgress = getStageProgress(stage.id)
               const offsetPercent = index * 12
               const isHovered = hoveredStage === stage.id

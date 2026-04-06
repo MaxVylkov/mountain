@@ -8,7 +8,7 @@ export default async function TripDetailPage({ params }: { params: Promise<{ id:
 
   const { data: trip } = await supabase
     .from('trips')
-    .select('*, mountains(name, region, height)')
+    .select('*, mountains(name, region, height), alpine_camps(name, region)')
     .eq('id', id)
     .single()
 

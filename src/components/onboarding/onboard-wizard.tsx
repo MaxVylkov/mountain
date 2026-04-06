@@ -11,10 +11,16 @@ import type { User } from '@supabase/supabase-js'
 
 type Level = 'beginner' | 'intermediate' | 'advanced'
 
-export function OnboardWizard() {
+interface Props {
+  initialProgress?: { id: string; overallProgress: number }[]
+  initialLevel?: Level
+}
+
+export function OnboardWizard({ initialProgress, initialLevel }: Props) {
   const router = useRouter()
-  const [step, setStep] = useState<1 | 2>(1)
-  const [level, setLevel] = useState<Level | null>(null)
+  const isViewMode = !!initialLevel
+  const [step, setStep] = useState<1 | 2>(isViewMode ? 2 : 1)
+  const [level, setLevel] = useState<Level | null>(initialLevel ?? null)
   const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => {
@@ -69,15 +75,22 @@ export function OnboardWizard() {
             exit={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.3 }}
           >
-            <button
-              onClick={handleBack}
-              className="mb-6 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Назад
-            </button>
+            {!isViewMode && (
+              <button
+                onClick={handleBack}
+                className="mb-6 flex items-center gap-1 text-sm text-mountain-muted hover:text-mountain-text transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Назад
+              </button>
+            )}
 
-            <JourneyMap level={level} onComplete={handleComplete} />
+            <JourneyMap
+              level={level}
+              onComplete={handleComplete}
+              viewMode={isViewMode}
+              progress={initialProgress}
+            />
           </motion.div>
         )}
       </AnimatePresence>

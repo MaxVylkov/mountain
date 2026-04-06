@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import CreateTeamModal from '@/components/teams/create-team-modal'
 import { TeamGearTemplateDownload } from '@/components/teams/team-gear-template-download'
+import { StaggerList, StaggerItem } from '@/components/ui/motion'
 
 interface TeamData {
   id: string
@@ -96,10 +97,10 @@ export default function TeamList({ userId, mountains }: TeamListProps) {
           </Button>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StaggerList className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {teams.map((item) => (
+            <StaggerItem key={item.team_id}>
             <Card
-              key={item.team_id}
               hover
               onClick={() => router.push(`/teams/${item.team.id}`)}
             >
@@ -143,8 +144,9 @@ export default function TeamList({ userId, mountains }: TeamListProps) {
                 </div>
               </div>
             </Card>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerList>
       )}
 
       {showModal && (

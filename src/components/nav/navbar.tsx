@@ -18,6 +18,7 @@ import {
   ChevronDown,
   Globe,
   CloudSun,
+  Tent,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { MobileMenu } from './mobile-menu'
@@ -33,6 +34,7 @@ interface NavLink {
 // All links — passed to MobileMenu so mobile stays complete
 const navLinks: NavLink[] = [
   { href: '/mountains', label: 'Маршруты', icon: Mountain },
+  { href: '/camps', label: 'Альплагеря', icon: Tent },
   { href: '/trips', label: 'Поездки', icon: Navigation },
   { href: '/teams', label: 'Отделения', icon: UsersRound },
   { href: '/knowledge', label: 'Знания', icon: BookOpen },
@@ -47,6 +49,7 @@ const navLinks: NavLink[] = [
 
 const primaryLinks: NavLink[] = [
   { href: '/mountains', label: 'Маршруты', icon: Mountain },
+  { href: '/camps', label: 'Альплагеря', icon: Tent },
   { href: '/weather', label: 'Погода', icon: CloudSun },
   { href: '/trips', label: 'Поездки', icon: Navigation },
   { href: '/teams', label: 'Отделения', icon: UsersRound },
@@ -172,7 +175,7 @@ export function Navbar() {
   return (
     <nav className="sticky top-0 z-50 border-b border-mountain-border bg-mountain-bg/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
-        <Link href="/" className="text-xl font-bold text-mountain-text shrink-0">
+        <Link href="/" className="text-xl font-bold tracking-tight text-mountain-text shrink-0">
           Mountaine
         </Link>
 

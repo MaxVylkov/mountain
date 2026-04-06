@@ -22,7 +22,7 @@ export function EmptyState({ title, description, action, icon: Icon }: EmptyStat
           <Icon size={28} className="text-mountain-primary" strokeWidth={1.5} />
         </div>
       )}
-      <p className="text-base font-semibold text-mountain-text">{title}</p>
+      <p className="text-lg font-semibold tracking-tight text-mountain-text">{title}</p>
       {description && (
         <p className="mt-1.5 text-sm text-mountain-muted max-w-xs">{description}</p>
       )}
@@ -31,14 +31,14 @@ export function EmptyState({ title, description, action, icon: Icon }: EmptyStat
           {action.href ? (
             <Link
               href={action.href}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-mountain-primary text-white text-sm font-medium hover:bg-mountain-primary/80 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-mountain-primary text-white text-sm font-medium hover:bg-mountain-primary/80 transition-colors focus-visible:ring-2 focus-visible:ring-mountain-accent focus-visible:ring-offset-2 focus-visible:ring-offset-mountain-bg"
             >
               {action.label}
             </Link>
           ) : (
             <button
               onClick={action.onClick}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-mountain-primary text-white text-sm font-medium hover:bg-mountain-primary/80 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-mountain-primary text-white text-sm font-medium hover:bg-mountain-primary/80 transition-colors focus-visible:ring-2 focus-visible:ring-mountain-accent focus-visible:ring-offset-2 focus-visible:ring-offset-mountain-bg"
             >
               {action.label}
             </button>

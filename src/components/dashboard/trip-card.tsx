@@ -9,7 +9,7 @@ interface Props {
 export function TripCard({ trip }: Props) {
   if (!trip) {
     return (
-      <div className="rounded-xl border border-dashed border-mountain-border bg-mountain-surface/20 p-4">
+      <div className="rounded-xl border border-dashed border-mountain-border bg-mountain-surface/20 p-4 h-full">
         <p className="text-xs font-semibold tracking-widest uppercase text-mountain-muted mb-2">
           Поездка
         </p>
@@ -28,7 +28,7 @@ export function TripCard({ trip }: Props) {
   const statusLabel = getTripStatusLabel(trip.status)
 
   return (
-    <div className="rounded-xl border border-mountain-primary/20 bg-mountain-primary/[0.04] p-4">
+    <div className="rounded-xl border border-mountain-primary/20 bg-mountain-primary/[0.04] p-4 h-full">
       <p className="text-xs font-semibold tracking-widest uppercase text-mountain-primary/60 mb-2">
         Активная поездка
       </p>

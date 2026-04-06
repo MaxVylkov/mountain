@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Grip } from 'lucide-react'
 import { KnotsModule } from '@/components/knots/knots-module'
+import { NextStepBanner } from '@/components/flow/next-step-banner'
 
 export default async function KnotsPage() {
   const supabase = await createClient()
@@ -13,7 +14,7 @@ export default async function KnotsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold flex items-center gap-3">
+      <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
         <Grip className="text-mountain-primary" />
         Узлы
       </h1>
@@ -21,6 +22,7 @@ export default async function KnotsPage() {
         Изучай альпинистские узлы пошагово — от простых к сложным.
       </p>
       <KnotsModule knots={knots || []} />
+      <NextStepBanner currentModule="knots" />
     </div>
   )
 }

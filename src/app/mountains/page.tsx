@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import MountainsView from '@/components/mountains/mountains-view'
+import { NextStepBanner } from '@/components/flow/next-step-banner'
 
 export default async function MountainsPage() {
   const supabase = await createClient()
@@ -12,10 +13,11 @@ export default async function MountainsPage() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-mountain-text">База маршрутов</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-mountain-text">База маршрутов</h1>
       </div>
 
       <MountainsView mountains={mountains || []} />
+      <NextStepBanner currentModule="mountains" />
     </div>
   )
 }

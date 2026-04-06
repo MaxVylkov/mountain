@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Copy, Check, Trash2, LogOut } from 'lucide-react'
+import { Copy, Check, Trash2, LogOut, Search, UserPlus, X } from 'lucide-react'
 
 interface TeamMembersProps {
   teamId: string
@@ -47,12 +47,25 @@ function formatDate(dateStr: string): string {
   })
 }
 
+interface InviteSearchResult {
+  id: string
+  display_name: string | null
+  email: string
+}
+
 export function TeamMembers({ teamId, leaderId, currentUserId, inviteToken }: TeamMembersProps) {
   const router = useRouter()
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
   const [removing, setRemoving] = useState<string | null>(null)
+
+  // Invite by name search
+  const [inviteQuery, setInviteQuery] = useState('')
+  const [inviteResults, setInviteResults] = useState<InviteSearchResult[]>([])
+  const [inviteSearching, setInviteSearching] = useState(false)
+  const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set())
+  const inviteTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const isLeader = currentUserId === leaderId
 
@@ -70,6 +83,30 @@ export function TeamMembers({ teamId, leaderId, currentUserId, inviteToken }: Te
   useEffect(() => {
     loadMembers()
   }, [loadMembers])
+
+  // Debounced invite search
+  useEffect(() => {
+    if (inviteTimeout.current) clearTimeout(inviteTimeout.current)
+    if (inviteQuery.length < 3) { setInviteResults([]); return }
+    setInviteSearching(true)
+    inviteTimeout.current = setTimeout(async () => {
+      const res = await fetch(`/api/users/search?email=${encodeURIComponent(inviteQuery)}`)
+      const json = await res.json()
+      setInviteResults(json.users ?? [])
+      setInviteSearching(false)
+    }, 400)
+    return () => { if (inviteTimeout.current) clearTimeout(inviteTimeout.current) }
+  }, [inviteQuery])
+
+  const handleInviteUser = async (targetId: string) => {
+    const supabase = createClient()
+    await supabase.from('team_invites').insert({
+      team_id: teamId,
+      inviter_id: currentUserId,
+      invitee_id: targetId,
+    })
+    setInvitedIds(prev => new Set([...prev, targetId]))
+  }
 
   const handleCopyInvite = () => {
     const link = `${window.location.origin}/teams/join/${inviteToken}`
@@ -153,9 +190,69 @@ export function TeamMembers({ teamId, leaderId, currentUserId, inviteToken }: Te
 
       {/* Invite section */}
       <Card>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <h3 className="text-mountain-text font-semibold">Пригласить участника</h3>
 
+          {/* Search by name */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-xs text-mountain-muted">
+              <Search size={12} />
+              <span>По имени или email</span>
+            </div>
+            <div className="relative">
+              <input
+                value={inviteQuery}
+                onChange={e => setInviteQuery(e.target.value)}
+                placeholder="Введите имя или email..."
+                className="w-full pl-4 pr-9 py-2.5 bg-mountain-bg border border-mountain-border rounded-lg text-sm text-mountain-text placeholder:text-mountain-muted focus:outline-none focus:border-mountain-primary transition-colors"
+              />
+              {inviteQuery && (
+                <button onClick={() => { setInviteQuery(''); setInviteResults([]) }} className="absolute right-3 top-1/2 -translate-y-1/2 text-mountain-muted hover:text-mountain-text">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            {inviteQuery.length > 0 && inviteQuery.length < 3 && (
+              <p className="text-xs text-mountain-muted">Минимум 3 символа</p>
+            )}
+            {inviteSearching && <p className="text-xs text-mountain-muted">Ищем...</p>}
+            {inviteResults.length > 0 && (
+              <div className="space-y-1.5">
+                {inviteResults.filter(u => {
+                  const memberIds = new Set(members.map(m => m.user_id))
+                  return u.id !== currentUserId && !memberIds.has(u.id)
+                }).map(u => (
+                  <div key={u.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-mountain-bg border border-mountain-border">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{u.display_name || 'Пользователь'}</p>
+                      <p className="text-xs text-mountain-muted">{u.email}</p>
+                    </div>
+                    {invitedIds.has(u.id) ? (
+                      <span className="text-xs text-mountain-muted flex items-center gap-1 shrink-0">
+                        <Check size={12} /> Приглашён
+                      </span>
+                    ) : (
+                      <Button onClick={() => handleInviteUser(u.id)} className="text-xs px-3 py-1.5 h-auto shrink-0">
+                        <UserPlus size={12} className="mr-1" /> Пригласить
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {inviteQuery.length >= 3 && !inviteSearching && inviteResults.length === 0 && (
+              <p className="text-xs text-mountain-muted">Не найдено</p>
+            )}
+          </div>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-mountain-border" />
+            <span className="text-xs text-mountain-muted">или по ссылке</span>
+            <div className="flex-1 h-px bg-mountain-border" />
+          </div>
+
+          {/* Invite link */}
           <div className="flex items-center gap-2">
             <code className="flex-1 min-w-0 truncate text-xs bg-mountain-bg px-3 py-2 rounded-lg text-mountain-muted border border-mountain-border">
               {typeof window !== 'undefined'
@@ -180,10 +277,6 @@ export function TeamMembers({ teamId, leaderId, currentUserId, inviteToken }: Te
               )}
             </Button>
           </div>
-
-          <p className="text-mountain-muted text-xs">
-            Отправьте эту ссылку участнику для вступления в отделение
-          </p>
         </div>
       </Card>
 

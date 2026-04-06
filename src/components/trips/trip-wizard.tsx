@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ArrowRight, Check, X, Package } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { ArrowLeft, ArrowRight, Check, Package, Tent, MapPin, Search, X, Mountain, UsersRound, UserPlus } from 'lucide-react'
 
 interface MountainData {
   id: string
@@ -13,6 +14,29 @@ interface MountainData {
   region: string
   height: number
   description: string | null
+}
+
+interface CampData {
+  id: string
+  name: string
+  region: string
+  sub_region: string | null
+  altitude: number | null
+  route_count: number | null
+  difficulty_range: string | null
+}
+
+interface RegionInfo {
+  name: string
+  mountains: MountainData[]
+  camps: CampData[]
+  maxHeight: number
+}
+
+interface InviteSearchResult {
+  id: string
+  display_name: string | null
+  email: string
 }
 
 const TEMPLATES = [
@@ -27,32 +51,117 @@ const CATEGORY_LABELS: Record<string, string> = {
   ropes: 'Верёвки', bivouac: 'Бивуак', electronics: 'Электроника', other: 'Прочее',
 }
 
-export function TripWizard({ mountains }: { mountains: MountainData[] }) {
+function matchCampToMountainRegion(camp: CampData, mountainRegions: string[]): string | null {
+  if (mountainRegions.includes(camp.region)) return camp.region
+  if (camp.sub_region) {
+    for (const mr of mountainRegions) {
+      const mrLower = mr.toLowerCase()
+      const subLower = camp.sub_region.toLowerCase()
+      if (subLower.includes('кабардино') && mrLower.includes('кабардино')) return mr
+      if (subLower.includes('карачаево') && mrLower.includes('карачаево')) return mr
+      if (subLower.includes('приэльбрусье') && mrLower.includes('адырсу')) return mr
+      if (subLower.includes('домбай') && mrLower.includes('карачаево')) return mr
+      if (subLower.includes('осетия') && mrLower.includes('осетия')) return mr
+      if (subLower.includes('дигория') && mrLower.includes('дигория')) return mr
+    }
+  }
+  return null
+}
+
+const TOTAL_STEPS = 5
+
+export function TripWizard({ mountains, camps }: { mountains: MountainData[]; camps: CampData[] }) {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [userId, setUserId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
-  // Wizard state
-  const [selectedMountain, setSelectedMountain] = useState<string | null>(null)
+  // Step 1: Region + camp
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
+  const [selectedCampId, setSelectedCampId] = useState<string | null>(null)
+
+  // Step 2: Template
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
   const [selectedPackingSet, setSelectedPackingSet] = useState<string | null>(null)
   const [templateGear, setTemplateGear] = useState<any[]>([])
   const [userGearIds, setUserGearIds] = useState<Set<string>>(new Set())
   const [userGearItems, setUserGearItems] = useState<any[]>([])
   const [userPackingSets, setUserPackingSets] = useState<any[]>([])
+
+  // Step 4: Routes
   const [routes, setRoutes] = useState<any[]>([])
   const [selectedRoutes, setSelectedRoutes] = useState<Set<string>>(new Set())
+
+  // Step 5: Team
+  const [teamMode, setTeamMode] = useState<'skip' | 'create' | 'existing' | null>(null)
+  const [teamName, setTeamName] = useState('')
+  const [teamDescription, setTeamDescription] = useState('')
+  const [teamStartDate, setTeamStartDate] = useState('')
+  const [teamEndDate, setTeamEndDate] = useState('')
+  const [existingTeams, setExistingTeams] = useState<any[]>([])
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null)
+  const [inviteQuery, setInviteQuery] = useState('')
+  const [inviteResults, setInviteResults] = useState<InviteSearchResult[]>([])
+  const [inviteSearching, setInviteSearching] = useState(false)
+  const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set())
+  const inviteTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const [creating, setCreating] = useState(false)
 
+  // Build regions
+  const regions = useMemo(() => {
+    const mountainRegions = [...new Set(mountains.map(m => m.region))].sort()
+    const regionMap = new Map<string, RegionInfo>()
+
+    for (const region of mountainRegions) {
+      const regionMountains = mountains.filter(m => m.region === region)
+      regionMap.set(region, {
+        name: region,
+        mountains: regionMountains,
+        camps: [],
+        maxHeight: Math.max(...regionMountains.map(m => m.height)),
+      })
+    }
+
+    const unmatchedCamps: CampData[] = []
+    for (const camp of camps) {
+      const matchedRegion = matchCampToMountainRegion(camp, mountainRegions)
+      if (matchedRegion && regionMap.has(matchedRegion)) {
+        regionMap.get(matchedRegion)!.camps.push(camp)
+      } else {
+        unmatchedCamps.push(camp)
+      }
+    }
+
+    const campOnlyRegions = new Map<string, CampData[]>()
+    for (const camp of unmatchedCamps) {
+      if (!campOnlyRegions.has(camp.region)) campOnlyRegions.set(camp.region, [])
+      campOnlyRegions.get(camp.region)!.push(camp)
+    }
+    for (const [region, regionCamps] of campOnlyRegions) {
+      regionMap.set(region, { name: region, mountains: [], camps: regionCamps, maxHeight: 0 })
+    }
+
+    return [...regionMap.values()].sort((a, b) => a.name.localeCompare(b.name))
+  }, [mountains, camps])
+
+  const filteredRegions = useMemo(() => {
+    if (!searchQuery) return regions
+    const q = searchQuery.toLowerCase()
+    return regions.filter(r =>
+      r.name.toLowerCase().includes(q) ||
+      r.camps.some(c => c.name.toLowerCase().includes(q)) ||
+      r.mountains.some(m => m.name.toLowerCase().includes(q))
+    )
+  }, [regions, searchQuery])
+
+  // Auth + user data
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
         setUserId(data.user.id)
-        // Load user's gear
-        supabase
-          .from('user_gear')
-          .select('gear_id, gear(id, name, category, weight)')
+        supabase.from('user_gear').select('gear_id, gear(id, name, category, weight)')
           .eq('user_id', data.user.id)
           .then(({ data: gearData }) => {
             if (gearData) {
@@ -60,123 +169,140 @@ export function TripWizard({ mountains }: { mountains: MountainData[] }) {
               setUserGearItems(gearData.map((g: any) => g.gear))
             }
           })
-        // Load user's packing sets
-        supabase
-          .from('packing_sets')
-          .select('id, name, packing_items(gear_id, gear(id, name, category, weight))')
+        supabase.from('packing_sets').select('id, name, packing_items(gear_id, gear(id, name, category, weight))')
           .eq('user_id', data.user.id)
-          .then(({ data: setsData }) => {
-            if (setsData) setUserPackingSets(setsData)
+          .then(({ data: setsData }) => { if (setsData) setUserPackingSets(setsData) })
+        // Load existing teams where user is leader
+        supabase.from('team_members').select('team_id, role, team:teams(id, name, description)')
+          .eq('user_id', data.user.id)
+          .then(({ data: tmData }) => {
+            if (tmData) setExistingTeams(tmData.filter((t: any) => t.role === 'leader').map((t: any) => t.team))
           })
       }
     })
   }, [])
 
-  // Load gear based on selection
+  // Load gear
   useEffect(() => {
     if (!selectedTemplate && !selectedPackingSet) return
-
-    if (selectedTemplate === 'my_closet') {
-      // Use all gear from user's closet
-      setTemplateGear(userGearItems)
-      return
-    }
-
+    if (selectedTemplate === 'my_closet') { setTemplateGear(userGearItems); return }
     if (selectedPackingSet) {
-      // Use gear from a specific packing set
       const set = userPackingSets.find((s: any) => s.id === selectedPackingSet)
-      if (set?.packing_items) {
-        setTemplateGear(set.packing_items.map((pi: any) => pi.gear).filter(Boolean))
-      }
+      if (set?.packing_items) setTemplateGear(set.packing_items.map((pi: any) => pi.gear).filter(Boolean))
       return
     }
-
     if (selectedTemplate) {
-      const supabase = createClient()
-      supabase
-        .from('gear_templates')
-        .select('gear_id, gear(id, name, category, weight)')
+      createClient().from('gear_templates').select('gear_id, gear(id, name, category, weight)')
         .eq('template', selectedTemplate)
-        .then(({ data }) => {
-          if (data) setTemplateGear(data.map((d: any) => d.gear))
-        })
+        .then(({ data }) => { if (data) setTemplateGear(data.map((d: any) => d.gear)) })
     }
   }, [selectedTemplate, selectedPackingSet, userGearItems, userPackingSets])
 
-  // Load routes when mountain selected
+  // Load routes for region
   useEffect(() => {
-    if (!selectedMountain) return
-    const supabase = createClient()
-    supabase
-      .from('routes')
-      .select('*')
-      .eq('mountain_id', selectedMountain)
-      .order('difficulty')
-      .order('name')
-      .then(({ data }) => {
-        if (data) setRoutes(data)
-      })
-  }, [selectedMountain])
+    if (!selectedRegion) return
+    const region = regions.find(r => r.name === selectedRegion)
+    if (!region || region.mountains.length === 0) { setRoutes([]); return }
+    createClient().from('routes').select('*, mountain:mountains(name)')
+      .in('mountain_id', region.mountains.map(m => m.id))
+      .order('difficulty').order('name')
+      .then(({ data }) => { if (data) setRoutes(data) })
+  }, [selectedRegion, regions])
+
+  // Invite search
+  useEffect(() => {
+    if (inviteTimeout.current) clearTimeout(inviteTimeout.current)
+    if (inviteQuery.length < 3) { setInviteResults([]); return }
+    setInviteSearching(true)
+    inviteTimeout.current = setTimeout(async () => {
+      const res = await fetch(`/api/users/search?email=${encodeURIComponent(inviteQuery)}`)
+      const json = await res.json()
+      setInviteResults(json.users ?? [])
+      setInviteSearching(false)
+    }, 400)
+    return () => { if (inviteTimeout.current) clearTimeout(inviteTimeout.current) }
+  }, [inviteQuery])
+
+  function selectRegion(regionName: string) {
+    setSelectedRegion(regionName)
+    setSelectedCampId(null)
+    const region = regions.find(r => r.name === regionName)
+    if (!region || region.camps.length === 0) setStep(2)
+  }
 
   async function createTrip() {
-    if (!userId || !selectedMountain) return
+    if (!userId || !selectedRegion) return
     if (!selectedTemplate && !selectedPackingSet) return
     setCreating(true)
     const supabase = createClient()
 
-    const mountainName = mountains.find(m => m.id === selectedMountain)?.name || 'Поездка'
-    // Determine which template key to store (only valid DB values or null)
-    const validTemplates = ['light_trek', 'np', 'sp3', 'sp2']
-    const templateKey = selectedTemplate && validTemplates.includes(selectedTemplate) ? selectedTemplate : null
+    const tripName = selectedCampId
+      ? camps.find(c => c.id === selectedCampId)?.name || selectedRegion
+      : selectedRegion
+    const templateKey = selectedTemplate && ['light_trek', 'np', 'sp3', 'sp2'].includes(selectedTemplate) ? selectedTemplate : null
     const templateName = TEMPLATES.find(t => t.key === selectedTemplate)?.name
       || userPackingSets.find((s: any) => s.id === selectedPackingSet)?.name
       || 'Мои сборы'
 
-    // Use existing packing set or create a new one
     let packingSetId: string | null = selectedPackingSet || null
-
     if (!selectedPackingSet) {
-      const { data: newSet } = await supabase
-        .from('packing_sets')
-        .insert({ user_id: userId, name: `${mountainName} — ${templateName}`, route_id: null })
-        .select()
-        .single()
+      const { data: newSet } = await supabase.from('packing_sets')
+        .insert({ user_id: userId, name: `${tripName} — ${templateName}`, route_id: null })
+        .select().single()
       packingSetId = newSet?.id || null
     }
 
-    // Create trip
-    const { data: trip } = await supabase
-      .from('trips')
+    // Create or use team
+    let teamId: string | null = selectedTeamId || null
+    if (teamMode === 'create' && teamName.trim()) {
+      const { data: newTeam } = await supabase.from('teams')
+        .insert({
+          name: teamName.trim(),
+          description: teamDescription.trim() || null,
+          leader_id: userId,
+          start_date: teamStartDate || null,
+          end_date: teamEndDate || null,
+        })
+        .select('id').single()
+      if (newTeam) {
+        teamId = newTeam.id
+        await supabase.from('team_members').insert({ team_id: newTeam.id, user_id: userId, role: 'leader' })
+        // Send invites
+        if (invitedIds.size > 0) {
+          const invites = Array.from(invitedIds).map(inviteeId => ({
+            team_id: newTeam.id,
+            inviter_id: userId,
+            invitee_id: inviteeId,
+          }))
+          await supabase.from('team_invites').insert(invites)
+        }
+      }
+    }
+
+    const { data: trip } = await supabase.from('trips')
       .insert({
         user_id: userId,
-        name: mountainName,
-        mountain_id: selectedMountain,
+        name: tripName,
+        region: selectedRegion,
+        camp_id: selectedCampId,
+        mountain_id: null,
         template: templateKey,
         status: 'packing',
         packing_set_id: packingSetId,
       })
-      .select()
-      .single()
+      .select().single()
 
     if (trip) {
-      // Add gear to new packing set (not when reusing an existing set)
       if (!selectedPackingSet && packingSetId && templateGear.length > 0) {
-        const gearToAdd = templateGear.map(g => ({
-          packing_set_id: packingSetId,
-          gear_id: g.id,
-        }))
-        await supabase.from('packing_items').insert(gearToAdd)
+        await supabase.from('packing_items').insert(
+          templateGear.map(g => ({ packing_set_id: packingSetId, gear_id: g.id }))
+        )
       }
-
-      // Add selected routes
       if (selectedRoutes.size > 0) {
-        const routeInserts = Array.from(selectedRoutes).map(routeId => ({
-          trip_id: trip.id,
-          route_id: routeId,
-        }))
-        await supabase.from('trip_routes').insert(routeInserts)
+        await supabase.from('trip_routes').insert(
+          Array.from(selectedRoutes).map(routeId => ({ trip_id: trip.id, route_id: routeId }))
+        )
       }
-
       router.push(`/trips/${trip.id}`)
     }
     setCreating(false)
@@ -192,43 +318,112 @@ export function TripWizard({ mountains }: { mountains: MountainData[] }) {
     )
   }
 
+  const stepLabels = ['Район', 'Шаблон', 'Снаряжение', 'Маршруты', 'Отделение']
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Progress */}
       <div className="flex items-center gap-2">
-        {[1, 2, 3, 4].map(s => (
+        {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map(s => (
           <div key={s} className="flex items-center gap-2 flex-1">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
               s <= step ? 'bg-mountain-primary text-white' : 'bg-mountain-surface text-mountain-muted'
             }`}>{s}</div>
-            {s < 4 && <div className={`flex-1 h-0.5 ${s < step ? 'bg-mountain-primary' : 'bg-mountain-border'}`} />}
+            {s < TOTAL_STEPS && <div className={`flex-1 h-0.5 ${s < step ? 'bg-mountain-primary' : 'bg-mountain-border'}`} />}
           </div>
         ))}
       </div>
       <div className="flex justify-between text-xs text-mountain-muted">
-        <span>Регион</span><span>Шаблон</span><span>Снаряжение</span><span>Маршруты</span>
+        {stepLabels.map(l => <span key={l}>{l}</span>)}
       </div>
 
-      {/* Step 1: Region */}
+      {/* Step 1: Region + Camp */}
       {step === 1 && (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">Куда собираемся?</h2>
-          <div className="grid gap-4">
-            {mountains.map(m => (
-              <button
-                key={m.id}
-                onClick={() => { setSelectedMountain(m.id); setStep(2) }}
-                className="text-left"
-              >
-                <Card hover className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-bold">{m.name}</h3>
-                    <span className="text-sm font-mono text-mountain-accent">{m.height} м</span>
-                  </div>
-                  <p className="text-sm text-mountain-muted">{m.region}</p>
-                </Card>
+
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mountain-muted" />
+            <input
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Район, лагерь или вершина..."
+              className="w-full pl-10 pr-9 py-3 bg-mountain-bg border border-mountain-border rounded-xl text-sm text-mountain-text placeholder:text-mountain-muted focus:outline-none focus:border-mountain-primary transition-colors"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-mountain-muted hover:text-mountain-text">
+                <X size={14} />
               </button>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            {filteredRegions.map(region => (
+              <div key={region.name}>
+                <button onClick={() => selectRegion(region.name)} className="w-full text-left">
+                  <Card hover className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-bold flex items-center gap-2">
+                        <MapPin size={18} className="text-mountain-primary shrink-0" />
+                        {region.name}
+                      </h3>
+                      <div className="flex items-center gap-3 text-xs text-mountain-muted shrink-0">
+                        {region.mountains.length > 0 && (
+                          <span className="flex items-center gap-1"><Mountain size={12} /> {region.mountains.length} вершин</span>
+                        )}
+                        {region.maxHeight > 0 && (
+                          <span className="font-mono text-mountain-accent">{region.maxHeight} м</span>
+                        )}
+                      </div>
+                    </div>
+                    {region.camps.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {region.camps.map(camp => (
+                          <span key={camp.id} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-mountain-surface text-mountain-muted">
+                            <Tent size={10} /> {camp.name}
+                            {camp.altitude ? <span className="font-mono">{camp.altitude}м</span> : null}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {region.mountains.length > 0 && (
+                      <p className="text-xs text-mountain-muted">
+                        {region.mountains.slice(0, 4).map(m => m.name).join(', ')}
+                        {region.mountains.length > 4 && ` и ещё ${region.mountains.length - 4}`}
+                      </p>
+                    )}
+                  </Card>
+                </button>
+
+                {selectedRegion === region.name && region.camps.length > 0 && step === 1 && (
+                  <div className="ml-6 mt-2 space-y-2">
+                    <p className="text-sm text-mountain-muted">Выбери альплагерь (необязательно)</p>
+                    {region.camps.map(camp => (
+                      <button key={camp.id} onClick={() => { setSelectedCampId(camp.id); setStep(2) }} className="w-full text-left">
+                        <Card hover className="py-2.5 px-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium flex items-center gap-1.5">
+                              <Tent size={14} className="text-mountain-accent" /> {camp.name}
+                            </span>
+                            <div className="flex items-center gap-3 text-xs text-mountain-muted">
+                              {camp.route_count && <span>{camp.route_count} маршрутов</span>}
+                              {camp.difficulty_range && <span className="font-mono">{camp.difficulty_range}</span>}
+                              {camp.altitude && <span className="font-mono">{camp.altitude} м</span>}
+                            </div>
+                          </div>
+                        </Card>
+                      </button>
+                    ))}
+                    <button onClick={() => setStep(2)} className="text-sm text-mountain-primary hover:underline pl-2">
+                      Без лагеря →
+                    </button>
+                  </div>
+                )}
+              </div>
             ))}
+            {filteredRegions.length === 0 && (
+              <p className="text-sm text-mountain-muted text-center py-4">Ничего не найдено</p>
+            )}
           </div>
         </div>
       )}
@@ -240,17 +435,16 @@ export function TripWizard({ mountains }: { mountains: MountainData[] }) {
             <button onClick={() => setStep(1)} className="text-mountain-muted hover:text-mountain-text"><ArrowLeft size={20} /></button>
             <h2 className="text-2xl font-bold">Набор снаряжения</h2>
           </div>
+          <p className="text-sm text-mountain-muted">
+            Район: <span className="text-mountain-text font-medium">{selectedRegion}</span>
+            {selectedCampId && <> · Лагерь: <span className="text-mountain-text font-medium">{camps.find(c => c.id === selectedCampId)?.name}</span></>}
+          </p>
 
-          {/* User's own sets */}
           {(userGearItems.length > 0 || userPackingSets.length > 0) && (
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-mountain-muted">Мои сборки</h3>
-
               {userGearItems.length > 0 && (
-                <button
-                  onClick={() => { setSelectedTemplate('my_closet'); setSelectedPackingSet(null); setStep(3) }}
-                  className="w-full text-left"
-                >
+                <button onClick={() => { setSelectedTemplate('my_closet'); setSelectedPackingSet(null); setStep(3) }} className="w-full text-left">
                   <Card hover className="space-y-1">
                     <div className="flex items-center justify-between">
                       <h3 className="font-bold">Вся моя кладовка</h3>
@@ -262,19 +456,12 @@ export function TripWizard({ mountains }: { mountains: MountainData[] }) {
                   </Card>
                 </button>
               )}
-
               {userPackingSets.filter((s: any) => s.packing_items?.length > 0).map((s: any) => (
-                <button
-                  key={s.id}
-                  onClick={() => { setSelectedPackingSet(s.id); setSelectedTemplate(null); setStep(3) }}
-                  className="w-full text-left"
-                >
+                <button key={s.id} onClick={() => { setSelectedPackingSet(s.id); setSelectedTemplate(null); setStep(3) }} className="w-full text-left">
                   <Card hover className="space-y-1">
                     <div className="flex items-center justify-between">
                       <h3 className="font-bold">{s.name}</h3>
-                      <span className="text-sm font-mono text-mountain-accent">
-                        {s.packing_items.length} предметов
-                      </span>
+                      <span className="text-sm font-mono text-mountain-accent">{s.packing_items.length} предметов</span>
                     </div>
                     <p className="text-sm text-mountain-muted">Набор из кладовки</p>
                   </Card>
@@ -283,15 +470,10 @@ export function TripWizard({ mountains }: { mountains: MountainData[] }) {
             </div>
           )}
 
-          {/* Standard templates */}
           <div className="space-y-2">
             <h3 className="text-sm font-medium text-mountain-muted">Шаблоны по уровню</h3>
             {TEMPLATES.map(t => (
-              <button
-                key={t.key}
-                onClick={() => { setSelectedTemplate(t.key); setSelectedPackingSet(null); setStep(3) }}
-                className="w-full text-left"
-              >
+              <button key={t.key} onClick={() => { setSelectedTemplate(t.key); setSelectedPackingSet(null); setStep(3) }} className="w-full text-left">
                 <Card hover className="space-y-1">
                   <div className="flex items-center justify-between">
                     <h3 className="font-bold">{t.name}</h3>
@@ -310,13 +492,13 @@ export function TripWizard({ mountains }: { mountains: MountainData[] }) {
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <button onClick={() => setStep(2)} className="text-mountain-muted hover:text-mountain-text"><ArrowLeft size={20} /></button>
-            <h2 className="text-2xl font-bold">Набор снаряжения</h2>
+            <h2 className="text-2xl font-bold">Снаряжение</h2>
           </div>
-          <p className="text-sm text-mountain-muted">Это снаряжение будет добавлено в твои сборы. Перед выходом на маршрут распределишь по рюкзакам.</p>
+          <p className="text-sm text-mountain-muted">Это снаряжение будет добавлено в твои сборы.</p>
 
-          <div className="flex gap-4 text-sm">
-            <span className="text-mountain-success">&#10003; Есть в кладовке: {templateGear.filter(g => userGearIds.has(g.id)).length}</span>
-            <span className="text-mountain-accent">&#9888; Нужно найти: {templateGear.filter(g => !userGearIds.has(g.id)).length}</span>
+          <div className="flex flex-wrap gap-4 text-sm">
+            <span className="text-mountain-success">&#10003; Есть: {templateGear.filter(g => userGearIds.has(g.id)).length}</span>
+            <span className="text-mountain-accent">&#9888; Нужно: {templateGear.filter(g => !userGearIds.has(g.id)).length}</span>
             <span className="font-mono text-mountain-muted">&#8721; {(templateGear.reduce((s, g) => s + (g.weight || 0), 0) / 1000).toFixed(1)} кг</span>
           </div>
 
@@ -346,13 +528,12 @@ export function TripWizard({ mountains }: { mountains: MountainData[] }) {
             <Card className="p-4 border-mountain-accent/30 bg-mountain-accent/5">
               <p className="text-sm text-mountain-accent">
                 Снаряжение с иконкой <Package size={14} className="inline" /> отсутствует в кладовке — одолжи у друзей, возьми в турклубе или купи.
-                Всё снаряжение из набора будет добавлено в сборы.
               </p>
             </Card>
           )}
 
           <Button onClick={() => setStep(4)} className="w-full">
-            Далее → Выбор маршрутов <ArrowRight size={16} className="ml-2" />
+            Далее → Маршруты <ArrowRight size={16} className="ml-2" />
           </Button>
         </div>
       )}
@@ -360,51 +541,204 @@ export function TripWizard({ mountains }: { mountains: MountainData[] }) {
       {/* Step 4: Routes */}
       {step === 4 && (
         <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <button onClick={() => setStep(3)} className="text-mountain-muted hover:text-mountain-text"><ArrowLeft size={20} /></button>
-            <h2 className="text-2xl font-bold">Выбор маршрутов</h2>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button onClick={() => setStep(3)} className="text-mountain-muted hover:text-mountain-text"><ArrowLeft size={20} /></button>
+              <h2 className="text-2xl font-bold">Маршруты</h2>
+            </div>
+            <Button variant="outline" onClick={() => setStep(5)} className="text-sm">
+              Выберу на месте →
+            </Button>
           </div>
-          <p className="text-sm text-mountain-muted">Выбери маршруты или пропусти — решишь на месте.</p>
 
-          <div className="space-y-2">
-            {routes.map(r => {
-              const grade = r.description?.match(/Категория:\s*(\S+)/)?.[1]
-              const isSelected = selectedRoutes.has(r.id)
-              return (
-                <button
-                  key={r.id}
-                  onClick={() => {
-                    setSelectedRoutes(prev => {
-                      const next = new Set(prev)
-                      if (next.has(r.id)) next.delete(r.id)
-                      else next.add(r.id)
-                      return next
-                    })
-                  }}
-                  className="w-full text-left"
-                >
-                  <Card className={`p-3 ${isSelected ? 'border-mountain-primary' : ''}`}>
-                    <div className="flex items-center gap-2">
-                      <div className={`w-5 h-5 rounded border flex items-center justify-center ${isSelected ? 'bg-mountain-primary border-mountain-primary' : 'border-mountain-border'}`}>
-                        {isSelected && <Check size={14} className="text-white" />}
+          {routes.length > 0 ? (
+            <div className="space-y-2">
+              {routes.map(r => {
+                const grade = r.description?.match(/Категория:\s*(\S+)/)?.[1]
+                const mountainName = (r.mountain as any)?.name
+                const isSelected = selectedRoutes.has(r.id)
+                return (
+                  <button
+                    key={r.id}
+                    onClick={() => {
+                      setSelectedRoutes(prev => {
+                        const next = new Set(prev)
+                        if (next.has(r.id)) next.delete(r.id)
+                        else next.add(r.id)
+                        return next
+                      })
+                    }}
+                    className="w-full text-left"
+                  >
+                    <Card className={`p-3 ${isSelected ? 'border-mountain-primary' : ''}`}>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 ${isSelected ? 'bg-mountain-primary border-mountain-primary' : 'border-mountain-border'}`}>
+                          {isSelected && <Check size={14} className="text-white" />}
+                        </div>
+                        {grade && <span className="text-xs font-mono font-bold text-mountain-accent">{grade}</span>}
+                        <span className="text-sm truncate">{r.name.replace(/^№\d+\.\s*/, '')}</span>
+                        {mountainName && <span className="text-xs text-mountain-muted shrink-0">· {mountainName}</span>}
                       </div>
-                      {grade && <span className="text-xs font-mono font-bold text-mountain-accent">{grade}</span>}
-                      <span className="text-sm">{r.name.replace(/^№\d+\.\s*/, '')}</span>
+                    </Card>
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            <Card className="text-center py-6">
+              <p className="text-sm text-mountain-muted">Маршруты для этого района пока не добавлены</p>
+            </Card>
+          )}
+
+          <Button onClick={() => setStep(5)} className="w-full">
+            Далее → Отделение <ArrowRight size={16} className="ml-2" />
+          </Button>
+        </div>
+      )}
+
+      {/* Step 5: Team */}
+      {step === 5 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button onClick={() => setStep(4)} className="text-mountain-muted hover:text-mountain-text"><ArrowLeft size={20} /></button>
+              <h2 className="text-2xl font-bold">Отделение</h2>
+            </div>
+            <Button variant="outline" onClick={() => { setTeamMode('skip'); createTrip() }} disabled={creating} className="text-sm">
+              {creating && teamMode === 'skip' ? 'Создаём...' : 'Без отделения →'}
+            </Button>
+          </div>
+          <p className="text-sm text-mountain-muted">Создай отделение для совместного выхода или выбери существующее.</p>
+
+          {/* Mode selection */}
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => setTeamMode('create')} className="text-left">
+              <Card hover className={`space-y-1 ${teamMode === 'create' ? 'border-mountain-primary' : ''}`}>
+                <h3 className="font-semibold flex items-center gap-2">
+                  <UsersRound size={16} className="text-mountain-primary" /> Новое отделение
+                </h3>
+                <p className="text-xs text-mountain-muted">Создать и пригласить участников</p>
+              </Card>
+            </button>
+            {existingTeams.length > 0 && (
+              <button onClick={() => setTeamMode('existing')} className="text-left">
+                <Card hover className={`space-y-1 ${teamMode === 'existing' ? 'border-mountain-primary' : ''}`}>
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <UsersRound size={16} className="text-mountain-accent" /> Моё отделение
+                  </h3>
+                  <p className="text-xs text-mountain-muted">Выбрать из существующих ({existingTeams.length})</p>
+                </Card>
+              </button>
+            )}
+          </div>
+
+          {/* Create team form */}
+          {teamMode === 'create' && (
+            <div className="space-y-4">
+              <Input
+                id="team-name"
+                label="Название отделения"
+                placeholder="Напр: НП-1 Адырсу 2026"
+                value={teamName}
+                onChange={e => setTeamName(e.target.value)}
+              />
+              <div className="space-y-1">
+                <label htmlFor="team-desc" className="block text-sm text-mountain-muted">Описание</label>
+                <textarea
+                  id="team-desc"
+                  className="w-full rounded-xl border border-mountain-border bg-mountain-surface px-4 py-2 text-sm text-mountain-text focus:outline-none focus:ring-2 focus:ring-mountain-primary/50 min-h-[60px] resize-y"
+                  placeholder="Описание (необязательно)"
+                  value={teamDescription}
+                  onChange={e => setTeamDescription(e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Input id="team-start" label="Дата начала" type="date" value={teamStartDate} onChange={e => setTeamStartDate(e.target.value)} />
+                <Input id="team-end" label="Дата окончания" type="date" value={teamEndDate} onChange={e => setTeamEndDate(e.target.value)} />
+              </div>
+
+              {/* Invite members */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-mountain-muted flex items-center gap-1.5">
+                  <UserPlus size={14} /> Пригласить участников
+                </h3>
+                <div className="relative">
+                  <input
+                    value={inviteQuery}
+                    onChange={e => setInviteQuery(e.target.value)}
+                    placeholder="Имя или email..."
+                    className="w-full pl-4 pr-9 py-2.5 bg-mountain-bg border border-mountain-border rounded-lg text-sm text-mountain-text placeholder:text-mountain-muted focus:outline-none focus:border-mountain-primary transition-colors"
+                  />
+                  {inviteQuery && (
+                    <button onClick={() => { setInviteQuery(''); setInviteResults([]) }} className="absolute right-3 top-1/2 -translate-y-1/2 text-mountain-muted hover:text-mountain-text">
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+                {inviteQuery.length > 0 && inviteQuery.length < 3 && (
+                  <p className="text-xs text-mountain-muted">Минимум 3 символа</p>
+                )}
+                {inviteSearching && <p className="text-xs text-mountain-muted">Ищем...</p>}
+                {inviteResults.length > 0 && (
+                  <div className="space-y-1.5">
+                    {inviteResults.filter(u => u.id !== userId).map(u => (
+                      <div key={u.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-mountain-bg border border-mountain-border">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{u.display_name || 'Пользователь'}</p>
+                          <p className="text-xs text-mountain-muted">{u.email}</p>
+                        </div>
+                        {invitedIds.has(u.id) ? (
+                          <span className="text-xs text-mountain-muted flex items-center gap-1 shrink-0"><Check size={12} /> Добавлен</span>
+                        ) : (
+                          <Button onClick={() => setInvitedIds(prev => new Set([...prev, u.id]))} className="text-xs px-3 py-1.5 h-auto shrink-0">
+                            <UserPlus size={12} className="mr-1" /> Добавить
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {inviteQuery.length >= 3 && !inviteSearching && inviteResults.length === 0 && (
+                  <p className="text-xs text-mountain-muted">Не найдено</p>
+                )}
+                {invitedIds.size > 0 && (
+                  <p className="text-xs text-mountain-success">Будет приглашено: {invitedIds.size} чел.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Select existing team */}
+          {teamMode === 'existing' && (
+            <div className="space-y-2">
+              {existingTeams.map((t: any) => (
+                <button key={t.id} onClick={() => setSelectedTeamId(t.id)} className="w-full text-left">
+                  <Card className={`p-3 ${selectedTeamId === t.id ? 'border-mountain-primary' : ''}`}>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 ${
+                        selectedTeamId === t.id ? 'bg-mountain-primary border-mountain-primary' : 'border-mountain-border'
+                      }`}>
+                        {selectedTeamId === t.id && <Check size={14} className="text-white" />}
+                      </div>
+                      <span className="text-sm font-medium">{t.name}</span>
                     </div>
+                    {t.description && <p className="text-xs text-mountain-muted mt-1 ml-7">{t.description}</p>}
                   </Card>
                 </button>
-              )
-            })}
-          </div>
+              ))}
+            </div>
+          )}
 
-          <div className="flex gap-3">
-            <Button onClick={createTrip} disabled={creating} className="flex-1">
-              {creating ? 'Создаём...' : `Создать поездку${selectedRoutes.size > 0 ? ` (${selectedRoutes.size} маршрутов)` : ''}`}
+          {/* Create button */}
+          {(teamMode === 'create' || teamMode === 'existing') && (
+            <Button
+              onClick={createTrip}
+              disabled={creating || (teamMode === 'create' && !teamName.trim()) || (teamMode === 'existing' && !selectedTeamId)}
+              className="w-full"
+            >
+              {creating ? 'Создаём...' : 'Создать поездку'}
             </Button>
-            <Button variant="outline" onClick={() => { setSelectedRoutes(new Set()); createTrip() }} disabled={creating}>
-              Решу на месте
-            </Button>
-          </div>
+          )}
         </div>
       )}
     </div>

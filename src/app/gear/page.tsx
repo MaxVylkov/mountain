@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { GearModule } from '@/components/gear/gear-module'
+import { NextStepBanner } from '@/components/flow/next-step-banner'
 
 export default async function GearPage() {
   const supabase = await createClient()
@@ -14,9 +15,10 @@ export default async function GearPage() {
     <div className="space-y-6">
       <div>
         <p className="text-xs font-semibold tracking-[0.15em] uppercase text-mountain-muted mb-2">Снаряжение</p>
-        <h1 className="text-3xl font-bold">Кладовка</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Кладовка</h1>
       </div>
       <GearModule catalog={catalog || []} />
+      <NextStepBanner currentModule="gear" />
     </div>
   )
 }

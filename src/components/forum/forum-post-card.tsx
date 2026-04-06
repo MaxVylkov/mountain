@@ -17,7 +17,7 @@ export function ForumPostCard({ post }: Props) {
           }`}>
             {post.type === 'thread' ? 'Обсуждение' : 'Отчёт'}
           </span>
-          <h3 className="text-sm font-semibold text-mountain-text leading-snug flex-1">{post.title}</h3>
+          <h3 className="text-[15px] font-semibold text-mountain-text leading-snug tracking-tight flex-1">{post.title}</h3>
         </div>
 
         {(post.attached_route || post.route_note) && (

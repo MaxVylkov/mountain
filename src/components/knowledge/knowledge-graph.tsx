@@ -499,7 +499,7 @@ export function KnowledgeGraph({ nodes, edges }: { nodes: KGNode[]; edges: KGEdg
                       {studiedSections}/{totalSections}
                     </span>
                   </div>
-                  <div className="h-2 bg-mountain-bg rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-mountain-bg rounded-full overflow-hidden">
                     <div
                       className="h-full bg-mountain-primary rounded-full transition-all"
                       style={{ width: `${(studiedSections / totalSections) * 100}%` }}

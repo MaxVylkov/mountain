@@ -20,7 +20,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           className={`
             w-full rounded-xl border bg-mountain-surface px-4 py-2
             text-mountain-text placeholder:text-mountain-muted/50
-            focus:outline-none focus:ring-2 focus:ring-mountain-primary/50
+            focus:outline-none focus-visible:ring-2 focus-visible:ring-mountain-primary/50 focus-visible:border-mountain-primary
             ${error ? 'border-mountain-danger' : 'border-mountain-border'}
             ${className}
           `}

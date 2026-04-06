@@ -7,6 +7,7 @@ import { ForumPost, ForumCategory } from './forum-types'
 import { ForumPostCard } from './forum-post-card'
 import { CreatePostModal } from './create-post-modal'
 import { EmptyState } from '@/components/ui/empty-state'
+import { StaggerList, StaggerItem } from '@/components/ui/motion'
 
 interface Props {
   posts: ForumPost[]
@@ -66,7 +67,7 @@ export function ForumPostList({ posts, category, currentUserId }: Props) {
           value={routeFilter}
           onChange={e => setRouteFilter(e.target.value)}
           placeholder="Фильтр по маршруту..."
-          className="w-full rounded-xl border border-mountain-border bg-mountain-surface/40 pl-9 pr-8 py-2 text-sm text-mountain-text focus:outline-none focus:border-mountain-primary placeholder:text-mountain-muted"
+          className="w-full rounded-xl border border-mountain-border bg-mountain-surface/40 pl-9 pr-8 py-2 text-sm text-mountain-text focus:outline-none focus-visible:ring-2 focus-visible:ring-mountain-primary/50 focus-visible:border-mountain-primary placeholder:text-mountain-muted"
         />
         {routeFilter && (
           <button
@@ -96,9 +97,13 @@ export function ForumPostList({ posts, category, currentUserId }: Props) {
           Постов с маршрутом «{routeFilter}» не найдено
         </div>
       ) : (
-        <div className="space-y-3">
-          {filteredPosts.map(post => <ForumPostCard key={post.id} post={post} />)}
-        </div>
+        <StaggerList className="space-y-3">
+          {filteredPosts.map(post => (
+            <StaggerItem key={post.id}>
+              <ForumPostCard post={post} />
+            </StaggerItem>
+          ))}
+        </StaggerList>
       )}
 
       {/* Post creation modal */}

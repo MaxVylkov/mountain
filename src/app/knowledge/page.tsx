@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { BookOpen } from 'lucide-react'
 import { KnowledgeGraph } from '@/components/knowledge/knowledge-graph'
+import { NextStepBanner } from '@/components/flow/next-step-banner'
 
 export default async function KnowledgePage() {
   const supabase = await createClient()
@@ -17,7 +18,7 @@ export default async function KnowledgePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold flex items-center gap-3">
+      <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
         <BookOpen className="text-mountain-primary" />
         Граф знаний
       </h1>
@@ -26,6 +27,7 @@ export default async function KnowledgePage() {
         Изучай темы, отслеживай прогресс.
       </p>
       <KnowledgeGraph nodes={nodes || []} edges={edges || []} />
+      <NextStepBanner currentModule="knowledge" />
     </div>
   )
 }

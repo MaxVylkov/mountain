@@ -18,7 +18,7 @@ export function ForumCategoryTabs() {
           <Link
             key={cat}
             href={href}
-            className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+            className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors focus-visible:ring-2 focus-visible:ring-mountain-primary focus-visible:ring-offset-2 focus-visible:ring-offset-mountain-bg ${
               active
                 ? 'border-mountain-primary text-mountain-text'
                 : 'border-transparent text-mountain-muted hover:text-mountain-text'

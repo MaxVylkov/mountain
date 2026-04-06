@@ -16,7 +16,7 @@ const TEMPLATE_LABELS: Record<string, string> = {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  planning: 'Планирование', packing: 'Сборы', active: 'Активно', completed: 'Завершено',
+  planning: 'Планирование', packing: 'Сборы', in_camp: 'В лагере', active: 'Активно', completed: 'Завершено',
 }
 
 const ROUTE_STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -51,6 +51,7 @@ export function TripDetail({ trip }: { trip: any }) {
     const supabase = createClient()
     loadTripRoutes()
 
+    // Load available routes: by mountain_id (legacy) or by region (new)
     if (trip.mountain_id) {
       supabase
         .from('routes')
@@ -59,6 +60,22 @@ export function TripDetail({ trip }: { trip: any }) {
         .order('difficulty')
         .order('name')
         .then(({ data }) => { if (data) setAvailableRoutes(data) })
+    } else if (trip.region) {
+      supabase
+        .from('mountains')
+        .select('id')
+        .eq('region', trip.region)
+        .then(({ data: mtns }) => {
+          if (mtns && mtns.length > 0) {
+            supabase
+              .from('routes')
+              .select('id, name, description, difficulty, mountain:mountains(name)')
+              .in('mountain_id', mtns.map(m => m.id))
+              .order('difficulty')
+              .order('name')
+              .then(({ data }) => { if (data) setAvailableRoutes(data) })
+          }
+        })
     }
 
     if (trip.packing_set_id) {
@@ -159,8 +176,10 @@ export function TripDetail({ trip }: { trip: any }) {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold">{trip.name}</h1>
-          <div className="flex items-center gap-3 mt-2 text-sm text-mountain-muted">
-            {trip.mountains && <span>{trip.mountains.name}, {trip.mountains.region}</span>}
+          <div className="flex items-center gap-3 mt-2 text-sm text-mountain-muted flex-wrap">
+            {trip.region && <span>{trip.region}</span>}
+            {trip.alpine_camps && <span>· {trip.alpine_camps.name}</span>}
+            {!trip.region && trip.mountains && <span>{trip.mountains.name}, {trip.mountains.region}</span>}
             {trip.template && <span className="px-2 py-0.5 rounded bg-mountain-surface">{TEMPLATE_LABELS[trip.template]}</span>}
             <span className="px-2 py-0.5 rounded bg-mountain-primary/20 text-mountain-primary">{STATUS_LABELS[trip.status]}</span>
           </div>

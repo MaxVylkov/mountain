@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Map, List, Mountain as MountainIcon, Target, Check } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
+import { StaggerList, StaggerItem } from '@/components/ui/motion'
 import { createClient } from '@/lib/supabase/client'
 
 const AlpineMap = dynamic(() => import('./alpine-map'), { ssr: false })
@@ -197,7 +198,7 @@ function RegionGroups({ mountains, userId, regionStatuses, activeFilter, onToggl
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <StaggerList className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {filteredEntries.map(([region, items]) => {
         const totalRoutes = items.reduce((sum, m) => sum + (m.routes?.[0]?.count || 0), 0)
         const href = items.length === 1
@@ -210,11 +211,11 @@ function RegionGroups({ mountains, userId, regionStatuses, activeFilter, onToggl
         const status = regionStatuses[region] ?? { want_to_go: false, visited: false }
 
         return (
-          <div key={region} className="relative group">
+          <StaggerItem key={region} className="relative group">
             <Link href={href}>
               <Card hover className="h-full flex flex-col justify-between gap-3">
                 <div>
-                  <h3 className="text-base font-bold">{region}</h3>
+                  <h3 className="text-base font-bold tracking-tight">{region}</h3>
                   <div className="flex items-center gap-2 text-sm text-mountain-muted mt-1">
                     {items.length > 1 && <span>{items.length} вершин</span>}
                     {items.length > 1 && totalRoutes > 0 && <span>·</span>}
@@ -246,7 +247,7 @@ function RegionGroups({ mountains, userId, regionStatuses, activeFilter, onToggl
 
             {/* Action buttons — shown on hover */}
             {userId && (
-              <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-2 right-2 flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={e => { e.preventDefault(); onToggle(region, 'want_to_go') }}
                   aria-label={status.want_to_go ? 'Убрать из запланированных' : 'Хочу съездить'}
@@ -273,9 +274,9 @@ function RegionGroups({ mountains, userId, regionStatuses, activeFilter, onToggl
                 </button>
               </div>
             )}
-          </div>
+          </StaggerItem>
         )
       })}
-    </div>
+    </StaggerList>
   )
 }

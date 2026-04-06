@@ -12,13 +12,16 @@ interface Trip {
   name: string
   status: string
   template: string | null
+  region: string | null
   mountains: { name: string; region: string } | null
+  alpine_camps: { name: string } | null
   created_at: string
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string; icon: React.ComponentType<{ size?: number }> }> = {
   planning: { label: 'Планирование', color: 'text-mountain-primary', icon: Mountain },
   packing: { label: 'Сборы', color: 'text-mountain-accent', icon: Package },
+  in_camp: { label: 'В лагере', color: 'text-mountain-accent', icon: Package },
   active: { label: 'На маршруте', color: 'text-mountain-success', icon: Navigation },
   completed: { label: 'Завершена', color: 'text-mountain-muted', icon: CheckCircle },
 }
@@ -41,7 +44,7 @@ export function TripsList({ mountains }: { mountains: any[] }) {
         setUserId(data.user.id)
         supabase
           .from('trips')
-          .select('*, mountains(name, region)')
+          .select('*, mountains(name, region), alpine_camps(name)')
           .eq('user_id', data.user.id)
           .order('created_at', { ascending: false })
           .then(({ data: tripsData }) => {
@@ -85,9 +88,11 @@ export function TripsList({ mountains }: { mountains: any[] }) {
                       {statusInfo.label}
                     </span>
                   </div>
-                  {trip.mountains && (
-                    <p className="text-sm text-mountain-muted">{(trip.mountains as any).name}, {(trip.mountains as any).region}</p>
-                  )}
+                  <p className="text-sm text-mountain-muted">
+                    {trip.region || (trip.mountains as any)?.region || ''}
+                    {(trip.alpine_camps as any)?.name && ` · ${(trip.alpine_camps as any).name}`}
+                    {!trip.region && (trip.mountains as any)?.name && ` · ${(trip.mountains as any).name}`}
+                  </p>
                   {trip.template && (
                     <span className="inline-block px-2 py-0.5 rounded text-xs bg-mountain-surface text-mountain-muted">
                       {TEMPLATE_LABELS[trip.template]}

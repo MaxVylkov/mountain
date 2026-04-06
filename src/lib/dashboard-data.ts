@@ -208,3 +208,68 @@ export async function fetchCompletedRoutes(supabase: SupabaseClient, userId: str
     return 0
   }
 }
+
+// ─── Streak calculation ──────────────────────────────────────────────────────
+
+export interface StreakInfo {
+  current: number    // consecutive days with activity
+  isActiveToday: boolean
+}
+
+/**
+ * Computes the user's activity streak by collecting distinct activity dates
+ * from kg_progress, knot_progress, and training_log tables.
+ */
+export async function fetchStreak(supabase: SupabaseClient, userId: string): Promise<StreakInfo> {
+  try {
+    const [kgRows, knotRows, trainingRows] = await Promise.all([
+      supabase.from('kg_progress').select('created_at').eq('user_id', userId),
+      supabase.from('knot_progress').select('updated_at').eq('user_id', userId).neq('status', 'locked'),
+      supabase.from('training_log').select('completed_at').eq('user_id', userId),
+    ])
+
+    const dates = new Set<string>()
+    for (const r of kgRows.data ?? []) {
+      if (r.created_at) dates.add(r.created_at.slice(0, 10))
+    }
+    for (const r of knotRows.data ?? []) {
+      if (r.updated_at) dates.add(r.updated_at.slice(0, 10))
+    }
+    for (const r of trainingRows.data ?? []) {
+      if (r.completed_at) dates.add(r.completed_at.slice(0, 10))
+    }
+
+    return computeStreak(Array.from(dates))
+  } catch {
+    return { current: 0, isActiveToday: false }
+  }
+}
+
+export function computeStreak(dateStrings: string[]): StreakInfo {
+  if (dateStrings.length === 0) return { current: 0, isActiveToday: false }
+
+  const sorted = dateStrings.sort().reverse()
+  const today = new Date().toISOString().slice(0, 10)
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+
+  const isActiveToday = sorted[0] === today
+  // Streak must start from today or yesterday to be "current"
+  if (sorted[0] !== today && sorted[0] !== yesterday) {
+    return { current: 0, isActiveToday: false }
+  }
+
+  let streak = 1
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = new Date(sorted[i - 1])
+    const curr = new Date(sorted[i])
+    const diff = (prev.getTime() - curr.getTime()) / 86400000
+    if (diff === 1) {
+      streak++
+    } else if (diff > 1) {
+      break
+    }
+    // diff === 0 means same day, skip
+  }
+
+  return { current: streak, isActiveToday }
+}

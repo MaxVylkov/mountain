@@ -2,12 +2,15 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Copy, Check, Users, UserCheck, Clock, Search, UserPlus, X, BarChart2 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import { DocumentsSection } from '@/components/profile/documents-section'
+import { ProfileJourney } from '@/components/profile/profile-journey'
+import { TeamInvites } from '@/components/profile/team-invites'
 
 type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced'
 const levelLabels: Record<ExperienceLevel, string> = {
@@ -258,6 +261,23 @@ export default function ProfilePage() {
           Влияет на отображение главной страницы
         </p>
       </Card>
+
+      {/* Journey progress */}
+      <Card className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">Путь к вершине</h2>
+          <Link
+            href="/onboard?view=true"
+            className="text-xs text-mountain-primary hover:text-mountain-primary/80 transition-colors"
+          >
+            Открыть карту →
+          </Link>
+        </div>
+        <ProfileJourney userId={user.id} />
+      </Card>
+
+      {/* Team invites */}
+      <TeamInvites userId={user.id} />
 
       {/* Find friend */}
       <Card className="space-y-3">
