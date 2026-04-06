@@ -7,11 +7,13 @@ export default async function MyListingsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: listings } = await supabase
+  const { data: listings, error: listingsError } = await supabase
     .from('marketplace_listings')
     .select('id, title, transaction_type, price, status, created_at')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
+
+  if (listingsError) console.error('[my-listings] query error:', listingsError)
 
   return (
     <div className="max-w-lg space-y-4">

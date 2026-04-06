@@ -93,7 +93,7 @@ export function MyListings({ listings }: MyListingsProps) {
                       ? 'bg-mountain-primary/10 text-blue-300'
                       : 'bg-mountain-surface text-mountain-muted border border-mountain-border'
                   }`}>
-                    {listing.status === 'active' ? 'Активно' : listing.status === 'sold' ? 'Продано' : 'Снято'}
+                    {listing.status === 'active' ? 'Активно' : listing.status === 'sold' ? 'Продано' : 'Архив'}
                   </span>
                 </div>
                 <div className="text-[10px] text-mountain-muted">
