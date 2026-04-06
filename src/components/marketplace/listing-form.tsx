@@ -170,7 +170,7 @@ export function ListingForm({ prefill, defaultCity, editId, initialValues }: Lis
       {/* Condition */}
       <div>
         <label className={labelClass}>Состояние</label>
-        <select value={condition} onChange={(e) => setCondition(e.target.value)} className={inputClass}>
+        <select required value={condition} onChange={(e) => setCondition(e.target.value)} className={inputClass}>
           {MARKETPLACE_CONDITIONS.map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
@@ -184,6 +184,7 @@ export function ListingForm({ prefill, defaultCity, editId, initialValues }: Lis
           <input
             type="number"
             min="0"
+            required
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             className={inputClass}
