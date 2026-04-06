@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server'
 import { OnboardingGuide } from '@/components/onboarding-guide'
 import { ResumeCard } from '@/components/dashboard/resume-card'
 import { TripCard } from '@/components/dashboard/trip-card'
-import { StagesRow } from '@/components/dashboard/stages-row'
 import {
   fetchKGStats,
   fetchKnotStats,
@@ -12,10 +11,13 @@ import {
   fetchActiveTrip,
   fetchGearCount,
   fetchCompletedRoutes,
-  calcFoothillsPercent,
+  fetchStreak,
   getFirstName,
   getLevelLabel,
 } from '@/lib/dashboard-data'
+import { computeNextSteps } from '@/lib/flow-engine'
+import { StreakCard } from '@/components/dashboard/streak-card'
+import { DailyChallenge } from '@/components/dashboard/daily-challenge'
 
 // ─── Tool grids ──────────────────────────────────────────────────────────────
 
@@ -26,12 +28,14 @@ const beginnerTools = [
   { href: '/gear', label: 'Кладовка', sub: 'Учёт снаряжения' },
   { href: '/mountains', label: 'Маршруты', sub: 'КГ, ТС, 1Б–6Б' },
   { href: '/forum', label: 'Форум', sub: 'Вопросы и опыт' },
+  { href: '/marketplace', label: 'Барахолка', sub: 'Купить и продать снаряжение' },
 ]
 
 const expertTools = [
   { href: '/mountains', label: 'Маршруты', sub: 'КГ, ТС, 1Б–6Б' },
   { href: '/teams', label: 'Отделения', sub: 'Состав, снаряжение' },
   { href: '/gear', label: 'Кладовка', sub: 'Учёт и сборы' },
+  { href: '/marketplace', label: 'Барахолка', sub: 'Купить и продать снаряжение' },
   { href: '/trips', label: 'Поездки', sub: 'Планирование выхода' },
   { href: '/rations', label: 'Раскладка', sub: 'Питание на маршруте' },
   { href: '/forum', label: 'Форум', sub: 'Вопросы и опыт' },
@@ -124,74 +128,62 @@ export default async function HomePage() {
     const isExpert = experienceLevel === 'intermediate' || experienceLevel === 'advanced'
     const tools = isExpert ? expertTools : beginnerTools
 
-    const [kgStats, knotStats, activeTrip, gearCount, completedRoutes] = await Promise.all([
+    const [kgStats, knotStats, activeTrip, gearCount, completedRoutes, streak] = await Promise.all([
       fetchKGStats(supabase, user.id),
       fetchKnotStats(supabase, user.id),
       fetchActiveTrip(supabase, user.id),
       fetchGearCount(supabase, user.id),
       fetchCompletedRoutes(supabase, user.id),
+      fetchStreak(supabase, user.id),
     ])
 
     // fetchLastActivity depends on kgStats/knotStats — called after Promise.all intentionally
     const lastActivity = await fetchLastActivity(supabase, user.id, kgStats, knotStats)
-    const foothillsPercent = calcFoothillsPercent(
-      kgStats.studied,
-      kgStats.total,
-      knotStats.mastered,
-      knotStats.total,
-    )
+    const nextSteps = computeNextSteps(kgStats, knotStats, gearCount, activeTrip, completedRoutes, experienceLevel)
+    const primaryNextStep = nextSteps[0] ?? null
 
     const firstName = getFirstName(profile?.display_name ?? null)
     const levelLabel = getLevelLabel(experienceLevel)
 
     return (
       <div className="min-h-[calc(100vh-4rem)]">
-        {/* Hero */}
+        {/* Hero — compact greeting */}
         <section
           aria-label="Приветствие"
-          className="pt-14 pb-10 border-b border-mountain-border"
+          className="pt-14 pb-8"
         >
-          <p className="text-xs font-medium tracking-[0.2em] uppercase text-mountain-accent mb-3">
-            Платформа для альпинистов
-          </p>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-mountain-text mb-1">
             {firstName ? `Привет, ${firstName}` : 'Добро пожаловать'}
           </h1>
-          {(levelLabel || completedRoutes > 0) && (
-            <p className="text-sm text-mountain-muted">
-              {levelLabel}
-              {levelLabel && completedRoutes > 0 && ' · '}
-              {completedRoutes > 0 && `${completedRoutes} восхождений`}
-            </p>
-          )}
+          <div className="flex items-center gap-3 flex-wrap">
+            {(levelLabel || completedRoutes > 0) && (
+              <p className="text-sm text-mountain-muted">
+                {levelLabel}
+                {levelLabel && completedRoutes > 0 && ' · '}
+                {completedRoutes > 0 && `${completedRoutes} восхождений`}
+              </p>
+            )}
+            <StreakCard streak={streak} />
+          </div>
         </section>
 
-        {/* Top row: Resume + Trip */}
-        <section aria-label="Быстрый доступ" className="pt-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <ResumeCard activity={lastActivity} />
-            <TripCard trip={activeTrip} />
-          </div>
-
-          {/* Stages */}
-          <div className="mb-2">
-            <p className="text-xs font-semibold tracking-[0.18em] uppercase text-mountain-muted mb-3">
-              Твой путь
-            </p>
-            <StagesRow
-              foothillsPercent={foothillsPercent}
-              gearCount={gearCount}
-              activeTrip={activeTrip}
-              completedRoutes={completedRoutes}
-            />
+        {/* Primary action row — Resume gets more weight */}
+        <section aria-label="Быстрый доступ">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+            <div className="md:col-span-3">
+              <ResumeCard activity={lastActivity} nextStep={primaryNextStep} />
+            </div>
+            <div className="md:col-span-2">
+              <TripCard trip={activeTrip} />
+            </div>
           </div>
 
           <div className="mt-4">
-            <OnboardingGuide level={experienceLevel as 'beginner' | 'intermediate' | 'advanced' | null} />
+            <DailyChallenge kgStats={kgStats} knotStats={knotStats} gearCount={gearCount} />
           </div>
         </section>
 
-        {/* Tools */}
+        {/* Tools — split into primary and secondary */}
         <section
           aria-label="Инструменты"
           className="mt-10 pt-8 border-t border-mountain-border"
@@ -200,6 +192,10 @@ export default async function HomePage() {
             Инструменты
           </p>
           <ToolGrid tools={tools} />
+
+          <div className="mt-6">
+            <OnboardingGuide level={experienceLevel as 'beginner' | 'intermediate' | 'advanced' | null} />
+          </div>
         </section>
       </div>
     )
@@ -287,7 +283,7 @@ export default async function HomePage() {
         </div>
 
         <div className="hidden lg:block w-px bg-mountain-border mx-0" />
-        <div className="lg:hidden h-px bg-mountain-border mb-12" />
+        <div className="lg:hidden h-px bg-mountain-border my-12" />
 
         {/* Expert path */}
         <div className="lg:pl-12">
