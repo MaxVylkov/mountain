@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  ArrowLeft, Map, Package, CheckSquare, Phone, Navigation,
+  ArrowLeft, Map, Package, CheckSquare, Phone, Navigation, Users,
   Plus, Check, X, Weight, Mountain, Flag, ChevronDown, ChevronUp,
   Backpack, AlertTriangle, Trash2
 } from 'lucide-react'
@@ -31,7 +31,7 @@ const ROUTE_STATUS_LABELS: Record<string, { label: string; color: string }> = {
 export function TripDetail({ trip }: { trip: any }) {
   const router = useRouter()
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [tab, setTab] = useState<'routes' | 'gear' | 'checklist' | 'emergency'>('routes')
+  const [tab, setTab] = useState<'routes' | 'gear' | 'checklist' | 'emergency' | 'team'>('routes')
   const [tripRoutes, setTripRoutes] = useState<any[]>([])
   const [packingItems, setPackingItems] = useState<any[]>([])
   const [availableRoutes, setAvailableRoutes] = useState<any[]>([])
@@ -173,6 +173,7 @@ export function TripDetail({ trip }: { trip: any }) {
     { key: 'gear' as const, label: 'Общее снаряжение', icon: Package },
     { key: 'checklist' as const, label: 'Чеклист', icon: CheckSquare },
     { key: 'emergency' as const, label: 'Экстренное', icon: Phone },
+    ...(trip.teams ? [{ key: 'team' as const, label: 'Отделение', icon: Users }] : []),
   ]
 
   return (
@@ -504,6 +505,28 @@ export function TripDetail({ trip }: { trip: any }) {
               <li>Держите заряженную рацию/телефон</li>
               <li>Не выходите на маршрут в одиночку</li>
             </ul>
+          </Card>
+        </div>
+      )}
+
+      {tab === 'team' && trip.teams && (
+        <div className="space-y-4">
+          <Card className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold flex items-center gap-2">
+                <Users size={18} className="text-mountain-primary" />
+                {trip.teams.name}
+              </h3>
+              <Link
+                href={`/teams/${trip.teams.id}`}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-mountain-primary text-white hover:bg-mountain-primary/80 transition-colors"
+              >
+                Открыть отделение
+              </Link>
+            </div>
+            <p className="text-sm text-mountain-muted">
+              Управляй участниками, снаряжением и раскладкой в разделе отделения.
+            </p>
           </Card>
         </div>
       )}

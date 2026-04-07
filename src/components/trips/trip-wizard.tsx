@@ -243,6 +243,7 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
         template: templateKey,
         status: 'packing',
         packing_set_id: packingSetId,
+        team_id: teamId,
       })
       .select().single()
 
@@ -622,6 +623,7 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
             <CreateTeamModal
               userId={userId}
               mountains={allMountains}
+              hideLocation
               onClose={() => setShowTeamModal(false)}
               onCreate={async (teamId) => {
                 setShowTeamModal(false)

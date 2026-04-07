@@ -15,6 +15,7 @@ interface CreateTeamModalProps {
   mountains: { id: string; name: string }[]
   onClose: () => void
   onCreate: (teamId?: string) => void
+  hideLocation?: boolean
 }
 
 export default function CreateTeamModal({
@@ -22,6 +23,7 @@ export default function CreateTeamModal({
   mountains,
   onClose,
   onCreate,
+  hideLocation = false,
 }: CreateTeamModalProps) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -146,52 +148,56 @@ export default function CreateTeamModal({
             />
           </div>
 
-          <div className="space-y-1">
-            <label htmlFor="team-mountain" className="block text-sm text-mountain-muted">
-              Горный массив
-            </label>
-            <select
-              id="team-mountain"
-              className={selectStyles}
-              value={mountainId}
-              onChange={(e) => setMountainId(e.target.value)}
-            >
-              <option value="">Не выбран</option>
-              {mountains.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {!hideLocation && (
+            <>
+              <div className="space-y-1">
+                <label htmlFor="team-mountain" className="block text-sm text-mountain-muted">
+                  Горный массив
+                </label>
+                <select
+                  id="team-mountain"
+                  className={selectStyles}
+                  value={mountainId}
+                  onChange={(e) => setMountainId(e.target.value)}
+                >
+                  <option value="">Не выбран</option>
+                  {mountains.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          <div className="space-y-1">
-            <label htmlFor="team-route" className="block text-sm text-mountain-muted">
-              Маршрут
-            </label>
-            <select
-              id="team-route"
-              className={selectStyles}
-              value={routeId}
-              onChange={(e) => setRouteId(e.target.value)}
-              disabled={!mountainId || loadingRoutes}
-            >
-              <option value="">
-                {!mountainId
-                  ? 'Сначала выберите массив'
-                  : loadingRoutes
-                    ? 'Загрузка...'
-                    : routes.length === 0
-                      ? 'Нет маршрутов'
-                      : 'Не выбран'}
-              </option>
-              {routes.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
-          </div>
+              <div className="space-y-1">
+                <label htmlFor="team-route" className="block text-sm text-mountain-muted">
+                  Маршрут
+                </label>
+                <select
+                  id="team-route"
+                  className={selectStyles}
+                  value={routeId}
+                  onChange={(e) => setRouteId(e.target.value)}
+                  disabled={!mountainId || loadingRoutes}
+                >
+                  <option value="">
+                    {!mountainId
+                      ? 'Сначала выберите массив'
+                      : loadingRoutes
+                        ? 'Загрузка...'
+                        : routes.length === 0
+                          ? 'Нет маршрутов'
+                          : 'Не выбран'}
+                  </option>
+                  {routes.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <Input
