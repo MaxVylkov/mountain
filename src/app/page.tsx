@@ -77,33 +77,95 @@ const beginnerLandingSteps = [
   },
 ]
 
-function ToolGrid({ tools, cols = '3' }: { tools: typeof expertTools; cols?: '2' | '3' | '4' }) {
-  const colClass =
-    cols === '2' ? 'grid-cols-2' : cols === '4' ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'
+// Three-tier tool layout: primary (full-width, large) → secondary (2-col, medium) → compact (no subtitle, muted)
+function ToolSection({ tools }: { tools: typeof expertTools }) {
+  const primary = tools[0]
+  const secondary = tools.slice(1, 3)
+  const compact = tools.slice(3)
+
   return (
-    <div
-      className={`grid ${colClass} gap-px bg-mountain-border rounded-lg overflow-hidden border border-mountain-border`}
-    >
-      {tools.map((tool) => (
-        <Link
-          key={tool.href + tool.label}
-          href={tool.href}
-          className="group bg-mountain-surface px-4 py-4 hover:bg-mountain-border/60 transition-colors duration-150"
-        >
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="font-semibold text-mountain-text text-sm group-hover:text-mountain-text transition-colors">
-                {tool.label}
+    <div className="border border-mountain-border rounded-lg overflow-hidden divide-y divide-mountain-border">
+      {/* Primary — full width, prominent */}
+      <Link
+        href={primary.href}
+        className="group flex items-center justify-between bg-mountain-surface px-5 py-5 hover:bg-mountain-border/40 transition-colors duration-150"
+      >
+        <div>
+          <div className="text-base font-bold text-mountain-text leading-tight">{primary.label}</div>
+          <div className="text-sm text-mountain-muted mt-1">{primary.sub}</div>
+        </div>
+        <ChevronRight size={16} className="text-mountain-muted group-hover:text-mountain-primary shrink-0 transition-colors" />
+      </Link>
+
+      {/* Secondary — 2-column, medium weight */}
+      {secondary.length > 0 && (
+        <div className="grid grid-cols-2 divide-x divide-mountain-border">
+          {secondary.map((tool) => (
+            <Link
+              key={tool.href + tool.label}
+              href={tool.href}
+              className="group flex items-start justify-between bg-mountain-surface px-4 py-4 hover:bg-mountain-border/40 transition-colors duration-150"
+            >
+              <div>
+                <div className="text-sm font-semibold text-mountain-text">{tool.label}</div>
+                <div className="text-xs text-mountain-muted mt-0.5">{tool.sub}</div>
               </div>
+              <ChevronRight size={13} className="text-mountain-border group-hover:text-mountain-primary mt-0.5 shrink-0 transition-colors" />
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {/* Compact — tight, no subtitle, muted until hover */}
+      {compact.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-mountain-border">
+          {compact.map((tool) => (
+            <Link
+              key={tool.href + tool.label}
+              href={tool.href}
+              className="group flex items-center justify-between bg-mountain-surface px-4 py-3 hover:bg-mountain-border/40 transition-colors duration-150"
+            >
+              <span className="text-sm font-medium text-mountain-muted group-hover:text-mountain-text transition-colors">{tool.label}</span>
+              <ChevronRight size={11} className="text-mountain-border group-hover:text-mountain-primary shrink-0 transition-colors" />
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Compact flat grid for landing page (no hierarchy needed — all tools equal weight for discovery)
+function ToolGrid({ tools }: { tools: typeof expertTools }) {
+  return (
+    <div className="border border-mountain-border rounded-lg overflow-hidden divide-y divide-mountain-border">
+      <div className="grid grid-cols-2 divide-x divide-mountain-border">
+        {tools.slice(0, 2).map((tool) => (
+          <Link
+            key={tool.href + tool.label}
+            href={tool.href}
+            className="group flex items-start justify-between bg-mountain-surface px-4 py-4 hover:bg-mountain-border/40 transition-colors duration-150"
+          >
+            <div>
+              <div className="text-sm font-semibold text-mountain-text">{tool.label}</div>
               <div className="text-xs text-mountain-muted mt-0.5">{tool.sub}</div>
             </div>
-            <ChevronRight
-              size={13}
-              className="text-mountain-border group-hover:text-mountain-primary mt-0.5 shrink-0 transition-colors"
-            />
-          </div>
-        </Link>
-      ))}
+            <ChevronRight size={13} className="text-mountain-border group-hover:text-mountain-primary mt-0.5 shrink-0 transition-colors" />
+          </Link>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-mountain-border">
+        {tools.slice(2).map((tool) => (
+          <Link
+            key={tool.href + tool.label}
+            href={tool.href}
+            className="group flex items-center justify-between bg-mountain-surface px-4 py-3 hover:bg-mountain-border/40 transition-colors duration-150"
+          >
+            <span className="text-sm font-medium text-mountain-muted group-hover:text-mountain-text transition-colors">{tool.label}</span>
+            <ChevronRight size={11} className="text-mountain-border group-hover:text-mountain-primary shrink-0 transition-colors" />
+          </Link>
+        ))}
+      </div>
     </div>
   )
 }
@@ -169,7 +231,7 @@ export default async function HomePage() {
 
         {/* Primary action row — Resume gets more weight */}
         <section aria-label="Быстрый доступ">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
             <div className="md:col-span-3">
               <ResumeCard activity={lastActivity} nextStep={primaryNextStep} />
             </div>
@@ -177,23 +239,17 @@ export default async function HomePage() {
               <TripCard trip={activeTrip} />
             </div>
           </div>
-
-          <div className="mt-4">
-            <DailyChallenge kgStats={kgStats} knotStats={knotStats} gearCount={gearCount} />
-          </div>
+          <DailyChallenge kgStats={kgStats} knotStats={knotStats} gearCount={gearCount} />
         </section>
 
-        {/* Tools — split into primary and secondary */}
+        {/* Tools */}
         <section
           aria-label="Инструменты"
-          className="mt-10 pt-8 border-t border-mountain-border"
+          className="mt-12 pt-8 border-t border-mountain-border"
         >
-          <p className="text-xs font-semibold tracking-[0.18em] uppercase text-mountain-muted mb-5">
-            Инструменты
-          </p>
-          <ToolGrid tools={tools} />
+          <ToolSection tools={tools} />
 
-          <div className="mt-6">
+          <div className="mt-5">
             <OnboardingGuide level={experienceLevel as 'beginner' | 'intermediate' | 'advanced' | null} />
           </div>
         </section>
@@ -297,7 +353,7 @@ export default async function HomePage() {
             </p>
             <OnboardingGuide level="advanced" />
           </div>
-          <ToolGrid tools={landingExpertTools} cols="2" />
+          <ToolGrid tools={landingExpertTools} />
         </div>
       </section>
 
