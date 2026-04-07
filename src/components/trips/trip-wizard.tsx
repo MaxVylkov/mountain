@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { ArrowLeft, ArrowRight, Check, Package, Tent, MapPin, Search, X, Mountain, UsersRound, UserPlus } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Package, Tent, MapPin, Search, X, Mountain, UsersRound } from 'lucide-react'
+import CreateTeamModal from '@/components/teams/create-team-modal'
 
 interface MountainData {
   id: string
@@ -31,12 +31,6 @@ interface RegionInfo {
   mountains: MountainData[]
   camps: CampData[]
   maxHeight: number
-}
-
-interface InviteSearchResult {
-  id: string
-  display_name: string | null
-  email: string
 }
 
 const TEMPLATES = [
@@ -93,18 +87,11 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
   const [selectedRoutes, setSelectedRoutes] = useState<Set<string>>(new Set())
 
   // Step 5: Team
-  const [teamMode, setTeamMode] = useState<'skip' | 'create' | 'existing' | null>(null)
-  const [teamName, setTeamName] = useState('')
-  const [teamDescription, setTeamDescription] = useState('')
-  const [teamStartDate, setTeamStartDate] = useState('')
-  const [teamEndDate, setTeamEndDate] = useState('')
+  const [teamMode, setTeamMode] = useState<'skip' | 'existing' | null>(null)
+  const [showTeamModal, setShowTeamModal] = useState(false)
   const [existingTeams, setExistingTeams] = useState<any[]>([])
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null)
-  const [inviteQuery, setInviteQuery] = useState('')
-  const [inviteResults, setInviteResults] = useState<InviteSearchResult[]>([])
-  const [inviteSearching, setInviteSearching] = useState(false)
-  const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set())
-  const inviteTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [allMountains, setAllMountains] = useState<{ id: string; name: string }[]>([])
 
   const [creating, setCreating] = useState(false)
 
@@ -209,19 +196,11 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
       .then(({ data }) => { if (data) setRoutes(data) })
   }, [selectedRegion, regions])
 
-  // Invite search
+  // Load all mountains for team modal
   useEffect(() => {
-    if (inviteTimeout.current) clearTimeout(inviteTimeout.current)
-    if (inviteQuery.length < 3) { setInviteResults([]); return }
-    setInviteSearching(true)
-    inviteTimeout.current = setTimeout(async () => {
-      const res = await fetch(`/api/users/search?email=${encodeURIComponent(inviteQuery)}`)
-      const json = await res.json()
-      setInviteResults(json.users ?? [])
-      setInviteSearching(false)
-    }, 400)
-    return () => { if (inviteTimeout.current) clearTimeout(inviteTimeout.current) }
-  }, [inviteQuery])
+    createClient().from('mountains').select('id, name').order('name')
+      .then(({ data }) => { if (data) setAllMountains(data) })
+  }, [])
 
   function selectRegion(regionName: string) {
     setSelectedRegion(regionName)
@@ -252,32 +231,7 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
       packingSetId = newSet?.id || null
     }
 
-    // Create or use team
-    let teamId: string | null = selectedTeamId || null
-    if (teamMode === 'create' && teamName.trim()) {
-      const { data: newTeam } = await supabase.from('teams')
-        .insert({
-          name: teamName.trim(),
-          description: teamDescription.trim() || null,
-          leader_id: userId,
-          start_date: teamStartDate || null,
-          end_date: teamEndDate || null,
-        })
-        .select('id').single()
-      if (newTeam) {
-        teamId = newTeam.id
-        await supabase.from('team_members').insert({ team_id: newTeam.id, user_id: userId, role: 'leader' })
-        // Send invites
-        if (invitedIds.size > 0) {
-          const invites = Array.from(invitedIds).map(inviteeId => ({
-            team_id: newTeam.id,
-            inviter_id: userId,
-            invitee_id: inviteeId,
-          }))
-          await supabase.from('team_invites').insert(invites)
-        }
-      }
-    }
+    const teamId: string | null = selectedTeamId || null
 
     const { data: trip } = await supabase.from('trips')
       .insert({
@@ -612,8 +566,8 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
 
           {/* Mode selection */}
           <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => setTeamMode('create')} className="text-left">
-              <Card hover className={`space-y-1 ${teamMode === 'create' ? 'border-mountain-primary' : ''}`}>
+            <button onClick={() => setShowTeamModal(true)} className="text-left">
+              <Card hover className="space-y-1">
                 <h3 className="font-semibold flex items-center gap-2">
                   <UsersRound size={16} className="text-mountain-primary" /> Новое отделение
                 </h3>
@@ -631,82 +585,6 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
               </button>
             )}
           </div>
-
-          {/* Create team form */}
-          {teamMode === 'create' && (
-            <div className="space-y-4">
-              <Input
-                id="team-name"
-                label="Название отделения"
-                placeholder="Напр: НП-1 Адырсу 2026"
-                value={teamName}
-                onChange={e => setTeamName(e.target.value)}
-              />
-              <div className="space-y-1">
-                <label htmlFor="team-desc" className="block text-sm text-mountain-muted">Описание</label>
-                <textarea
-                  id="team-desc"
-                  className="w-full rounded-xl border border-mountain-border bg-mountain-surface px-4 py-2 text-sm text-mountain-text focus:outline-none focus:ring-2 focus:ring-mountain-primary/50 min-h-[60px] resize-y"
-                  placeholder="Описание (необязательно)"
-                  value={teamDescription}
-                  onChange={e => setTeamDescription(e.target.value)}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Input id="team-start" label="Дата начала" type="date" value={teamStartDate} onChange={e => setTeamStartDate(e.target.value)} />
-                <Input id="team-end" label="Дата окончания" type="date" value={teamEndDate} onChange={e => setTeamEndDate(e.target.value)} />
-              </div>
-
-              {/* Invite members */}
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-mountain-muted flex items-center gap-1.5">
-                  <UserPlus size={14} /> Пригласить участников
-                </h3>
-                <div className="relative">
-                  <input
-                    value={inviteQuery}
-                    onChange={e => setInviteQuery(e.target.value)}
-                    placeholder="Имя или email..."
-                    className="w-full pl-4 pr-9 py-2.5 bg-mountain-bg border border-mountain-border rounded-lg text-sm text-mountain-text placeholder:text-mountain-muted focus:outline-none focus:border-mountain-primary transition-colors"
-                  />
-                  {inviteQuery && (
-                    <button onClick={() => { setInviteQuery(''); setInviteResults([]) }} className="absolute right-3 top-1/2 -translate-y-1/2 text-mountain-muted hover:text-mountain-text">
-                      <X size={14} />
-                    </button>
-                  )}
-                </div>
-                {inviteQuery.length > 0 && inviteQuery.length < 3 && (
-                  <p className="text-xs text-mountain-muted">Минимум 3 символа</p>
-                )}
-                {inviteSearching && <p className="text-xs text-mountain-muted">Ищем...</p>}
-                {inviteResults.length > 0 && (
-                  <div className="space-y-1.5">
-                    {inviteResults.filter(u => u.id !== userId).map(u => (
-                      <div key={u.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-mountain-bg border border-mountain-border">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{u.display_name || 'Пользователь'}</p>
-                          <p className="text-xs text-mountain-muted">{u.email}</p>
-                        </div>
-                        {invitedIds.has(u.id) ? (
-                          <span className="text-xs text-mountain-muted flex items-center gap-1 shrink-0"><Check size={12} /> Добавлен</span>
-                        ) : (
-                          <Button onClick={() => setInvitedIds(prev => new Set([...prev, u.id]))} className="text-xs px-3 py-1.5 h-auto shrink-0">
-                            <UserPlus size={12} className="mr-1" /> Добавить
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {inviteQuery.length >= 3 && !inviteSearching && inviteResults.length === 0 && (
-                  <p className="text-xs text-mountain-muted">Не найдено</p>
-                )}
-                {invitedIds.size > 0 && (
-                  <p className="text-xs text-mountain-success">Будет приглашено: {invitedIds.size} чел.</p>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Select existing team */}
           {teamMode === 'existing' && (
@@ -730,14 +608,35 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
           )}
 
           {/* Create button */}
-          {(teamMode === 'create' || teamMode === 'existing') && (
+          {teamMode === 'existing' && (
             <Button
               onClick={createTrip}
-              disabled={creating || (teamMode === 'create' && !teamName.trim()) || (teamMode === 'existing' && !selectedTeamId)}
+              disabled={creating || !selectedTeamId}
               className="w-full"
             >
               {creating ? 'Создаём...' : 'Создать поездку'}
             </Button>
+          )}
+
+          {showTeamModal && userId && (
+            <CreateTeamModal
+              userId={userId}
+              mountains={allMountains}
+              onClose={() => setShowTeamModal(false)}
+              onCreate={async (teamId) => {
+                setShowTeamModal(false)
+                if (teamId) {
+                  setSelectedTeamId(teamId)
+                  setTeamMode('existing')
+                  // Reload teams list to include the newly created team
+                  const supabase = createClient()
+                  const { data: tmData } = await supabase.from('team_members')
+                    .select('team_id, role, team:teams(id, name, description)')
+                    .eq('user_id', userId!)
+                  if (tmData) setExistingTeams(tmData.filter((t: any) => t.role === 'leader').map((t: any) => t.team))
+                }
+              }}
+            />
           )}
         </div>
       )}

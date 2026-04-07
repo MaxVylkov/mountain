@@ -14,7 +14,7 @@ interface CreateTeamModalProps {
   userId: string
   mountains: { id: string; name: string }[]
   onClose: () => void
-  onCreate: () => void
+  onCreate: (teamId?: string) => void
 }
 
 export default function CreateTeamModal({
@@ -104,7 +104,7 @@ export default function CreateTeamModal({
       return
     }
 
-    onCreate()
+    onCreate(team.id)
   }
 
   const selectStyles =
