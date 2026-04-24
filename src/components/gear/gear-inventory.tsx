@@ -6,10 +6,10 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Plus, Search, Trash2, Weight, X, Sparkles, Check, AlertTriangle, CircleAlert, Download, Filter, Backpack } from 'lucide-react'
+import { Plus, Search, Weight, X, Sparkles, Check, AlertTriangle, CircleAlert, Download, Filter, Backpack } from 'lucide-react'
 import { GearExcelImport } from './gear-excel-import'
 import { GearDetailModal } from './gear-detail-modal'
-import { GearCategoryIcon } from './gear-category-icons'
+import { GearCategoryIcon, GearIcon } from './gear-category-icons'
 import * as XLSX from 'xlsx'
 
 interface GearItem {
@@ -26,6 +26,7 @@ interface UserGearItem {
   gear_id: string
   condition: string
   notes: string | null
+  icon_key?: string | null
   tags?: string[]
   gear: GearItem
 }
@@ -395,7 +396,7 @@ export function GearInventory({ catalog, userId }: { catalog: GearItem[]; userId
                     onClick={() => setSelectedItem(item)}
                   >
                     <div className={`flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${colorClass}`}>
-                      <GearCategoryIcon category={item.gear?.category} className="h-[18px] w-[18px]" />
+                      <GearIcon category={item.gear?.category} iconKey={item.icon_key} className="h-[18px] w-[18px]" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">

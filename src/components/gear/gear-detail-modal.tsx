@@ -2,12 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { X, Weight, Plus, Tag, Save, Trash2 } from 'lucide-react'
+import { X, Plus, Tag, Save, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { POPULAR_BRANDS } from './gear-inventory'
-import { GearCategoryIcon } from './gear-category-icons'
+import { GEAR_ICON_OPTIONS, GearIcon } from './gear-category-icons'
 
 interface GearItem {
   id: string
@@ -23,6 +23,7 @@ interface UserGearItem {
   gear_id: string
   condition: string
   notes: string | null
+  icon_key?: string | null
   tags?: string[]
   gear: GearItem
 }
@@ -65,6 +66,7 @@ interface GearDetailModalProps {
 export function GearDetailModal({ item, onClose, onUpdate, onRemove, onSaleListingId }: GearDetailModalProps) {
   const categoryColor = CATEGORY_COLORS[item.gear?.category || 'other'] ?? CATEGORY_COLORS.other
   const [condition, setCondition] = useState(item.condition)
+  const [iconKey, setIconKey] = useState(item.icon_key || '')
   const [brand, setBrand] = useState(item.gear?.brand || '')
   const [showBrandSuggestions, setShowBrandSuggestions] = useState(false)
   const [notes, setNotes] = useState(item.notes || '')
@@ -86,7 +88,7 @@ export function GearDetailModal({ item, onClose, onUpdate, onRemove, onSaleListi
     }
     await supabase
       .from('user_gear')
-      .update({ condition, notes: notes || null, tags })
+      .update({ condition, notes: notes || null, tags, icon_key: iconKey || null })
       .eq('id', item.id)
     setSaving(false)
     setSaved(true)
@@ -123,7 +125,7 @@ export function GearDetailModal({ item, onClose, onUpdate, onRemove, onSaleListi
         <div className="flex items-start justify-between">
           <div className="flex flex-1 items-start gap-3">
             <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${categoryColor}`}>
-              <GearCategoryIcon category={item.gear?.category} className="h-5 w-5" />
+              <GearIcon category={item.gear?.category} iconKey={iconKey} className="h-5 w-5" />
             </div>
             <div className="min-w-0">
               <h2 className="text-lg font-bold text-mountain-text">{item.gear?.name}</h2>
@@ -165,6 +167,41 @@ export function GearDetailModal({ item, onClose, onUpdate, onRemove, onSaleListi
         {item.gear?.description && (
           <p className="text-sm text-mountain-muted">{item.gear.description}</p>
         )}
+
+        {/* Icon */}
+        <div className="space-y-2">
+          <label className="block text-sm text-mountain-muted">Иконка вещи</label>
+          <div className="grid grid-cols-5 gap-2">
+            <button
+              type="button"
+              onClick={() => setIconKey('')}
+              title="По категории"
+              className={`flex h-10 items-center justify-center rounded-lg border transition-colors ${
+                !iconKey
+                  ? 'border-mountain-primary bg-mountain-primary/10 text-mountain-primary'
+                  : 'border-mountain-border bg-mountain-surface text-mountain-muted hover:text-mountain-text'
+              }`}
+            >
+              <GearIcon category={item.gear?.category} className="h-5 w-5" />
+            </button>
+            {GEAR_ICON_OPTIONS.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setIconKey(key)}
+                title={label}
+                aria-label={label}
+                className={`flex h-10 items-center justify-center rounded-lg border transition-colors ${
+                  iconKey === key
+                    ? 'border-mountain-primary bg-mountain-primary/10 text-mountain-primary'
+                    : 'border-mountain-border bg-mountain-surface text-mountain-muted hover:text-mountain-text'
+                }`}
+              >
+                <GearIcon iconKey={key} className="h-5 w-5" />
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Brand */}
         <div className="space-y-2 relative">

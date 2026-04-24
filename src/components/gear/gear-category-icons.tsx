@@ -11,8 +11,30 @@ export type GearCategory =
 
 type GearCategoryIconComponent = (props: SVGProps<SVGSVGElement>) => ReactElement
 
+export type GearIconKey =
+  | 'rope'
+  | 'carabiner'
+  | 'jacket'
+  | 'boot'
+  | 'tent'
+  | 'device'
+  | 'box'
+  | 'helmet'
+  | 'ice_axe'
+  | 'backpack'
+  | 'headlamp'
+  | 'stove'
+  | 'first_aid'
+  | 'map'
+  | 'bottle'
+
 type GearCategoryIconProps = SVGProps<SVGSVGElement> & {
   category: string | null | undefined
+}
+
+type GearIconProps = SVGProps<SVGSVGElement> & {
+  category?: string | null
+  iconKey?: string | null
 }
 
 function IconBase({ children, ...props }: SVGProps<SVGSVGElement>) {
@@ -113,6 +135,104 @@ function OtherGearIcon(props: SVGProps<SVGSVGElement>) {
   )
 }
 
+function HelmetIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M4 13.5C4 8.8 7.6 5 12 5s8 3.8 8 8.5V16H4v-2.5Z" />
+      <path d="M4 16h16" />
+      <path d="M7 16v2.5h10V16" />
+      <path d="M12 5v6" />
+      <path d="M8.5 6.6 10 11" />
+      <path d="m15.5 6.6-1.5 4.4" />
+    </IconBase>
+  )
+}
+
+function IceAxeIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M7 5.5c3.5-1.7 7.1-1.7 10.5 0" />
+      <path d="M9 5.2 12 8l3-2.8" />
+      <path d="M12 8v12" />
+      <path d="m9.5 17 2.5 3 2.5-3" />
+      <path d="M6.5 6.2 4.5 8" />
+      <path d="m17.5 6.2 2 1.8" />
+    </IconBase>
+  )
+}
+
+function BackpackIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M8 7V5.8C8 4.2 9.8 3 12 3s4 1.2 4 2.8V7" />
+      <rect x="5.5" y="6.5" width="13" height="14" rx="3" />
+      <path d="M8 11h8" />
+      <path d="M8.5 15.5h7" />
+      <path d="M5.5 12H4" />
+      <path d="M20 12h-1.5" />
+    </IconBase>
+  )
+}
+
+function HeadlampIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M3.5 10.5h17" />
+      <path d="M3.5 13.5h17" />
+      <rect x="8" y="7" width="8" height="10" rx="2" />
+      <circle cx="12" cy="12" r="2" />
+      <path d="m16 9 3-2" />
+      <path d="m16 15 3 2" />
+    </IconBase>
+  )
+}
+
+function StoveIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M9 3.5h6" />
+      <path d="M8 7h8l-1 5H9L8 7Z" />
+      <path d="M9.5 12 7 20h10l-2.5-8" />
+      <path d="M8.5 16h7" />
+      <path d="M12 3.5V7" />
+    </IconBase>
+  )
+}
+
+function FirstAidIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <rect x="4" y="7" width="16" height="12" rx="2" />
+      <path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7" />
+      <path d="M12 10.5v5" />
+      <path d="M9.5 13h5" />
+    </IconBase>
+  )
+}
+
+function MapIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M4 6.5 9.5 4l5 2.5L20 4v13.5L14.5 20l-5-2.5L4 20V6.5Z" />
+      <path d="M9.5 4v13.5" />
+      <path d="M14.5 6.5V20" />
+      <path d="m6.5 9.5 1.2-.6" />
+      <path d="m16.6 15.4 1.2-.6" />
+    </IconBase>
+  )
+}
+
+function BottleIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M10 3.5h4" />
+      <path d="M10.5 6.5h3" />
+      <path d="M9 8.5c-1 1-1.5 2.2-1.5 3.7V18a3 3 0 0 0 3 3h3a3 3 0 0 0 3-3v-5.8c0-1.5-.5-2.7-1.5-3.7l-1.5-1.5v-3h-3v3L9 8.5Z" />
+      <path d="M8 15h8" />
+    </IconBase>
+  )
+}
+
 const GEAR_CATEGORY_ICONS: Record<GearCategory, GearCategoryIconComponent> = {
   clothing: ClothingIcon,
   footwear: FootwearIcon,
@@ -123,7 +243,51 @@ const GEAR_CATEGORY_ICONS: Record<GearCategory, GearCategoryIconComponent> = {
   other: OtherGearIcon,
 }
 
-export function GearCategoryIcon({ category, ...props }: GearCategoryIconProps) {
-  const Icon = GEAR_CATEGORY_ICONS[(category || 'other') as GearCategory] ?? OtherGearIcon
+const GEAR_ICONS: Record<GearIconKey, GearCategoryIconComponent> = {
+  rope: RopeIcon,
+  carabiner: HardwareIcon,
+  jacket: ClothingIcon,
+  boot: FootwearIcon,
+  tent: BivouacIcon,
+  device: ElectronicsIcon,
+  box: OtherGearIcon,
+  helmet: HelmetIcon,
+  ice_axe: IceAxeIcon,
+  backpack: BackpackIcon,
+  headlamp: HeadlampIcon,
+  stove: StoveIcon,
+  first_aid: FirstAidIcon,
+  map: MapIcon,
+  bottle: BottleIcon,
+}
+
+export const GEAR_ICON_OPTIONS: Array<{ key: GearIconKey; label: string }> = [
+  { key: 'rope', label: 'Верёвка' },
+  { key: 'carabiner', label: 'Карабин' },
+  { key: 'helmet', label: 'Каска' },
+  { key: 'ice_axe', label: 'Ледоруб' },
+  { key: 'backpack', label: 'Рюкзак' },
+  { key: 'boot', label: 'Ботинок' },
+  { key: 'jacket', label: 'Куртка' },
+  { key: 'tent', label: 'Палатка' },
+  { key: 'headlamp', label: 'Фонарь' },
+  { key: 'stove', label: 'Горелка' },
+  { key: 'first_aid', label: 'Аптечка' },
+  { key: 'map', label: 'Карта' },
+  { key: 'bottle', label: 'Фляга' },
+  { key: 'device', label: 'Прибор' },
+  { key: 'box', label: 'Прочее' },
+]
+
+export function GearIcon({ category, iconKey, ...props }: GearIconProps) {
+  const Icon =
+    (iconKey ? GEAR_ICONS[iconKey as GearIconKey] : null) ??
+    GEAR_CATEGORY_ICONS[(category || 'other') as GearCategory] ??
+    OtherGearIcon
+
   return <Icon {...props} />
+}
+
+export function GearCategoryIcon({ category, ...props }: GearCategoryIconProps) {
+  return <GearIcon category={category} {...props} />
 }
