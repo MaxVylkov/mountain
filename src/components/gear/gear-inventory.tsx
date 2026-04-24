@@ -6,9 +6,10 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Plus, Search, Trash2, Weight, X, Cable, Wrench, Shirt, Footprints, Tent, Cpu, Package, Sparkles, Check, AlertTriangle, CircleAlert, Download, Filter, Backpack } from 'lucide-react'
+import { Plus, Search, Trash2, Weight, X, Sparkles, Check, AlertTriangle, CircleAlert, Download, Filter, Backpack } from 'lucide-react'
 import { GearExcelImport } from './gear-excel-import'
 import { GearDetailModal } from './gear-detail-modal'
+import { GearCategoryIcon } from './gear-category-icons'
 import * as XLSX from 'xlsx'
 
 interface GearItem {
@@ -37,16 +38,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   bivouac: 'Бивуак',
   electronics: 'Электроника',
   other: 'Прочее',
-}
-
-const CATEGORY_ICONS: Record<string, any> = {
-  clothing: Shirt,
-  footwear: Footprints,
-  hardware: Wrench,
-  ropes: Cable,
-  bivouac: Tent,
-  electronics: Cpu,
-  other: Package,
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -287,8 +278,9 @@ export function GearInventory({ catalog, userId }: { catalog: GearItem[]; userId
                   <button
                     key={cat}
                     onClick={() => setFilterCategory(filterCategory === cat ? null : cat)}
-                    className={`px-2 py-1 rounded text-xs transition-colors ${filterCategory === cat ? CATEGORY_COLORS[cat] : 'bg-mountain-surface text-mountain-muted hover:text-mountain-text border border-mountain-border'}`}
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${filterCategory === cat ? CATEGORY_COLORS[cat] : 'bg-mountain-surface text-mountain-muted hover:text-mountain-text border border-mountain-border'}`}
                   >
+                    <GearCategoryIcon category={cat} className="h-3 w-3" />
                     {label}
                   </button>
                 ))}
@@ -382,14 +374,16 @@ export function GearInventory({ catalog, userId }: { catalog: GearItem[]; userId
           <div key={cat} className="space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium flex items-center gap-2">
-                <span className={`px-2 py-0.5 rounded text-xs ${CATEGORY_COLORS[cat]}`}>{label}</span>
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs ${CATEGORY_COLORS[cat]}`}>
+                  <GearCategoryIcon category={cat} className="h-3.5 w-3.5" />
+                  {label}
+                </span>
                 <span className="text-mountain-muted">({items.length})</span>
               </h3>
               <span className="text-xs font-mono text-mountain-muted">{(catWeight / 1000).toFixed(1)} кг</span>
             </div>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {items.map(item => {
-                const CatIcon = CATEGORY_ICONS[item.gear?.category || 'other'] || Package
                 const colorClass = CATEGORY_COLORS[item.gear?.category || 'other'] || 'bg-mountain-border text-mountain-muted'
                 const cond = CONDITION_ICONS[item.condition] || CONDITION_ICONS.good
                 const CondIcon = cond.icon
@@ -401,7 +395,7 @@ export function GearInventory({ catalog, userId }: { catalog: GearItem[]; userId
                     onClick={() => setSelectedItem(item)}
                   >
                     <div className={`flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${colorClass}`}>
-                      <CatIcon size={18} />
+                      <GearCategoryIcon category={item.gear?.category} className="h-[18px] w-[18px]" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
@@ -488,8 +482,9 @@ export function GearInventory({ catalog, userId }: { catalog: GearItem[]; userId
                   <button
                     key={cat}
                     onClick={() => setCatalogCategory(cat)}
-                    className={`px-2 py-1 rounded text-xs transition-colors ${catalogCategory === cat ? CATEGORY_COLORS[cat] : 'bg-mountain-surface text-mountain-muted'}`}
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${catalogCategory === cat ? CATEGORY_COLORS[cat] : 'bg-mountain-surface text-mountain-muted'}`}
                   >
+                    <GearCategoryIcon category={cat} className="h-3 w-3" />
                     {label}
                   </button>
                 ))}
@@ -505,7 +500,8 @@ export function GearInventory({ catalog, userId }: { catalog: GearItem[]; userId
                   <div>
                     <p className="text-sm">{item.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className={`px-1.5 py-0.5 rounded text-xs ${CATEGORY_COLORS[item.category]}`}>
+                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs ${CATEGORY_COLORS[item.category]}`}>
+                        <GearCategoryIcon category={item.category} className="h-3 w-3" />
                         {CATEGORY_LABELS[item.category]}
                       </span>
                       {item.brand && <span className="text-xs text-mountain-muted">{item.brand}</span>}

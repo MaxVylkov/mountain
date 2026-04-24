@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { POPULAR_BRANDS } from './gear-inventory'
+import { GearCategoryIcon } from './gear-category-icons'
 
 interface GearItem {
   id: string
@@ -43,6 +44,16 @@ const CATEGORY_LABELS: Record<string, string> = {
   other: 'Прочее',
 }
 
+const CATEGORY_COLORS: Record<string, string> = {
+  clothing: 'bg-purple-500/15 text-purple-500',
+  footwear: 'bg-mountain-accent/15 text-mountain-accent',
+  hardware: 'bg-mountain-primary/15 text-mountain-primary',
+  ropes: 'bg-mountain-success/15 text-mountain-success',
+  bivouac: 'bg-orange-500/15 text-orange-500',
+  electronics: 'bg-mountain-primary/10 text-mountain-primary',
+  other: 'bg-mountain-muted/15 text-mountain-muted',
+}
+
 interface GearDetailModalProps {
   item: UserGearItem
   onClose: () => void
@@ -52,6 +63,7 @@ interface GearDetailModalProps {
 }
 
 export function GearDetailModal({ item, onClose, onUpdate, onRemove, onSaleListingId }: GearDetailModalProps) {
+  const categoryColor = CATEGORY_COLORS[item.gear?.category || 'other'] ?? CATEGORY_COLORS.other
   const [condition, setCondition] = useState(item.condition)
   const [brand, setBrand] = useState(item.gear?.brand || '')
   const [showBrandSuggestions, setShowBrandSuggestions] = useState(false)
@@ -109,12 +121,16 @@ export function GearDetailModal({ item, onClose, onUpdate, onRemove, onSaleListi
       >
         {/* Header */}
         <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-mountain-text">{item.gear?.name}</h2>
-            <p className="text-xs text-mountain-muted mt-0.5">
-              {CATEGORY_LABELS[item.gear?.category] || item.gear?.category}
-              {item.gear?.weight && ` • ${item.gear.weight} г`}
-            </p>
+          <div className="flex flex-1 items-start gap-3">
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${categoryColor}`}>
+              <GearCategoryIcon category={item.gear?.category} className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold text-mountain-text">{item.gear?.name}</h2>
+              <p className="text-xs text-mountain-muted mt-0.5">
+                {CATEGORY_LABELS[item.gear?.category] || item.gear?.category}
+                {item.gear?.weight && ` • ${item.gear.weight} г`}
+              </p>
             <div className="mt-2">
               {/* On-sale badge */}
               {onSaleListingId && (
@@ -137,6 +153,7 @@ export function GearDetailModal({ item, onClose, onUpdate, onRemove, onSaleListi
                   Выставить на продажу
                 </Link>
               )}
+            </div>
             </div>
           </div>
           <button onClick={onClose} className="text-mountain-muted hover:text-mountain-text">
