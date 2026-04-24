@@ -14,7 +14,7 @@
 
 | File | Action |
 |------|--------|
-| `supabase/migrations/019_user_documents.sql` | Create (new migration) |
+| `supabase/migrations/020_user_documents.sql` | Create (new migration) |
 | `src/components/profile/documents-section.tsx` | Create (new component) |
 | `src/app/profile/page.tsx` | Modify (import + render DocumentsSection) |
 
@@ -23,13 +23,13 @@
 ### Task 1: Database migration
 
 **Files:**
-- Create: `supabase/migrations/019_user_documents.sql`
+- Create: `supabase/migrations/020_user_documents.sql`
 
 **Context:** The project has a pre-existing `005_*` numbering collision (two files named `005_*.sql`). Migrations are applied manually — not via `supabase db push` auto-runner. The latest migration is `018_team_telegram_link.sql`.
 
 - [ ] **Step 1: Create the migration file**
 
-`supabase/migrations/019_user_documents.sql`:
+`supabase/migrations/020_user_documents.sql`:
 
 ```sql
 -- Bucket for private user documents
@@ -91,7 +91,7 @@ Verify: the `user-documents` bucket and `user_documents` table appear in the Sup
 - [ ] **Step 3: Commit**
 
 ```bash
-git add supabase/migrations/019_user_documents.sql
+git add supabase/migrations/020_user_documents.sql
 git commit -m "feat(storage): add user-documents bucket and user_documents table with RLS"
 ```
 

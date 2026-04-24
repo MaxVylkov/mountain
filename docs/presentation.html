@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mountaine — Презентация</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    .slides {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 48px;
+    }
+
+    /* ── Slide ─────────────────────────────── */
+    .slide {
+      border-radius: 20px;
+      padding: 48px 52px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Hero */
+    .slide-hero {
+      background: linear-gradient(135deg, #1a2744 0%, #0f1117 60%, #0d2315 100%);
+      border: 1px solid #2a3550;
+      text-align: center;
+      padding: 80px 52px;
+    }
+    .slide-hero .logo {
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      background: linear-gradient(135deg, #5b9cf6, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
+    }
+    .slide-hero .tagline {
+      font-size: 20px;
+      color: #94a3b8;
+      line-height: 1.5;
+      max-width: 520px;
+      margin: 0 auto 32px;
+    }
+    .slide-hero .badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 100px;
+      background: rgba(91, 156, 246, 0.15);
+      border: 1px solid rgba(91, 156, 246, 0.3);
+      color: #5b9cf6;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    /* Section label */
+    .slide-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #5b9cf6;
+      margin-bottom: 12px;
+    }
+    .slide h2 {
+      font-size: 30px;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 8px;
+      line-height: 1.2;
+    }
+    .slide .subtitle {
+      color: #64748b;
+      font-size: 15px;
+      margin-bottom: 32px;
+    }
+
+    /* Dark card */
+    .slide-dark {
+      background: #161b27;
+      border: 1px solid #1e2a3a;
+    }
+    .slide-accent {
+      background: linear-gradient(135deg, #0f1f14 0%, #161b27 100%);
+      border: 1px solid #1e3328;
+    }
+    .slide-blue {
+      background: linear-gradient(135deg, #0f1a2e 0%, #161b27 100%);
+      border: 1px solid #1e2d4a;
+    }
+
+    /* Goal cards */
+    .goals {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .goal-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .goal-card .num {
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #5b9cf6, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+    .goal-card p {
+      font-size: 14px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+    .goal-card strong { color: #e2e8f0; }
+
+    /* Module grid */
+    .modules {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .module-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      padding: 18px 16px;
+    }
+    .module-card .icon {
+      font-size: 26px;
+      margin-bottom: 10px;
+    }
+    .module-card .name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #f1f5f9;
+      margin-bottom: 4px;
+    }
+    .module-card .desc {
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.4;
+    }
+
+    /* Feature highlight */
+    .features {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .feature-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px 20px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+    }
+    .feature-row .icon {
+      font-size: 22px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .feature-row .text strong {
+      display: block;
+      font-size: 14px;
+      color: #f1f5f9;
+      margin-bottom: 2px;
+    }
+    .feature-row .text span {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.4;
+    }
+
+    /* Audience */
+    .audience {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .audience-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 18px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+    }
+    .audience-card .icon { font-size: 24px; }
+    .audience-card .text strong {
+      display: block;
+      font-size: 14px;
+      color: #f1f5f9;
+    }
+    .audience-card .text span {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    /* Coming soon */
+    .coming-soon {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .cs-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+    }
+    .cs-row .icon { font-size: 20px; }
+    .cs-row .text { flex: 1; }
+    .cs-row .text strong { font-size: 14px; color: #e2e8f0; display: block; }
+    .cs-row .text span { font-size: 12px; color: #475569; }
+    .cs-row .tag {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 100px;
+      background: rgba(91,156,246,0.12);
+      color: #5b9cf6;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .cs-row .tag.soon {
+      background: rgba(52,211,153,0.12);
+      color: #34d399;
+    }
+
+    /* CTA */
+    .slide-cta {
+      background: linear-gradient(135deg, #112240 0%, #0f1117 50%, #0d2315 100%);
+      border: 1px solid #1e3a5f;
+      text-align: center;
+      padding: 64px 52px;
+    }
+    .slide-cta h2 {
+      font-size: 34px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #5b9cf6, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
+    }
+    .slide-cta p {
+      font-size: 16px;
+      color: #64748b;
+      margin-bottom: 32px;
+    }
+    .cta-btn {
+      display: inline-block;
+      padding: 14px 36px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #3b7af0, #2563eb);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      letter-spacing: 0.3px;
+    }
+    .version-tag {
+      margin-top: 24px;
+      font-size: 12px;
+      color: #334155;
+    }
+
+    @media (max-width: 620px) {
+      .slide { padding: 32px 24px; }
+      .goals, .audience { grid-template-columns: 1fr; }
+      .modules { grid-template-columns: 1fr 1fr; }
+      .slide-hero { padding: 52px 24px; }
+      .slide-hero .logo { font-size: 36px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="slides">
+
+    <!-- HERO -->
+    <div class="slide slide-hero">
+      <div class="logo">⛰ Mountaine</div>
+      <p class="tagline">Цифровой помощник альпиниста и горного туриста — всё для подготовки и организации похода в одном месте</p>
+      <span class="badge">Бета-версия · 2026</span>
+    </div>
+
+    <!-- ЦЕЛИ -->
+    <div class="slide slide-dark">
+      <div class="slide-label">Зачем это нужно</div>
+      <h2>Одно приложение вместо десяти таблиц</h2>
+      <p class="subtitle">Раньше: Excel, заметки в телефоне, чаты, распечатки. Теперь всё в одном месте.</p>
+      <div class="goals">
+        <div class="goal-card">
+          <div class="num">01</div>
+          <p><strong>Снизить порог входа</strong> — новичок видит структурированный путь: учись, собирай снаряжение, планируй маршрут</p>
+        </div>
+        <div class="goal-card">
+          <div class="num">02</div>
+          <p><strong>Инструмент подготовки</strong> — сборка снаряжения, расчёт питания, матрица кто что берёт в группе</p>
+        </div>
+        <div class="goal-card">
+          <div class="num">03</div>
+          <p><strong>История и прогресс</strong> — пройденные маршруты, изученные техники, накопленный опыт сохраняются</p>
+        </div>
+        <div class="goal-card">
+          <div class="num">04</div>
+          <p><strong>Сообщество</strong> — делиться опытом, маршрутами и сборками снаряжения (форум в разработке)</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- МОДУЛИ -->
+    <div class="slide slide-blue">
+      <div class="slide-label">Разделы приложения</div>
+      <h2>7 модулей первой версии</h2>
+      <p class="subtitle">От обучения до координации отделения</p>
+      <div class="modules">
+        <div class="module-card">
+          <div class="icon">🗺️</div>
+          <div class="name">База маршрутов</div>
+          <div class="desc">Каталог маршрутов с описаниями, сложностью, сезонами и комментариями</div>
+        </div>
+        <div class="module-card">
+          <div class="icon">🎒</div>
+          <div class="name">Кладовка</div>
+          <div class="desc">Личный инвентарь снаряжения и именованные сборки для походов</div>
+        </div>
+        <div class="module-card">
+          <div class="icon">👥</div>
+          <div class="name">Отделения</div>
+          <div class="desc">Координация группы: кто что берёт, раскладка, чеклист готовности</div>
+        </div>
+        <div class="module-card">
+          <div class="icon">🧠</div>
+          <div class="name">Граф знаний</div>
+          <div class="desc">Программа альпшколы как интерактивный граф: техника, безопасность, медицина</div>
+        </div>
+        <div class="module-card">
+          <div class="icon">🪢</div>
+          <div class="name">Узлы</div>
+          <div class="desc">Каталог альпинистских узлов с прогрессом изучения</div>
+        </div>
+        <div class="module-card">
+          <div class="icon">🍽️</div>
+          <div class="name">Раскладка</div>
+          <div class="desc">Расчёт питания, шаблоны для разных уровней, список покупок</div>
+        </div>
+        <div class="module-card">
+          <div class="icon">💪</div>
+          <div class="name">Тренировки</div>
+          <div class="desc">Журнал физической подготовки к походу</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- КИЛЛЕР ФИЧИ -->
+    <div class="slide slide-accent">
+      <div class="slide-label">Ключевые возможности</div>
+      <h2>Что выделяет Mountaine</h2>
+      <p class="subtitle">Фичи, которых нет в таблицах и обычных заметках</p>
+      <div class="features">
+        <div class="feature-row">
+          <div class="icon">🎯</div>
+          <div class="text">
+            <strong>Матрица снаряжения отделения</strong>
+            <span>Руководитель задаёт нормы (личное и общественное), участники отмечают что берут — видно кому чего не хватает</span>
+          </div>
+        </div>
+        <div class="feature-row">
+          <div class="icon">📋</div>
+          <div class="text">
+            <strong>Умные сборки из шаблонов</strong>
+            <span>Выбери уровень (НП / СП-3 / СП-2) — получи готовый список снаряжения с нормами, скорректируй под себя</span>
+          </div>
+        </div>
+        <div class="feature-row">
+          <div class="icon">🗺️</div>
+          <div class="text">
+            <strong>Комментарии с хештегами и оценками гуру</strong>
+            <span>Под каждым маршрутом — живая бета от участников сообщества</span>
+          </div>
+        </div>
+        <div class="feature-row">
+          <div class="icon">🧠</div>
+          <div class="text">
+            <strong>Граф знаний альпшколы</strong>
+            <span>Вся учебная программа структурирована как граф — видно что изучено, что осталось, как темы связаны</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- АУДИТОРИЯ -->
+    <div class="slide slide-dark">
+      <div class="slide-label">Для кого</div>
+      <h2>Целевая аудитория</h2>
+      <p class="subtitle">От новичка в секции до руководителя категорийного похода</p>
+      <div class="audience">
+        <div class="audience-card">
+          <div class="icon">🌱</div>
+          <div class="text">
+            <strong>Новички</strong>
+            <span>Впервые идут в горы, нужен структурированный старт</span>
+          </div>
+        </div>
+        <div class="audience-card">
+          <div class="icon">🧗</div>
+          <div class="text">
+            <strong>Участники секций</strong>
+            <span>НП / СП, учебно-тренировочные сборы</span>
+          </div>
+        </div>
+        <div class="audience-card">
+          <div class="icon">👑</div>
+          <div class="text">
+            <strong>Руководители</strong>
+            <span>Координация отделения, проверка готовности группы</span>
+          </div>
+        </div>
+        <div class="audience-card">
+          <div class="icon">🏔️</div>
+          <div class="text">
+            <strong>Опытные альпинисты</strong>
+            <span>Планирование экспедиций, история маршрутов</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- В РАЗРАБОТКЕ -->
+    <div class="slide slide-blue">
+      <div class="slide-label">Дорожная карта</div>
+      <h2>Что появится дальше</h2>
+      <p class="subtitle">Ближайшие шаги развития</p>
+      <div class="coming-soon">
+        <div class="cs-row">
+          <div class="icon">💬</div>
+          <div class="text">
+            <strong>Форум сообщества</strong>
+            <span>Обсуждения маршрутов, снаряжения, обучения. Поделиться сборкой снаряжения одной кнопкой</span>
+          </div>
+          <span class="tag soon">В разработке</span>
+        </div>
+        <div class="cs-row">
+          <div class="icon">📰</div>
+          <div class="text">
+            <strong>Лента активности</strong>
+            <span>Посты о походах, фото, отчёты — социальная лента в стиле Strava</span>
+          </div>
+          <span class="tag">Скоро</span>
+        </div>
+        <div class="cs-row">
+          <div class="icon">🎓</div>
+          <div class="text">
+            <strong>Режим тестирования</strong>
+            <span>Контрольные вопросы по разделам альпшколы — проверь свои знания</span>
+          </div>
+          <span class="tag">Скоро</span>
+        </div>
+        <div class="cs-row">
+          <div class="icon">📱</div>
+          <div class="text">
+            <strong>Интеграция с соцсетями</strong>
+            <span>Публикация отчётов в Telegram, Instagram, ВКонтакте</span>
+          </div>
+          <span class="tag">Идея</span>
+        </div>
+        <div class="cs-row">
+          <div class="icon">🏛️</div>
+          <div class="text">
+            <strong>Мой турклуб</strong>
+            <span>Отдельный аккаунт клуба, прокатное снаряжение, график выездов</span>
+          </div>
+          <span class="tag">Идея</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="slide slide-cta">
+      <h2>Попробуй Mountaine</h2>
+      <p>Бета-версия открыта для тестирования.<br>Будем рады обратной связи — что работает, что нет, чего не хватает.</p>
+      <div class="version-tag">v1.0 Beta · 2026 · Сделано в России</div>
+    </div>
+
+  </div>
+</body>
+</html>

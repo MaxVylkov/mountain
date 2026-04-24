@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { Navbar } from '@/components/nav/navbar'
 
 // Mock next/navigation
@@ -26,10 +26,14 @@ describe('Navbar', () => {
   it('renders navigation links', () => {
     render(<Navbar />)
     expect(screen.getByText('Маршруты')).toBeInTheDocument()
-    expect(screen.getByText('Кладовка')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /учёба/i }))
     expect(screen.getByText('Знания')).toBeInTheDocument()
     expect(screen.getByText('Узлы')).toBeInTheDocument()
     expect(screen.getByText('Тренировки')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /снаряжение/i }))
+    expect(screen.getByText('Кладовка')).toBeInTheDocument()
   })
 
   it('shows login button when not authenticated', () => {

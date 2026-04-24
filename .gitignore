@@ -13,6 +13,10 @@
 # testing
 /coverage
 
+# local tool state
+/.supabase/
+/.superpowers/
+
 # next.js
 /.next/
 /out/
@@ -43,3 +47,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated docs/parser cache
+docs/__pycache__/
+docs/far_routes.json
+supabase/migrations/027_far_urls_auto.sql

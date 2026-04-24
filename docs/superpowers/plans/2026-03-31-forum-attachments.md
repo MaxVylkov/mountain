@@ -14,7 +14,7 @@
 
 | File | Action |
 |------|--------|
-| `supabase/migrations/020_forum_attachments.sql` | Create |
+| `supabase/migrations/021_forum_attachments.sql` | Create |
 | `src/lib/storage-url.ts` | Create |
 | `src/__tests__/storage-url.test.ts` | Create (unit test) |
 | `src/components/forum/forum-types.ts` | Modify (extend `ForumPost`) |
@@ -29,7 +29,7 @@
 ### Task 1: Database migration
 
 **Files:**
-- Create: `supabase/migrations/020_forum_attachments.sql`
+- Create: `supabase/migrations/021_forum_attachments.sql`
 
 
 
@@ -37,7 +37,7 @@
 
 - [ ] **Step 1: Create migration file**
 
-`supabase/migrations/020_forum_attachments.sql`:
+`supabase/migrations/021_forum_attachments.sql`:
 
 ```sql
 -- Public bucket for forum file attachments
@@ -107,7 +107,7 @@ Verify: `forum-attachments` bucket and `forum_file_attachments` table appear in 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add supabase/migrations/020_forum_attachments.sql
+git add supabase/migrations/021_forum_attachments.sql
 git commit -m "feat(storage): add forum-attachments bucket and forum_file_attachments table"
 ```
 
