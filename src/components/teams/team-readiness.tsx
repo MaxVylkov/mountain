@@ -82,8 +82,8 @@ export function TeamReadiness({ teamId, members, currentUserId, isLeader }: Team
     loadReadiness()
   }, [loadReadiness])
 
-  const toggleItem = async (item: string) => {
-    const key = makeKey(currentUserId, item)
+  const toggleItem = async (userId: string, item: string) => {
+    const key = makeKey(userId, item)
     const current = readiness.get(key) ?? false
 
     setToggling(prev => new Set(prev).add(key))
@@ -91,7 +91,7 @@ export function TeamReadiness({ teamId, members, currentUserId, isLeader }: Team
 
     const supabase = createClient()
     const { error } = await supabase.from('team_readiness').upsert(
-      { team_id: teamId, user_id: currentUserId, item, checked: !current },
+      { team_id: teamId, user_id: userId, item, checked: !current },
       { onConflict: 'team_id,user_id,item' }
     )
 
@@ -181,12 +181,12 @@ export function TeamReadiness({ teamId, members, currentUserId, isLeader }: Team
                   const checked = readiness.get(key) ?? false
                   const isCurrentUser = m.user_id === currentUserId
                   const isTogglingThis = toggling.has(key)
-                  const canClick = isCurrentUser
+                  const canClick = isCurrentUser || isLeader
 
                   return (
                     <td key={m.user_id} className="text-center px-3 py-3">
                       <button
-                        onClick={() => canClick && toggleItem(item)}
+                        onClick={() => canClick && toggleItem(m.user_id, item)}
                         disabled={!canClick || isTogglingThis}
                         className={`inline-flex items-center justify-center transition-colors ${
                           canClick ? 'cursor-pointer hover:opacity-80' : 'cursor-default'
@@ -194,8 +194,8 @@ export function TeamReadiness({ teamId, members, currentUserId, isLeader }: Team
                         title={
                           canClick
                             ? checked
-                              ? 'Нажмите, чтобы снять отметку'
-                              : 'Нажмите, чтобы отметить'
+                              ? 'Снять отметку'
+                              : 'Отметить готовность'
                             : undefined
                         }
                       >

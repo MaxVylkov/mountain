@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { ArrowLeft, Users, Wrench, UtensilsCrossed, CheckSquare, Crown, Edit2, Check, X, Send, UserPlus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Users, Wrench, UtensilsCrossed, CheckSquare, Crown, Edit2, Check, X, Send, UserPlus, Trash2, AlertTriangle } from 'lucide-react'
 import { InviteFriendsModal } from '@/components/teams/invite-friends-modal'
 import { Card } from '@/components/ui/card'
 import { TeamMembers } from '@/components/teams/team-members'
@@ -38,6 +38,8 @@ const tabs: { key: Tab; label: string; icon: typeof Users }[] = [
   { key: 'readiness', label: 'Готовность', icon: CheckSquare },
 ]
 
+const READINESS_ITEMS_COUNT = 6
+
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return '—'
   return new Date(dateStr).toLocaleDateString('ru-RU', {
@@ -45,6 +47,124 @@ function formatDate(dateStr: string | null): string {
     month: 'short',
     year: 'numeric',
   })
+}
+
+interface PrepSummaryProps {
+  teamId: string
+  members: { user_id: string; display_name: string }[]
+  onOpenTab: (tab: Tab) => void
+}
+
+interface RequiredGearRow {
+  id: string
+  norm_per_person: number | null
+  norm_per_team: number | null
+}
+
+interface MemberGearRow {
+  required_gear_id: string
+  quantity: number
+}
+
+interface ReadinessRow {
+  checked: boolean
+}
+
+function TeamPrepSummary({ teamId, members, onOpenTab }: PrepSummaryProps) {
+  const [loading, setLoading] = useState(true)
+  const [requiredGear, setRequiredGear] = useState<RequiredGearRow[]>([])
+  const [memberGear, setMemberGear] = useState<MemberGearRow[]>([])
+  const [readinessRows, setReadinessRows] = useState<ReadinessRow[]>([])
+
+  useEffect(() => {
+    const supabase = createClient()
+    Promise.all([
+      supabase.from('team_required_gear').select('id, norm_per_person, norm_per_team').eq('team_id', teamId),
+      supabase.from('team_member_gear').select('required_gear_id, quantity').eq('team_id', teamId),
+      supabase.from('team_readiness').select('checked').eq('team_id', teamId),
+    ]).then(([gearRes, memberGearRes, readinessRes]) => {
+      setRequiredGear((gearRes.data ?? []) as RequiredGearRow[])
+      setMemberGear((memberGearRes.data ?? []) as MemberGearRow[])
+      setReadinessRows((readinessRes.data ?? []) as ReadinessRow[])
+      setLoading(false)
+    })
+  }, [teamId, members.length])
+
+  const memberCount = members.length
+  const gearReady = requiredGear.filter(item => {
+    const total = memberGear
+      .filter(row => row.required_gear_id === item.id)
+      .reduce((sum, row) => sum + row.quantity, 0)
+    const required =
+      item.norm_per_person != null
+        ? item.norm_per_person * memberCount
+        : item.norm_per_team
+    return required == null ? total > 0 : total >= required
+  }).length
+  const gearPercent = requiredGear.length > 0 ? Math.round((gearReady / requiredGear.length) * 100) : 0
+  const readinessTotal = memberCount * READINESS_ITEMS_COUNT
+  const readinessChecked = readinessRows.filter(row => row.checked).length
+  const readinessPercent = readinessTotal > 0 ? Math.round((readinessChecked / readinessTotal) * 100) : 0
+
+  const cards = [
+    {
+      label: 'Участники',
+      value: memberCount,
+      detail: memberCount > 0 ? 'человек в отделении' : 'добавьте участников',
+      action: 'Управлять',
+      tab: 'members' as Tab,
+      tone: memberCount > 0 ? 'text-mountain-text' : 'text-mountain-accent',
+    },
+    {
+      label: 'Снаряжение',
+      value: requiredGear.length > 0 ? `${gearPercent}%` : '—',
+      detail: requiredGear.length > 0 ? `${gearReady}/${requiredGear.length} позиций закрыто` : 'список не задан',
+      action: requiredGear.length > 0 ? 'Проверить' : 'Задать список',
+      tab: 'gear' as Tab,
+      tone: requiredGear.length > 0 && gearPercent < 100 ? 'text-mountain-accent' : 'text-mountain-text',
+    },
+    {
+      label: 'Раскладка',
+      value: 'план',
+      detail: 'выберите рацион и список покупок',
+      action: 'Открыть',
+      tab: 'rations' as Tab,
+      tone: 'text-mountain-text',
+    },
+    {
+      label: 'Готовность',
+      value: `${readinessPercent}%`,
+      detail: readinessTotal > 0 ? `${readinessChecked}/${readinessTotal} отметок` : 'нет участников',
+      action: 'Отметить',
+      tab: 'readiness' as Tab,
+      tone: readinessPercent < 100 ? 'text-mountain-accent' : 'text-mountain-success',
+    },
+  ]
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {cards.map(card => (
+        <Card key={card.label} className="p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs text-mountain-muted">{card.label}</p>
+              <p className={`text-2xl font-bold mt-1 ${card.tone}`}>{loading ? '…' : card.value}</p>
+              <p className="text-xs text-mountain-muted mt-1">{loading ? 'считаю состояние' : card.detail}</p>
+            </div>
+            {!loading && (card.label === 'Снаряжение' && requiredGear.length === 0 || card.label === 'Готовность' && readinessPercent < 100) && (
+              <AlertTriangle className="w-4 h-4 text-mountain-accent shrink-0 mt-1" />
+            )}
+          </div>
+          <button
+            onClick={() => onOpenTab(card.tab)}
+            className="mt-3 text-xs font-medium text-mountain-primary hover:text-mountain-text transition-colors"
+          >
+            {card.action}
+          </button>
+        </Card>
+      ))}
+    </div>
+  )
 }
 
 export function TeamDetail({ teamId, team, currentUserId }: TeamDetailProps) {
@@ -283,6 +403,12 @@ export function TeamDetail({ teamId, team, currentUserId }: TeamDetailProps) {
           </div>
         )}
       </Card>
+
+      <TeamPrepSummary
+        teamId={teamId}
+        members={members}
+        onOpenTab={setActiveTab}
+      />
 
       {/* Tabs */}
       <div className="flex border-b border-mountain-border overflow-x-auto">
