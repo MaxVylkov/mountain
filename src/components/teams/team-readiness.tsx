@@ -19,6 +19,7 @@ interface TeamReadinessProps {
   members: { user_id: string; display_name: string }[]
   currentUserId: string
   isLeader: boolean
+  onPreparationChange?: () => void
 }
 
 interface ReadinessRecord {
@@ -28,7 +29,7 @@ interface ReadinessRecord {
   checked: boolean
 }
 
-export function TeamReadiness({ teamId, members, currentUserId, isLeader }: TeamReadinessProps) {
+export function TeamReadiness({ teamId, members, currentUserId, isLeader, onPreparationChange }: TeamReadinessProps) {
   const [readiness, setReadiness] = useState<Map<string, boolean>>(new Map())
   const [loading, setLoading] = useState(true)
   const [toggling, setToggling] = useState<Set<string>>(new Set())
@@ -98,6 +99,8 @@ export function TeamReadiness({ teamId, members, currentUserId, isLeader }: Team
     if (error) {
       console.error('Error toggling readiness:', error)
       setReadiness(prev => new Map(prev).set(key, current))
+    } else {
+      onPreparationChange?.()
     }
 
     setToggling(prev => {
@@ -153,6 +156,45 @@ export function TeamReadiness({ teamId, members, currentUserId, isLeader }: Team
           />
         </div>
       </Card>
+
+      {/* Per-member readiness */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {members.map(m => {
+          const checked = getMemberStats(m.user_id)
+          const percent = Math.round((checked / DEFAULT_ITEMS.length) * 100)
+
+          return (
+            <Card key={m.user_id} className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-mountain-text truncate">
+                  {m.display_name}
+                </span>
+                <span className={`text-xs font-medium ${
+                  percent === 100 ? 'text-mountain-success' : percent >= 50 ? 'text-mountain-accent' : 'text-mountain-danger'
+                }`}>
+                  {percent}%
+                </span>
+              </div>
+              <p className="mb-2 text-xs text-mountain-muted">{checked}/{DEFAULT_ITEMS.length} пунктов закрыто</p>
+              <div
+                className="w-full h-2 rounded-full bg-mountain-surface border border-mountain-border overflow-hidden"
+                role="progressbar"
+                aria-valuenow={percent}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`Готовность: ${m.display_name}`}
+              >
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    percent === 100 ? 'bg-mountain-success' : percent >= 50 ? 'bg-mountain-accent' : 'bg-mountain-danger'
+                  }`}
+                  style={{ width: `${percent}%` }}
+                />
+              </div>
+            </Card>
+          )
+        })}
+      </div>
 
       {/* Readiness grid */}
       <Card className="p-0 overflow-x-auto">
@@ -215,42 +257,6 @@ export function TeamReadiness({ teamId, members, currentUserId, isLeader }: Team
           </tbody>
         </table>
       </Card>
-
-      {/* Per-member readiness */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {members.map(m => {
-          const checked = getMemberStats(m.user_id)
-          const percent = Math.round((checked / DEFAULT_ITEMS.length) * 100)
-
-          return (
-            <Card key={m.user_id} className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-mountain-text truncate">
-                  {m.display_name}
-                </span>
-                <span className="text-xs text-mountain-muted">
-                  {checked}/{DEFAULT_ITEMS.length} готов
-                </span>
-              </div>
-              <div
-                className="w-full h-2 rounded-full bg-mountain-surface border border-mountain-border overflow-hidden"
-                role="progressbar"
-                aria-valuenow={percent}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label={`Готовность: ${m.display_name}`}
-              >
-                <div
-                  className={`h-full rounded-full transition-all duration-300 ${
-                    percent === 100 ? 'bg-mountain-success' : percent >= 50 ? 'bg-mountain-accent' : 'bg-mountain-danger'
-                  }`}
-                  style={{ width: `${percent}%` }}
-                />
-              </div>
-            </Card>
-          )
-        })}
-      </div>
     </div>
   )
 }

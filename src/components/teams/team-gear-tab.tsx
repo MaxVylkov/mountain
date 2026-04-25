@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { LayoutList, LayoutGrid, Plus, Edit2, PackageOpen, Download, BookmarkPlus } from 'lucide-react'
+import { LayoutList, LayoutGrid, Plus, Edit2, PackageOpen, Download, BookmarkPlus, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { GearPickerModal } from './gear-picker-modal'
 import { GearSvodkaView } from './gear-svodka-view'
 import { GearKartochkiView } from './gear-kartochki-view'
-import { RequiredGearItem, MemberGearEntry, Member, SECTIONS, SECTION_KEYS, getRequired } from './gear-constants'
+import { RequiredGearItem, MemberGearEntry, Member, SECTIONS, SECTION_KEYS, getRequired, getDeficit } from './gear-constants'
 import * as XLSX from 'xlsx'
 
 type ViewMode = 'svodka' | 'kartochki'
@@ -17,9 +17,10 @@ interface TeamGearTabProps {
   members: Member[]
   currentUserId: string
   isLeader: boolean
+  onPreparationChange?: () => void
 }
 
-export function TeamGearTab({ teamId, members, currentUserId, isLeader }: TeamGearTabProps) {
+export function TeamGearTab({ teamId, members, currentUserId, isLeader, onPreparationChange }: TeamGearTabProps) {
   const [items, setItems] = useState<RequiredGearItem[]>([])
   const [memberGear, setMemberGear] = useState<MemberGearEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -71,6 +72,8 @@ export function TeamGearTab({ teamId, members, currentUserId, isLeader }: TeamGe
     if (error) {
       setItems(prevItems)
       setMemberGear(prevMemberGear)
+    } else {
+      onPreparationChange?.()
     }
   }
 
@@ -87,6 +90,7 @@ export function TeamGearTab({ teamId, members, currentUserId, isLeader }: TeamGe
       { team_id: teamId, required_gear_id: itemId, user_id: userId, quantity },
       { onConflict: 'required_gear_id,user_id' }
     )
+    onPreparationChange?.()
   }
 
   const openLeaderPicker = () => { setPickerMode('leader'); setShowPicker(true) }
@@ -156,9 +160,47 @@ export function TeamGearTab({ teamId, members, currentUserId, isLeader }: TeamGe
   }
 
   const hasItems = items.length > 0
+  const coveredItems = items.filter(item => {
+    const total = memberGear
+      .filter(entry => entry.required_gear_id === item.id)
+      .reduce((sum, entry) => sum + entry.quantity, 0)
+    const deficit = getDeficit(item, members.length, total)
+    return deficit === null ? total > 0 : deficit <= 0
+  }).length
+  const missingItems = items.length - coveredItems
+  const gearPercent = items.length > 0 ? Math.round((coveredItems / items.length) * 100) : 0
 
   return (
     <div className="space-y-4">
+      {hasItems && (
+        <div className={`rounded-xl border p-4 ${
+          missingItems === 0
+            ? 'border-mountain-success/30 bg-mountain-success/10'
+            : 'border-mountain-accent/40 bg-mountain-accent/10'
+        }`}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              {missingItems === 0 ? (
+                <CheckCircle2 className="w-5 h-5 text-mountain-success" />
+              ) : (
+                <AlertTriangle className="w-5 h-5 text-mountain-accent" />
+              )}
+              <div>
+                <p className="font-semibold text-mountain-text">
+                  {missingItems === 0 ? 'Снаряжение закрыто' : `Не закрыто ${missingItems} позиций`}
+                </p>
+                <p className="text-sm text-mountain-muted">
+                  {coveredItems}/{items.length} позиций закрыто по нормам отделения
+                </p>
+              </div>
+            </div>
+            <span className={`text-2xl font-bold ${missingItems === 0 ? 'text-mountain-success' : 'text-mountain-accent'}`}>
+              {gearPercent}%
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
         {isLeader && (
@@ -300,7 +342,7 @@ export function TeamGearTab({ teamId, members, currentUserId, isLeader }: TeamGe
           memberCount={members.length}
           onClose={() => setShowPicker(false)}
           onRefresh={load}
-          onDone={() => { setShowPicker(false); load() }}
+          onDone={() => { setShowPicker(false); load(); onPreparationChange?.() }}
         />
       )}
     </div>
