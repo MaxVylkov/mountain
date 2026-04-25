@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ArrowRight, Check, Compass, Tent, MapPin, Search, X, Mountain, UsersRound } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Compass, Plus, Tent, MapPin, Search, X, Mountain, UsersRound } from 'lucide-react'
 import CreateTeamModal from '@/components/teams/create-team-modal'
 
 interface MountainData {
@@ -71,6 +71,7 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
   const [showTeamModal, setShowTeamModal] = useState(false)
   const [existingTeams, setExistingTeams] = useState<any[]>([])
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null)
+  const [teamSearchQuery, setTeamSearchQuery] = useState('')
   const [allMountains, setAllMountains] = useState<{ id: string; name: string }[]>([])
 
   const [creating, setCreating] = useState(false)
@@ -197,6 +198,20 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
     setCreating(false)
   }
 
+  const stepLabels = ['Район', 'Маршруты', 'Отделение']
+  const currentRegion = selectedRegion ? regions.find(r => r.name === selectedRegion) : null
+  const selectedCamp = selectedCampId ? camps.find(c => c.id === selectedCampId) : null
+  const progressPercent = Math.round((step / TOTAL_STEPS) * 100)
+  const filteredTeams = useMemo(() => {
+    const q = teamSearchQuery.trim().toLowerCase()
+    if (!q) return existingTeams
+    return existingTeams.filter((team: any) =>
+      team.name?.toLowerCase().includes(q) ||
+      team.description?.toLowerCase().includes(q)
+    )
+  }, [existingTeams, teamSearchQuery])
+  const selectedTeam = existingTeams.find((team: any) => team.id === selectedTeamId)
+
   if (!userId) {
     return (
       <Card className="max-w-lg mx-auto">
@@ -206,11 +221,6 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
       </Card>
     )
   }
-
-  const stepLabels = ['Район', 'Маршруты', 'Отделение']
-  const currentRegion = selectedRegion ? regions.find(r => r.name === selectedRegion) : null
-  const selectedCamp = selectedCampId ? camps.find(c => c.id === selectedCampId) : null
-  const progressPercent = Math.round((step / TOTAL_STEPS) * 100)
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -437,71 +447,129 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
 
       {/* Step 3: Team */}
       {step === 3 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <button onClick={() => setStep(2)} className="text-mountain-muted hover:text-mountain-text"><ArrowLeft size={20} /></button>
-              <h2 className="text-2xl font-bold">Отделение</h2>
+        <div className="space-y-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setStep(2)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-mountain-border text-mountain-muted hover:border-mountain-primary/60 hover:text-mountain-text"
+                aria-label="Назад к маршрутам"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              <div>
+                <h2 className="text-2xl font-bold">Отделение</h2>
+                <p className="text-sm text-mountain-muted">Можно привязать поездку к команде сейчас или сделать это позже.</p>
+              </div>
             </div>
-            <Button variant="outline" onClick={() => { setTeamMode('skip'); createTrip() }} disabled={creating} className="text-sm">
-              {creating && teamMode === 'skip' ? 'Создаём...' : 'Без отделения →'}
+            <Button
+              variant="ghost"
+              onClick={() => { setTeamMode('skip'); createTrip() }}
+              disabled={creating}
+              className="self-start sm:self-auto"
+            >
+              {creating && teamMode === 'skip' ? 'Создаём...' : 'Пропустить'}
             </Button>
           </div>
-          <p className="text-sm text-mountain-muted">Создай отделение для совместного выхода или выбери существующее.</p>
 
-          {/* Mode selection */}
-          <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => setShowTeamModal(true)} className="text-left">
-              <Card hover className="space-y-1">
-                <h3 className="font-semibold flex items-center gap-2">
-                  <UsersRound size={16} className="text-mountain-primary" /> Новое отделение
-                </h3>
-                <p className="text-xs text-mountain-muted">Создать и пригласить участников</p>
+          <Card className="p-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl bg-mountain-primary/10 text-mountain-primary">
+                  <UsersRound size={18} />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Кто идет на маршрут?</h3>
+                  <p className="mt-1 text-sm text-mountain-muted">
+                    В отделении потом удобно распределить снаряжение, участников и готовность.
+                  </p>
+                </div>
+              </div>
+              <Button onClick={() => setShowTeamModal(true)} className="shrink-0">
+                <Plus size={16} className="mr-2" />
+                Новое отделение
+              </Button>
+            </div>
+          </Card>
+
+          <div className="space-y-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h3 className="font-semibold">Мои отделения</h3>
+                <p className="text-sm text-mountain-muted">
+                  {existingTeams.length > 0 ? `Доступно ${existingTeams.length}` : 'Пока нет созданных отделений'}
+                </p>
+              </div>
+              {existingTeams.length > 5 && (
+                <div className="relative w-full sm:w-72">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-mountain-muted" />
+                  <input
+                    value={teamSearchQuery}
+                    onChange={e => setTeamSearchQuery(e.target.value)}
+                    placeholder="Найти отделение..."
+                    className="w-full rounded-xl border border-mountain-border bg-mountain-surface py-2 pl-9 pr-3 text-sm text-mountain-text placeholder:text-mountain-muted focus:border-mountain-primary focus:outline-none"
+                  />
+                </div>
+              )}
+            </div>
+
+            {existingTeams.length === 0 ? (
+              <Card className="p-5 text-center">
+                <p className="text-sm text-mountain-muted">Создай первое отделение, и оно сразу появится здесь.</p>
               </Card>
-            </button>
-            {existingTeams.length > 0 && (
-              <button onClick={() => setTeamMode('existing')} className="text-left">
-                <Card hover className={`space-y-1 ${teamMode === 'existing' ? 'border-mountain-primary' : ''}`}>
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <UsersRound size={16} className="text-mountain-accent" /> Моё отделение
-                  </h3>
-                  <p className="text-xs text-mountain-muted">Выбрать из существующих ({existingTeams.length})</p>
-                </Card>
-              </button>
+            ) : filteredTeams.length === 0 ? (
+              <Card className="p-5 text-center">
+                <p className="text-sm text-mountain-muted">По этому запросу ничего не нашлось.</p>
+              </Card>
+            ) : (
+              <div className="grid gap-2">
+                {filteredTeams.map((t: any) => {
+                  const isSelected = selectedTeamId === t.id
+                  return (
+                    <button key={t.id} onClick={() => { setSelectedTeamId(t.id); setTeamMode('existing') }} className="w-full text-left">
+                      <Card hover className={`p-4 transition-colors ${isSelected ? 'border-mountain-primary bg-mountain-primary/5' : ''}`}>
+                        <div className="flex items-start gap-3">
+                          <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+                            isSelected ? 'border-mountain-primary bg-mountain-primary' : 'border-mountain-border'
+                          }`}>
+                            {isSelected && <Check size={14} className="text-white" />}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                              <span className="font-medium text-mountain-text">{t.name}</span>
+                              {isSelected && <span className="text-xs font-medium text-mountain-primary">Выбрано</span>}
+                            </div>
+                            {t.description && <p className="mt-1 line-clamp-2 text-sm text-mountain-muted">{t.description}</p>}
+                          </div>
+                        </div>
+                      </Card>
+                    </button>
+                  )
+                })}
+              </div>
             )}
           </div>
 
-          {/* Select existing team */}
-          {teamMode === 'existing' && (
-            <div className="space-y-2">
-              {existingTeams.map((t: any) => (
-                <button key={t.id} onClick={() => setSelectedTeamId(t.id)} className="w-full text-left">
-                  <Card className={`p-3 ${selectedTeamId === t.id ? 'border-mountain-primary' : ''}`}>
-                    <div className="flex items-center gap-2">
-                      <div className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 ${
-                        selectedTeamId === t.id ? 'bg-mountain-primary border-mountain-primary' : 'border-mountain-border'
-                      }`}>
-                        {selectedTeamId === t.id && <Check size={14} className="text-white" />}
-                      </div>
-                      <span className="text-sm font-medium">{t.name}</span>
-                    </div>
-                    {t.description && <p className="text-xs text-mountain-muted mt-1 ml-7">{t.description}</p>}
-                  </Card>
-                </button>
-              ))}
+          <Card className="sticky bottom-4 p-4 shadow-lg shadow-black/20">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium">
+                  {selectedTeam ? selectedTeam.name : 'Отделение не выбрано'}
+                </p>
+                <p className="text-xs text-mountain-muted">
+                  {selectedTeam ? 'Поездка будет связана с этим отделением.' : 'Можно создать новое, выбрать из списка или пропустить.'}
+                </p>
+              </div>
+              <Button
+                onClick={createTrip}
+                disabled={creating || !selectedTeamId}
+                className="sm:w-auto"
+              >
+                {creating ? 'Создаём...' : 'Создать поездку'}
+                {!creating && <ArrowRight size={16} className="ml-2" />}
+              </Button>
             </div>
-          )}
-
-          {/* Create button */}
-          {teamMode === 'existing' && (
-            <Button
-              onClick={createTrip}
-              disabled={creating || !selectedTeamId}
-              className="w-full"
-            >
-              {creating ? 'Создаём...' : 'Создать поездку'}
-            </Button>
-          )}
+          </Card>
 
           {showTeamModal && userId && (
             <CreateTeamModal

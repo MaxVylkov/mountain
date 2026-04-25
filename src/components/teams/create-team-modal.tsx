@@ -4,6 +4,7 @@ import { useState, useEffect, FormEvent } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { X } from 'lucide-react'
 
 interface Route {
   id: string
@@ -118,18 +119,31 @@ export default function CreateTeamModal({
       onClick={onClose}
     >
       <div
-        className="surface-card w-full max-w-md p-6 space-y-4"
+        className="surface-card w-full max-w-lg p-6 space-y-5"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-bold text-mountain-text">
-          Создать отделение
-        </h2>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-mountain-text">Новое отделение</h2>
+            <p className="mt-1 text-sm text-mountain-muted">
+              Дай отделению понятное имя. Участников и снаряжение можно добавить после создания.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-mountain-muted hover:bg-mountain-bg hover:text-mountain-text"
+            aria-label="Закрыть"
+          >
+            <X size={18} />
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             id="team-name"
             label="Название"
-            placeholder="Название отделения"
+            placeholder="Например: Алтай, майские"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
@@ -142,7 +156,7 @@ export default function CreateTeamModal({
             <textarea
               id="team-desc"
               className={`${selectStyles} min-h-[80px] resize-y`}
-              placeholder="Описание (необязательно)"
+              placeholder="Кто идет, цель выхода, важные вводные..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
@@ -199,7 +213,7 @@ export default function CreateTeamModal({
             </>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Input
               id="team-start"
               label="Дата начала"
@@ -220,7 +234,7 @@ export default function CreateTeamModal({
             <p className="text-sm text-mountain-danger">{error}</p>
           )}
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
             <Button
               type="button"
               variant="outline"
