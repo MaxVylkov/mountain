@@ -17,6 +17,8 @@ interface CreateTeamModalProps {
   onClose: () => void
   onCreate: (teamId?: string) => void
   hideLocation?: boolean
+  existingTeamNames?: string[]
+  submitLabel?: string
 }
 
 export default function CreateTeamModal({
@@ -25,6 +27,8 @@ export default function CreateTeamModal({
   onClose,
   onCreate,
   hideLocation = false,
+  existingTeamNames = [],
+  submitLabel = 'Создать',
 }: CreateTeamModalProps) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -36,6 +40,8 @@ export default function CreateTeamModal({
   const [loadingRoutes, setLoadingRoutes] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  const normalizedExistingNames = existingTeamNames.map(normalizeTeamName)
 
   useEffect(() => {
     if (!mountainId) {
@@ -63,8 +69,16 @@ export default function CreateTeamModal({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!name.trim()) {
+    const trimmedName = name.trim()
+    const normalizedName = normalizeTeamName(trimmedName)
+
+    if (!trimmedName) {
       setError('Введите название отделения')
+      return
+    }
+
+    if (normalizedExistingNames.includes(normalizedName)) {
+      setError('Отделение с таким названием уже есть. Название должно быть уникальным.')
       return
     }
 
@@ -76,7 +90,7 @@ export default function CreateTeamModal({
     const { data: team, error: insertError } = await supabase
       .from('teams')
       .insert({
-        name: name.trim(),
+        name: trimmedName,
         description: description.trim() || null,
         mountain_id: mountainId || null,
         route_id: routeId || null,
@@ -88,7 +102,7 @@ export default function CreateTeamModal({
       .single()
 
     if (insertError || !team) {
-      setError('Не удалось создать отделение. Попробуйте ещё раз.')
+      setError('Не удалось создать отделение. Проверьте название и попробуйте ещё раз.')
       setSubmitting(false)
       return
     }
@@ -145,7 +159,10 @@ export default function CreateTeamModal({
             label="Название"
             placeholder="Например: Алтай, майские"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value)
+              if (error) setError('')
+            }}
             required
           />
 
@@ -249,11 +266,15 @@ export default function CreateTeamModal({
               className="flex-1"
               disabled={submitting}
             >
-              {submitting ? 'Создание...' : 'Создать'}
+              {submitting ? 'Создание...' : submitLabel}
             </Button>
           </div>
         </form>
       </div>
     </div>
   )
+}
+
+function normalizeTeamName(value: string) {
+  return value.trim().replace(/\s+/g, ' ').toLowerCase()
 }

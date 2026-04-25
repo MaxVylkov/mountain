@@ -130,7 +130,7 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
       if (data.user) {
         setUserId(data.user.id)
         // Load existing teams where user is leader
-        supabase.from('team_members').select('team_id, role, team:teams(id, name, description)')
+        supabase.from('team_members').select('team_id, role, team:teams(id, name, description, start_date, end_date)')
           .eq('user_id', data.user.id)
           .then(({ data: tmData }) => {
             if (tmData) setExistingTeams(tmData.filter((t: any) => t.role === 'leader').map((t: any) => t.team))
@@ -163,7 +163,7 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
     if (!region || region.camps.length === 0) setStep(2)
   }
 
-  async function createTrip() {
+  async function createTrip(teamIdOverride?: string) {
     if (!userId || !selectedRegion) return
     setCreating(true)
     const supabase = createClient()
@@ -171,7 +171,7 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
     const tripName = selectedCampId
       ? camps.find(c => c.id === selectedCampId)?.name || selectedRegion
       : selectedRegion
-    const teamId: string | null = selectedTeamId || null
+    const teamId: string | null = teamIdOverride || selectedTeamId || null
 
     const { data: trip } = await supabase.from('trips')
       .insert({
@@ -204,12 +204,20 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
   const progressPercent = Math.round((step / TOTAL_STEPS) * 100)
   const filteredTeams = useMemo(() => {
     const q = teamSearchQuery.trim().toLowerCase()
-    if (!q) return existingTeams
-    return existingTeams.filter((team: any) =>
+    const teams = q
+      ? existingTeams.filter((team: any) =>
       team.name?.toLowerCase().includes(q) ||
       team.description?.toLowerCase().includes(q)
-    )
-  }, [existingTeams, teamSearchQuery])
+      )
+      : existingTeams
+
+    if (!selectedTeamId) return teams
+    return [...teams].sort((a: any, b: any) => {
+      if (a.id === selectedTeamId) return -1
+      if (b.id === selectedTeamId) return 1
+      return 0
+    })
+  }, [existingTeams, teamSearchQuery, selectedTeamId])
   const selectedTeam = existingTeams.find((team: any) => team.id === selectedTeamId)
 
   if (!userId) {
@@ -498,6 +506,7 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
                 <h3 className="font-semibold">Мои отделения</h3>
                 <p className="text-sm text-mountain-muted">
                   {existingTeams.length > 0 ? `Доступно ${existingTeams.length}` : 'Пока нет созданных отделений'}
+                  {selectedTeam && ` · выбрано: ${selectedTeam.name}`}
                 </p>
               </div>
               {existingTeams.length > 5 && (
@@ -540,6 +549,11 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
                               {isSelected && <span className="text-xs font-medium text-mountain-primary">Выбрано</span>}
                             </div>
                             {t.description && <p className="mt-1 line-clamp-2 text-sm text-mountain-muted">{t.description}</p>}
+                            {(t.start_date || t.end_date) && (
+                              <p className="mt-1 text-xs text-mountain-muted">
+                                {[t.start_date, t.end_date].filter(Boolean).join(' — ')}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </Card>
@@ -561,7 +575,7 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
                 </p>
               </div>
               <Button
-                onClick={createTrip}
+                onClick={() => createTrip()}
                 disabled={creating || !selectedTeamId}
                 className="sm:w-auto"
               >
@@ -576,18 +590,15 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
               userId={userId}
               mountains={allMountains}
               hideLocation
+              existingTeamNames={existingTeams.map((team: any) => team.name)}
+              submitLabel="Создать отделение и поездку"
               onClose={() => setShowTeamModal(false)}
               onCreate={async (teamId) => {
                 setShowTeamModal(false)
                 if (teamId) {
                   setSelectedTeamId(teamId)
                   setTeamMode('existing')
-                  // Reload teams list to include the newly created team
-                  const supabase = createClient()
-                  const { data: tmData } = await supabase.from('team_members')
-                    .select('team_id, role, team:teams(id, name, description)')
-                    .eq('user_id', userId!)
-                  if (tmData) setExistingTeams(tmData.filter((t: any) => t.role === 'leader').map((t: any) => t.team))
+                  await createTrip(teamId)
                 }
               }}
             />

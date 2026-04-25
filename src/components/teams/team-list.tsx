@@ -154,9 +154,14 @@ export default function TeamList({ userId, mountains }: TeamListProps) {
           userId={userId}
           mountains={mountains}
           onClose={() => setShowModal(false)}
-          onCreate={() => {
+          existingTeamNames={teams.map((item) => item.team.name)}
+          onCreate={(teamId) => {
             setShowModal(false)
-            loadTeams()
+            if (teamId) {
+              router.push(`/teams/${teamId}`)
+            } else {
+              loadTeams()
+            }
           }}
         />
       )}
