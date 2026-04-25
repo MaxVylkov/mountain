@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, Compass, Package, Tent, MapPin, Search, X, Mountain, UsersRound } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, Compass, Tent, MapPin, Search, X, Mountain, UsersRound } from 'lucide-react'
 import CreateTeamModal from '@/components/teams/create-team-modal'
 
 interface MountainData {
@@ -33,18 +33,6 @@ interface RegionInfo {
   maxHeight: number
 }
 
-const TEMPLATES = [
-  { key: 'light_trek', name: 'Лёгкий треккинг', desc: 'Базовая одежда, рюкзак 30л, палки, фонарь, лёгкий бивуак', weight: '~8 кг' },
-  { key: 'np', name: 'НП (начальная подготовка)', desc: '+ обвязка, каска, верёвка, карабины, базовое железо', weight: '~15 кг' },
-  { key: 'sp3', name: 'СП-3', desc: '+ кошки, ледоруб, ледобуры, больше железа, зимний бивуак', weight: '~18 кг' },
-  { key: 'sp2', name: 'СП-2 и выше', desc: '+ ледовые инструменты, полный набор закладок/френдов, ИТО', weight: '~22 кг' },
-]
-
-const CATEGORY_LABELS: Record<string, string> = {
-  clothing: 'Одежда', footwear: 'Обувь', hardware: 'Железо',
-  ropes: 'Верёвки', bivouac: 'Бивуак', electronics: 'Электроника', other: 'Прочее',
-}
-
 function matchCampToMountainRegion(camp: CampData, mountainRegions: string[]): string | null {
   if (mountainRegions.includes(camp.region)) return camp.region
   if (camp.sub_region) {
@@ -62,7 +50,7 @@ function matchCampToMountainRegion(camp: CampData, mountainRegions: string[]): s
   return null
 }
 
-const TOTAL_STEPS = 5
+const TOTAL_STEPS = 3
 
 export function TripWizard({ mountains, camps }: { mountains: MountainData[]; camps: CampData[] }) {
   const router = useRouter()
@@ -74,19 +62,11 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
   const [selectedCampId, setSelectedCampId] = useState<string | null>(null)
 
-  // Step 2: Template
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
-  const [selectedPackingSet, setSelectedPackingSet] = useState<string | null>(null)
-  const [templateGear, setTemplateGear] = useState<any[]>([])
-  const [userGearIds, setUserGearIds] = useState<Set<string>>(new Set())
-  const [userGearItems, setUserGearItems] = useState<any[]>([])
-  const [userPackingSets, setUserPackingSets] = useState<any[]>([])
-
-  // Step 4: Routes
+  // Step 2: Routes
   const [routes, setRoutes] = useState<any[]>([])
   const [selectedRoutes, setSelectedRoutes] = useState<Set<string>>(new Set())
 
-  // Step 5: Team
+  // Step 3: Team
   const [teamMode, setTeamMode] = useState<'skip' | 'existing' | null>(null)
   const [showTeamModal, setShowTeamModal] = useState(false)
   const [existingTeams, setExistingTeams] = useState<any[]>([])
@@ -148,17 +128,6 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
         setUserId(data.user.id)
-        supabase.from('user_gear').select('gear_id, gear(id, name, category, weight)')
-          .eq('user_id', data.user.id)
-          .then(({ data: gearData }) => {
-            if (gearData) {
-              setUserGearIds(new Set(gearData.map((g: any) => g.gear_id)))
-              setUserGearItems(gearData.map((g: any) => g.gear))
-            }
-          })
-        supabase.from('packing_sets').select('id, name, packing_items(gear_id, gear(id, name, category, weight))')
-          .eq('user_id', data.user.id)
-          .then(({ data: setsData }) => { if (setsData) setUserPackingSets(setsData) })
         // Load existing teams where user is leader
         supabase.from('team_members').select('team_id, role, team:teams(id, name, description)')
           .eq('user_id', data.user.id)
@@ -168,22 +137,6 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
       }
     })
   }, [])
-
-  // Load gear
-  useEffect(() => {
-    if (!selectedTemplate && !selectedPackingSet) return
-    if (selectedTemplate === 'my_closet') { setTemplateGear(userGearItems); return }
-    if (selectedPackingSet) {
-      const set = userPackingSets.find((s: any) => s.id === selectedPackingSet)
-      if (set?.packing_items) setTemplateGear(set.packing_items.map((pi: any) => pi.gear).filter(Boolean))
-      return
-    }
-    if (selectedTemplate) {
-      createClient().from('gear_templates').select('gear_id, gear(id, name, category, weight)')
-        .eq('template', selectedTemplate)
-        .then(({ data }) => { if (data) setTemplateGear(data.map((d: any) => d.gear)) })
-    }
-  }, [selectedTemplate, selectedPackingSet, userGearItems, userPackingSets])
 
   // Load routes for region
   useEffect(() => {
@@ -211,26 +164,12 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
 
   async function createTrip() {
     if (!userId || !selectedRegion) return
-    if (!selectedTemplate && !selectedPackingSet) return
     setCreating(true)
     const supabase = createClient()
 
     const tripName = selectedCampId
       ? camps.find(c => c.id === selectedCampId)?.name || selectedRegion
       : selectedRegion
-    const templateKey = selectedTemplate && ['light_trek', 'np', 'sp3', 'sp2'].includes(selectedTemplate) ? selectedTemplate : null
-    const templateName = TEMPLATES.find(t => t.key === selectedTemplate)?.name
-      || userPackingSets.find((s: any) => s.id === selectedPackingSet)?.name
-      || 'Мои сборы'
-
-    let packingSetId: string | null = selectedPackingSet || null
-    if (!selectedPackingSet) {
-      const { data: newSet } = await supabase.from('packing_sets')
-        .insert({ user_id: userId, name: `${tripName} — ${templateName}`, route_id: null })
-        .select().single()
-      packingSetId = newSet?.id || null
-    }
-
     const teamId: string | null = selectedTeamId || null
 
     const { data: trip } = await supabase.from('trips')
@@ -240,19 +179,14 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
         region: selectedRegion,
         camp_id: selectedCampId,
         mountain_id: null,
-        template: templateKey,
-        status: 'packing',
-        packing_set_id: packingSetId,
+        template: null,
+        status: 'planning',
+        packing_set_id: null,
         team_id: teamId,
       })
       .select().single()
 
     if (trip) {
-      if (!selectedPackingSet && packingSetId && templateGear.length > 0) {
-        await supabase.from('packing_items').insert(
-          templateGear.map(g => ({ packing_set_id: packingSetId, gear_id: g.id }))
-        )
-      }
       if (selectedRoutes.size > 0) {
         await supabase.from('trip_routes').insert(
           Array.from(selectedRoutes).map(routeId => ({ trip_id: trip.id, route_id: routeId }))
@@ -273,7 +207,7 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
     )
   }
 
-  const stepLabels = ['Район', 'Шаблон', 'Снаряжение', 'Маршруты', 'Отделение']
+  const stepLabels = ['Район', 'Маршруты', 'Отделение']
   const currentRegion = selectedRegion ? regions.find(r => r.name === selectedRegion) : null
   const selectedCamp = selectedCampId ? camps.find(c => c.id === selectedCampId) : null
   const progressPercent = Math.round((step / TOTAL_STEPS) * 100)
@@ -292,10 +226,8 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
                 <h1 className="text-2xl font-bold text-mountain-text">{stepLabels[step - 1]}</h1>
                 <p className="mt-1 text-sm text-mountain-muted">
                   {step === 1 && 'Выбери район, лагерь или вершину. Остальное подстроится под этот выбор.'}
-                  {step === 2 && 'Выбери готовый шаблон или свою сборку из кладовки.'}
-                  {step === 3 && 'Проверь, что уже есть, а что нужно добрать.'}
-                  {step === 4 && 'Добавь маршруты в план поездки или оставь выбор на месте.'}
-                  {step === 5 && 'Свяжи поездку с отделением или создай её без команды.'}
+                  {step === 2 && 'Добавь маршруты в план поездки или оставь выбор на месте.'}
+                  {step === 3 && 'Свяжи поездку с отделением. Снаряжение будет готовиться уже там.'}
                 </p>
               </div>
               <div className="min-w-48">
@@ -311,7 +243,7 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
           </div>
 
           <div className="bg-mountain-surface p-4 lg:w-80">
-            <div className="grid grid-cols-5 gap-1">
+            <div className="grid grid-cols-3 gap-1">
               {stepLabels.map((label, index) => {
                 const s = index + 1
                 return (
@@ -469,7 +401,7 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
               )}
 
               <Button onClick={() => selectedRegion && setStep(2)} disabled={!selectedRegion} className="w-full">
-                Далее: шаблон
+                Далее: маршруты
                 <ArrowRight size={16} className="ml-2" />
               </Button>
             </Card>
@@ -477,125 +409,15 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
           </div>
       )}
 
-      {/* Step 2: Template */}
+      {/* Step 2: Routes */}
       {step === 2 && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <button onClick={() => setStep(1)} className="text-mountain-muted hover:text-mountain-text"><ArrowLeft size={20} /></button>
-            <h2 className="text-2xl font-bold">Набор снаряжения</h2>
-          </div>
-          <p className="text-sm text-mountain-muted">
-            Район: <span className="text-mountain-text font-medium">{selectedRegion}</span>
-            {selectedCampId && <> · Лагерь: <span className="text-mountain-text font-medium">{camps.find(c => c.id === selectedCampId)?.name}</span></>}
-          </p>
-
-          {(userGearItems.length > 0 || userPackingSets.length > 0) && (
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-mountain-muted">Мои сборки</h3>
-              {userGearItems.length > 0 && (
-                <button onClick={() => { setSelectedTemplate('my_closet'); setSelectedPackingSet(null); setStep(3) }} className="w-full text-left">
-                  <Card hover className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-bold">Вся моя кладовка</h3>
-                      <span className="text-sm font-mono text-mountain-accent">
-                        ~{(userGearItems.reduce((s: number, g: any) => s + (g?.weight || 0), 0) / 1000).toFixed(1)} кг
-                      </span>
-                    </div>
-                    <p className="text-sm text-mountain-muted">Всё снаряжение из кладовки ({userGearItems.length} предметов)</p>
-                  </Card>
-                </button>
-              )}
-              {userPackingSets.filter((s: any) => s.packing_items?.length > 0).map((s: any) => (
-                <button key={s.id} onClick={() => { setSelectedPackingSet(s.id); setSelectedTemplate(null); setStep(3) }} className="w-full text-left">
-                  <Card hover className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-bold">{s.name}</h3>
-                      <span className="text-sm font-mono text-mountain-accent">{s.packing_items.length} предметов</span>
-                    </div>
-                    <p className="text-sm text-mountain-muted">Набор из кладовки</p>
-                  </Card>
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium text-mountain-muted">Шаблоны по уровню</h3>
-            {TEMPLATES.map(t => (
-              <button key={t.key} onClick={() => { setSelectedTemplate(t.key); setSelectedPackingSet(null); setStep(3) }} className="w-full text-left">
-                <Card hover className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold">{t.name}</h3>
-                    <span className="text-sm font-mono text-mountain-accent">{t.weight}</span>
-                  </div>
-                  <p className="text-sm text-mountain-muted">{t.desc}</p>
-                </Card>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Step 3: Gear check */}
-      {step === 3 && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <button onClick={() => setStep(2)} className="text-mountain-muted hover:text-mountain-text"><ArrowLeft size={20} /></button>
-            <h2 className="text-2xl font-bold">Снаряжение</h2>
-          </div>
-          <p className="text-sm text-mountain-muted">Это снаряжение будет добавлено в твои сборы.</p>
-
-          <div className="flex flex-wrap gap-4 text-sm">
-            <span className="text-mountain-success">&#10003; Есть: {templateGear.filter(g => userGearIds.has(g.id)).length}</span>
-            <span className="text-mountain-accent">&#9888; Нужно: {templateGear.filter(g => !userGearIds.has(g.id)).length}</span>
-            <span className="font-mono text-mountain-muted">&#8721; {(templateGear.reduce((s, g) => s + (g.weight || 0), 0) / 1000).toFixed(1)} кг</span>
-          </div>
-
-          {Object.entries(CATEGORY_LABELS).map(([cat, label]) => {
-            const catItems = templateGear.filter(g => g.category === cat)
-            if (catItems.length === 0) return null
-            return (
-              <div key={cat} className="space-y-1">
-                <h3 className="text-sm font-medium text-mountain-muted">{label}</h3>
-                {catItems.map(g => {
-                  const has = userGearIds.has(g.id)
-                  return (
-                    <div key={g.id} className={`flex items-center justify-between px-3 py-2 rounded-lg ${has ? 'bg-mountain-success/5' : 'bg-mountain-accent/5'}`}>
-                      <div className="flex items-center gap-2">
-                        {has ? <Check size={16} className="text-mountain-success" /> : <Package size={16} className="text-mountain-accent" />}
-                        <span className="text-sm">{g.name}</span>
-                      </div>
-                      <span className="text-xs text-mountain-muted">{g.weight}г</span>
-                    </div>
-                  )
-                })}
-              </div>
-            )
-          })}
-
-          {templateGear.filter(g => !userGearIds.has(g.id)).length > 0 && (
-            <Card className="p-4 border-mountain-accent/30 bg-mountain-accent/5">
-              <p className="text-sm text-mountain-accent">
-                Снаряжение с иконкой <Package size={14} className="inline" /> отсутствует в кладовке — одолжи у друзей, возьми в турклубе или купи.
-              </p>
-            </Card>
-          )}
-
-          <Button onClick={() => setStep(4)} className="w-full">
-            Далее → Маршруты <ArrowRight size={16} className="ml-2" />
-          </Button>
-        </div>
-      )}
-
-      {/* Step 4: Routes */}
-      {step === 4 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <button onClick={() => setStep(3)} className="text-mountain-muted hover:text-mountain-text"><ArrowLeft size={20} /></button>
+              <button onClick={() => setStep(1)} className="text-mountain-muted hover:text-mountain-text"><ArrowLeft size={20} /></button>
               <h2 className="text-2xl font-bold">Маршруты</h2>
             </div>
-            <Button variant="outline" onClick={() => setStep(5)} className="text-sm">
+            <Button variant="outline" onClick={() => setStep(3)} className="text-sm">
               Выберу на месте →
             </Button>
           </div>
@@ -639,18 +461,18 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
             </Card>
           )}
 
-          <Button onClick={() => setStep(5)} className="w-full">
+          <Button onClick={() => setStep(3)} className="w-full">
             Далее → Отделение <ArrowRight size={16} className="ml-2" />
           </Button>
         </div>
       )}
 
-      {/* Step 5: Team */}
-      {step === 5 && (
+      {/* Step 3: Team */}
+      {step === 3 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <button onClick={() => setStep(4)} className="text-mountain-muted hover:text-mountain-text"><ArrowLeft size={20} /></button>
+              <button onClick={() => setStep(2)} className="text-mountain-muted hover:text-mountain-text"><ArrowLeft size={20} /></button>
               <h2 className="text-2xl font-bold">Отделение</h2>
             </div>
             <Button variant="outline" onClick={() => { setTeamMode('skip'); createTrip() }} disabled={creating} className="text-sm">
