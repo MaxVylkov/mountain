@@ -27,6 +27,22 @@ export type GearIconKey =
   | 'first_aid'
   | 'map'
   | 'bottle'
+  | 'crampons'
+  | 'ascender'
+  | 'belay_device'
+  | 'quickdraw'
+  | 'ice_screw'
+  | 'radio'
+  | 'sunglasses'
+  | 'gloves'
+  | 'sleeping_bag'
+  | 'pad'
+  | 'trekking_poles'
+  | 'harness'
+  | 'cam'
+  | 'nut'
+  | 'slings'
+  | 'thermos'
 
 type GearCategoryIconProps = SVGProps<SVGSVGElement> & {
   category: string | null | undefined
@@ -233,6 +249,205 @@ function BottleIcon(props: SVGProps<SVGSVGElement>) {
   )
 }
 
+function CramponsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M6 5h12" />
+      <path d="M7 8h10" />
+      <path d="M8 5v11" />
+      <path d="M16 5v11" />
+      <path d="M5 16h14" />
+      <path d="m6 16-1.5 3" />
+      <path d="m9 16-1 3" />
+      <path d="m12 16v3" />
+      <path d="m15 16 1 3" />
+      <path d="m18 16 1.5 3" />
+    </IconBase>
+  )
+}
+
+function AscenderIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 3v18" />
+      <path d="M8 5.5h5.5a4 4 0 0 1 0 8H9" />
+      <path d="M9 13.5 7 20h5" />
+      <path d="m10 8 3 2-3 2" />
+    </IconBase>
+  )
+}
+
+function BelayDeviceIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <rect x="6" y="5" width="12" height="14" rx="3" />
+      <path d="M9.5 9h5" />
+      <path d="M9.5 12h5" />
+      <path d="M9.5 15h5" />
+      <path d="M5 20h14" />
+    </IconBase>
+  )
+}
+
+function QuickdrawIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M9 3.5a3.5 3.5 0 0 1 0 7H7.5a3.5 3.5 0 0 1 0-7H9Z" />
+      <path d="M16.5 13.5H15a3.5 3.5 0 0 0 0 7h1.5a3.5 3.5 0 0 0 0-7Z" />
+      <path d="M10 10.2 14 14" />
+      <path d="M14 10.2 10 14" />
+    </IconBase>
+  )
+}
+
+function IceScrewIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M7 5h8" />
+      <path d="M15 5l2 2-9 9-2-2 9-9Z" />
+      <path d="m8 16-2 5" />
+      <path d="m11 8 3 3" />
+      <path d="m9.5 9.5 3 3" />
+      <path d="m8 11 3 3" />
+      <path d="M17 7h3" />
+    </IconBase>
+  )
+}
+
+function RadioIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M9 5h8a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
+      <path d="M10 5 8 2" />
+      <path d="M11 9h4" />
+      <circle cx="13" cy="15" r="2" />
+      <path d="M5 9v5" />
+    </IconBase>
+  )
+}
+
+function SunglassesIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M3.5 10.5 6 8h3.5l1.5 2.5" />
+      <path d="m20.5 10.5-2.5-2.5h-3.5L13 10.5" />
+      <path d="M3.5 10.5h7v2.2a3 3 0 0 1-6 0v-2.2Z" />
+      <path d="M13.5 10.5h7v2.2a3 3 0 0 1-6 0v-2.2Z" />
+      <path d="M10.5 11.5h3" />
+    </IconBase>
+  )
+}
+
+function GlovesIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M7 20h5V9a1.5 1.5 0 0 0-3 0v4" />
+      <path d="M9 13V7.5a1.5 1.5 0 0 1 3 0V13" />
+      <path d="M12 13V8.5a1.5 1.5 0 0 1 3 0V14" />
+      <path d="M15 14v-3a1.5 1.5 0 0 1 3 0v4.5A4.5 4.5 0 0 1 13.5 20H12" />
+      <path d="M7 20v-4l-2-2" />
+    </IconBase>
+  )
+}
+
+function SleepingBagIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 3a6 6 0 0 0-6 6v7a5 5 0 0 0 5 5h2a5 5 0 0 0 5-5V9a6 6 0 0 0-6-6Z" />
+      <path d="M8 9h8" />
+      <path d="M12 9v12" />
+      <path d="M9.5 13h5" />
+      <path d="M9.5 17h5" />
+    </IconBase>
+  )
+}
+
+function PadIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <rect x="6" y="3" width="12" height="18" rx="2" />
+      <path d="M6 7h12" />
+      <path d="M6 11h12" />
+      <path d="M6 15h12" />
+      <path d="M6 19h12" />
+    </IconBase>
+  )
+}
+
+function TrekkingPolesIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M8 3v18" />
+      <path d="M16 3v18" />
+      <path d="M6.5 5h3" />
+      <path d="M14.5 5h3" />
+      <path d="m6 21 2-3 2 3" />
+      <path d="m14 21 2-3 2 3" />
+      <path d="M8 8h2" />
+      <path d="M16 8h2" />
+    </IconBase>
+  )
+}
+
+function HarnessIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M7 5c2 1.5 8 1.5 10 0" />
+      <path d="M7 5 5 13l3 7" />
+      <path d="m17 5 2 8-3 7" />
+      <path d="M8 13h8" />
+      <path d="M10 13v4" />
+      <path d="M14 13v4" />
+      <circle cx="12" cy="10" r="1.5" />
+    </IconBase>
+  )
+}
+
+function CamIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 9v11" />
+      <path d="M8.5 4.5C6.8 4.5 5.5 5.8 5.5 7.5S6.8 10.5 8.5 10.5c1.5 0 2.6-1 3-2.3" />
+      <path d="M15.5 4.5c1.7 0 3 1.3 3 3s-1.3 3-3 3c-1.5 0-2.6-1-3-2.3" />
+      <path d="M9 15h6" />
+      <path d="M10 20h4" />
+    </IconBase>
+  )
+}
+
+function NutIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M9 4h6l2 7-5 9-5-9 2-7Z" />
+      <path d="M10 8h4" />
+      <path d="M8 13h8" />
+      <path d="M12 20v2" />
+    </IconBase>
+  )
+}
+
+function SlingsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <ellipse cx="12" cy="12" rx="7" ry="10" />
+      <ellipse cx="12" cy="12" rx="4" ry="7" />
+      <path d="M8.5 5.5 15.5 18.5" />
+    </IconBase>
+  )
+}
+
+function ThermosIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M9 3.5h6" />
+      <path d="M10 6h4" />
+      <rect x="8" y="6" width="8" height="15" rx="2" />
+      <path d="M8 11h8" />
+      <path d="M10.5 15h3" />
+    </IconBase>
+  )
+}
+
 const GEAR_CATEGORY_ICONS: Record<GearCategory, GearCategoryIconComponent> = {
   clothing: ClothingIcon,
   footwear: FootwearIcon,
@@ -259,6 +474,22 @@ const GEAR_ICONS: Record<GearIconKey, GearCategoryIconComponent> = {
   first_aid: FirstAidIcon,
   map: MapIcon,
   bottle: BottleIcon,
+  crampons: CramponsIcon,
+  ascender: AscenderIcon,
+  belay_device: BelayDeviceIcon,
+  quickdraw: QuickdrawIcon,
+  ice_screw: IceScrewIcon,
+  radio: RadioIcon,
+  sunglasses: SunglassesIcon,
+  gloves: GlovesIcon,
+  sleeping_bag: SleepingBagIcon,
+  pad: PadIcon,
+  trekking_poles: TrekkingPolesIcon,
+  harness: HarnessIcon,
+  cam: CamIcon,
+  nut: NutIcon,
+  slings: SlingsIcon,
+  thermos: ThermosIcon,
 }
 
 export const GEAR_ICON_OPTIONS: Array<{ key: GearIconKey; label: string }> = [
@@ -275,6 +506,22 @@ export const GEAR_ICON_OPTIONS: Array<{ key: GearIconKey; label: string }> = [
   { key: 'first_aid', label: 'Аптечка' },
   { key: 'map', label: 'Карта' },
   { key: 'bottle', label: 'Фляга' },
+  { key: 'crampons', label: 'Кошки' },
+  { key: 'ascender', label: 'Жумар' },
+  { key: 'belay_device', label: 'Страховочное' },
+  { key: 'quickdraw', label: 'Оттяжка' },
+  { key: 'ice_screw', label: 'Ледобур' },
+  { key: 'radio', label: 'Рация' },
+  { key: 'sunglasses', label: 'Очки' },
+  { key: 'gloves', label: 'Перчатки' },
+  { key: 'sleeping_bag', label: 'Спальник' },
+  { key: 'pad', label: 'Коврик' },
+  { key: 'trekking_poles', label: 'Палки' },
+  { key: 'harness', label: 'Обвязка' },
+  { key: 'cam', label: 'Френд' },
+  { key: 'nut', label: 'Закладка' },
+  { key: 'slings', label: 'Петли' },
+  { key: 'thermos', label: 'Термос' },
   { key: 'device', label: 'Прибор' },
   { key: 'box', label: 'Прочее' },
 ]
