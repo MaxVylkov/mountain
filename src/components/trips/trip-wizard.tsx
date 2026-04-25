@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ArrowRight, Check, Package, Tent, MapPin, Search, X, Mountain, UsersRound } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, Compass, Package, Tent, MapPin, Search, X, Mountain, UsersRound } from 'lucide-react'
 import CreateTeamModal from '@/components/teams/create-team-modal'
 
 interface MountainData {
@@ -274,113 +274,207 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
   }
 
   const stepLabels = ['Район', 'Шаблон', 'Снаряжение', 'Маршруты', 'Отделение']
+  const currentRegion = selectedRegion ? regions.find(r => r.name === selectedRegion) : null
+  const selectedCamp = selectedCampId ? camps.find(c => c.id === selectedCampId) : null
+  const progressPercent = Math.round((step / TOTAL_STEPS) * 100)
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Progress */}
-      <div className="flex items-center gap-2">
-        {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map(s => (
-          <div key={s} className="flex items-center gap-2 flex-1">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
-              s <= step ? 'bg-mountain-primary text-white' : 'bg-mountain-surface text-mountain-muted'
-            }`}>{s}</div>
-            {s < TOTAL_STEPS && <div className={`flex-1 h-0.5 ${s < step ? 'bg-mountain-primary' : 'bg-mountain-border'}`} />}
+    <div className="max-w-5xl mx-auto space-y-6">
+      <Card className="overflow-hidden p-0">
+        <div className="grid gap-px bg-mountain-border lg:grid-cols-[1fr_auto]">
+          <div className="bg-mountain-surface p-5">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-mountain-muted">
+              <Compass className="h-4 w-4 text-mountain-primary" />
+              Создание поездки
+            </div>
+            <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-mountain-text">{stepLabels[step - 1]}</h1>
+                <p className="mt-1 text-sm text-mountain-muted">
+                  {step === 1 && 'Выбери район, лагерь или вершину. Остальное подстроится под этот выбор.'}
+                  {step === 2 && 'Выбери готовый шаблон или свою сборку из кладовки.'}
+                  {step === 3 && 'Проверь, что уже есть, а что нужно добрать.'}
+                  {step === 4 && 'Добавь маршруты в план поездки или оставь выбор на месте.'}
+                  {step === 5 && 'Свяжи поездку с отделением или создай её без команды.'}
+                </p>
+              </div>
+              <div className="min-w-48">
+                <div className="mb-2 flex items-center justify-between text-xs text-mountain-muted">
+                  <span>Шаг {step} из {TOTAL_STEPS}</span>
+                  <span>{progressPercent}%</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-mountain-bg">
+                  <div className="h-full rounded-full bg-mountain-primary transition-all" style={{ width: `${progressPercent}%` }} />
+                </div>
+              </div>
+            </div>
           </div>
-        ))}
-      </div>
-      <div className="flex justify-between text-xs text-mountain-muted">
-        {stepLabels.map(l => <span key={l}>{l}</span>)}
-      </div>
+
+          <div className="bg-mountain-surface p-4 lg:w-80">
+            <div className="grid grid-cols-5 gap-1">
+              {stepLabels.map((label, index) => {
+                const s = index + 1
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => s < step && setStep(s)}
+                    disabled={s > step}
+                    className={`rounded-lg px-2 py-2 text-center text-xs transition-colors ${
+                      s === step
+                        ? 'bg-mountain-primary text-white'
+                        : s < step
+                          ? 'bg-mountain-primary/10 text-mountain-primary hover:bg-mountain-primary/15'
+                          : 'bg-mountain-bg text-mountain-muted'
+                    }`}
+                  >
+                    <span className="mx-auto mb-1 flex h-5 w-5 items-center justify-center rounded-full bg-current/10 text-[11px] font-bold">
+                      {s < step ? <CheckCircle2 className="h-3.5 w-3.5" /> : s}
+                    </span>
+                    <span className="hidden sm:inline lg:hidden xl:inline">{label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      </Card>
 
       {/* Step 1: Region + Camp */}
       {step === 1 && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold">Куда собираемся?</h2>
-
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mountain-muted" />
-            <input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Район, лагерь или вершина..."
-              className="w-full pl-10 pr-9 py-3 bg-mountain-bg border border-mountain-border rounded-xl text-sm text-mountain-text placeholder:text-mountain-muted focus:outline-none focus:border-mountain-primary transition-colors"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-mountain-muted hover:text-mountain-text">
-                <X size={14} />
-              </button>
-            )}
-          </div>
-
-          <div className="space-y-3">
-            {filteredRegions.map(region => (
-              <div key={region.name}>
-                <button onClick={() => selectRegion(region.name)} className="w-full text-left">
-                  <Card hover className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-bold flex items-center gap-2">
-                        <MapPin size={18} className="text-mountain-primary shrink-0" />
-                        {region.name}
-                      </h3>
-                      <div className="flex items-center gap-3 text-xs text-mountain-muted shrink-0">
-                        {region.mountains.length > 0 && (
-                          <span className="flex items-center gap-1"><Mountain size={12} /> {region.mountains.length} вершин</span>
-                        )}
-                        {region.maxHeight > 0 && (
-                          <span className="font-mono text-mountain-accent">{region.maxHeight} м</span>
-                        )}
-                      </div>
-                    </div>
-                    {region.camps.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {region.camps.map(camp => (
-                          <span key={camp.id} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-mountain-surface text-mountain-muted">
-                            <Tent size={10} /> {camp.name}
-                            {camp.altitude ? <span className="font-mono">{camp.altitude}м</span> : null}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    {region.mountains.length > 0 && (
-                      <p className="text-xs text-mountain-muted">
-                        {region.mountains.slice(0, 4).map(m => m.name).join(', ')}
-                        {region.mountains.length > 4 && ` и ещё ${region.mountains.length - 4}`}
-                      </p>
-                    )}
-                  </Card>
+        <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+          <div className="space-y-4">
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mountain-muted" />
+              <input
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Район, лагерь или вершина..."
+                className="w-full pl-10 pr-9 py-3 bg-mountain-surface border border-mountain-border rounded-xl text-sm text-mountain-text placeholder:text-mountain-muted focus:outline-none focus:border-mountain-primary transition-colors"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-mountain-muted hover:text-mountain-text">
+                  <X size={14} />
                 </button>
+              )}
+            </div>
 
-                {selectedRegion === region.name && region.camps.length > 0 && step === 1 && (
-                  <div className="ml-6 mt-2 space-y-2">
-                    <p className="text-sm text-mountain-muted">Выбери альплагерь (необязательно)</p>
-                    {region.camps.map(camp => (
-                      <button key={camp.id} onClick={() => { setSelectedCampId(camp.id); setStep(2) }} className="w-full text-left">
-                        <Card hover className="py-2.5 px-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium flex items-center gap-1.5">
-                              <Tent size={14} className="text-mountain-accent" /> {camp.name}
-                            </span>
-                            <div className="flex items-center gap-3 text-xs text-mountain-muted">
-                              {camp.route_count && <span>{camp.route_count} маршрутов</span>}
-                              {camp.difficulty_range && <span className="font-mono">{camp.difficulty_range}</span>}
-                              {camp.altitude && <span className="font-mono">{camp.altitude} м</span>}
-                            </div>
+            <div className="space-y-2">
+              {filteredRegions.map(region => {
+                const active = selectedRegion === region.name
+                return (
+                  <div key={region.name}>
+                    <button onClick={() => selectRegion(region.name)} className="w-full text-left">
+                      <Card hover className={`p-4 transition-colors ${active ? 'border-mountain-primary bg-mountain-primary/5' : ''}`}>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0">
+                            <h3 className="flex items-center gap-2 text-base font-bold text-mountain-text">
+                              <MapPin size={17} className="text-mountain-primary shrink-0" />
+                              <span className="truncate">{region.name}</span>
+                            </h3>
+                            <p className="mt-1 text-sm text-mountain-muted">
+                              {region.camps.length > 0
+                                ? region.camps.slice(0, 3).map(c => c.name).join(', ')
+                                : region.mountains.slice(0, 4).map(m => m.name).join(', ')}
+                              {region.camps.length > 3 && ` и ещё ${region.camps.length - 3}`}
+                              {region.camps.length === 0 && region.mountains.length > 4 && ` и ещё ${region.mountains.length - 4}`}
+                            </p>
                           </div>
-                        </Card>
-                      </button>
-                    ))}
-                    <button onClick={() => setStep(2)} className="text-sm text-mountain-primary hover:underline pl-2">
-                      Без лагеря →
+                          <div className="flex shrink-0 flex-wrap gap-2 text-xs text-mountain-muted sm:justify-end">
+                            {region.mountains.length > 0 && (
+                              <span className="inline-flex items-center gap-1 rounded-lg bg-mountain-bg px-2 py-1">
+                                <Mountain size={12} />
+                                {region.mountains.length} вершин
+                              </span>
+                            )}
+                            {region.camps.length > 0 && (
+                              <span className="inline-flex items-center gap-1 rounded-lg bg-mountain-bg px-2 py-1">
+                                <Tent size={12} />
+                                {region.camps.length} лагеря
+                              </span>
+                            )}
+                            {region.maxHeight > 0 && (
+                              <span className="rounded-lg bg-mountain-bg px-2 py-1 font-mono text-mountain-accent">{region.maxHeight} м</span>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
                     </button>
+
+                    {active && region.camps.length > 0 && step === 1 && (
+                      <div className="mt-2 rounded-xl border border-mountain-border bg-mountain-surface/40 p-3">
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <p className="text-xs font-medium uppercase tracking-wide text-mountain-muted">Альплагерь</p>
+                          <button onClick={() => setStep(2)} className="text-xs font-medium text-mountain-primary hover:text-mountain-primary/80">
+                            Без лагеря →
+                          </button>
+                        </div>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {region.camps.map(camp => (
+                            <button
+                              key={camp.id}
+                              onClick={() => { setSelectedCampId(camp.id); setStep(2) }}
+                              className="rounded-lg border border-mountain-border bg-mountain-bg p-3 text-left transition-colors hover:border-mountain-primary"
+                            >
+                              <span className="flex items-center gap-1.5 text-sm font-medium text-mountain-text">
+                                <Tent size={14} className="text-mountain-accent" />
+                                {camp.name}
+                              </span>
+                              <span className="mt-1 flex flex-wrap gap-2 text-xs text-mountain-muted">
+                                {camp.route_count && <span>{camp.route_count} маршрутов</span>}
+                                {camp.difficulty_range && <span className="font-mono">{camp.difficulty_range}</span>}
+                                {camp.altitude && <span className="font-mono">{camp.altitude} м</span>}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            ))}
-            {filteredRegions.length === 0 && (
-              <p className="text-sm text-mountain-muted text-center py-4">Ничего не найдено</p>
-            )}
+                )
+              })}
+              {filteredRegions.length === 0 && (
+                <p className="text-sm text-mountain-muted text-center py-4">Ничего не найдено</p>
+              )}
+            </div>
           </div>
-        </div>
+
+          <aside className="lg:sticky lg:top-20 lg:self-start">
+            <Card className="p-4 space-y-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-mountain-muted">Выбор района</p>
+                <h2 className="mt-1 text-xl font-bold text-mountain-text">
+                  {selectedRegion || 'Пока ничего не выбрано'}
+                </h2>
+                <p className="mt-1 text-sm text-mountain-muted">
+                  {selectedCamp ? `Лагерь: ${selectedCamp.name}` : currentRegion ? 'Можно продолжить без лагеря или выбрать лагерь из списка.' : 'Начни с района, лагеря или вершины.'}
+                </p>
+              </div>
+
+              {currentRegion && (
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-lg bg-mountain-bg p-2">
+                    <p className="text-lg font-bold text-mountain-text">{currentRegion.mountains.length}</p>
+                    <p className="text-[11px] text-mountain-muted">вершин</p>
+                  </div>
+                  <div className="rounded-lg bg-mountain-bg p-2">
+                    <p className="text-lg font-bold text-mountain-text">{currentRegion.camps.length}</p>
+                    <p className="text-[11px] text-mountain-muted">лагерей</p>
+                  </div>
+                  <div className="rounded-lg bg-mountain-bg p-2">
+                    <p className="text-lg font-bold text-mountain-text">{currentRegion.maxHeight || '—'}</p>
+                    <p className="text-[11px] text-mountain-muted">метров</p>
+                  </div>
+                </div>
+              )}
+
+              <Button onClick={() => selectedRegion && setStep(2)} disabled={!selectedRegion} className="w-full">
+                Далее: шаблон
+                <ArrowRight size={16} className="ml-2" />
+              </Button>
+            </Card>
+          </aside>
+          </div>
       )}
 
       {/* Step 2: Template */}
