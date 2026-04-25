@@ -455,7 +455,7 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
 
       {/* Step 3: Team */}
       {step === 3 && (
-        <div className="space-y-5">
+        <div className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <button
@@ -480,15 +480,15 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
             </Button>
           </div>
 
-          <Card className="p-4">
+          <div className="surface-card px-4 py-3">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl bg-mountain-primary/10 text-mountain-primary">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-mountain-primary/10 text-mountain-primary">
                   <UsersRound size={18} />
                 </div>
                 <div>
                   <h3 className="font-semibold">Кто идет на маршрут?</h3>
-                  <p className="mt-1 text-sm text-mountain-muted">
+                  <p className="text-sm text-mountain-muted">
                     В отделении потом удобно распределить снаряжение, участников и готовность.
                   </p>
                 </div>
@@ -498,7 +498,7 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
                 Новое отделение
               </Button>
             </div>
-          </Card>
+          </div>
 
           <div className="space-y-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -531,32 +531,34 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
                 <p className="text-sm text-mountain-muted">По этому запросу ничего не нашлось.</p>
               </Card>
             ) : (
-              <div className="grid gap-2">
+              <div className="grid gap-1.5">
                 {filteredTeams.map((t: any) => {
                   const isSelected = selectedTeamId === t.id
+                  const dates = [t.start_date, t.end_date].filter(Boolean).join(' — ')
                   return (
                     <button key={t.id} onClick={() => { setSelectedTeamId(t.id); setTeamMode('existing') }} className="w-full text-left">
-                      <Card hover className={`p-4 transition-colors ${isSelected ? 'border-mountain-primary bg-mountain-primary/5' : ''}`}>
-                        <div className="flex items-start gap-3">
-                          <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+                      <div className={`surface-card min-h-14 px-4 py-3 transition-colors hover:border-mountain-primary ${
+                        isSelected ? 'border-mountain-primary bg-mountain-primary/5' : ''
+                      }`}>
+                        <div className="flex items-center gap-3">
+                          <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
                             isSelected ? 'border-mountain-primary bg-mountain-primary' : 'border-mountain-border'
                           }`}>
                             {isSelected && <Check size={14} className="text-white" />}
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                              <span className="font-medium text-mountain-text">{t.name}</span>
-                              {isSelected && <span className="text-xs font-medium text-mountain-primary">Выбрано</span>}
+                          <div className="grid min-w-0 flex-1 gap-1 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                            <div className="min-w-0">
+                              <span className="block truncate font-medium text-mountain-text">{t.name}</span>
+                              {(t.description || dates) && (
+                                <span className="mt-0.5 block truncate text-xs text-mountain-muted">
+                                  {[t.description, dates].filter(Boolean).join(' · ')}
+                                </span>
+                              )}
                             </div>
-                            {t.description && <p className="mt-1 line-clamp-2 text-sm text-mountain-muted">{t.description}</p>}
-                            {(t.start_date || t.end_date) && (
-                              <p className="mt-1 text-xs text-mountain-muted">
-                                {[t.start_date, t.end_date].filter(Boolean).join(' — ')}
-                              </p>
-                            )}
+                            {isSelected && <span className="text-xs font-medium text-mountain-primary">Выбрано</span>}
                           </div>
                         </div>
-                      </Card>
+                      </div>
                     </button>
                   )
                 })}
@@ -564,7 +566,7 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
             )}
           </div>
 
-          <Card className="sticky bottom-4 p-4 shadow-lg shadow-black/20">
+          <div className="surface-card sticky bottom-3 px-4 py-3 shadow-lg shadow-black/20">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-medium">
@@ -583,7 +585,7 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
                 {!creating && <ArrowRight size={16} className="ml-2" />}
               </Button>
             </div>
-          </Card>
+          </div>
 
           {showTeamModal && userId && (
             <CreateTeamModal
