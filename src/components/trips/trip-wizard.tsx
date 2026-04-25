@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, Compass, Tent, MapPin, Search, X, Mountain, UsersRound } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Compass, Tent, MapPin, Search, X, Mountain, UsersRound } from 'lucide-react'
 import CreateTeamModal from '@/components/teams/create-team-modal'
 
 interface MountainData {
@@ -214,59 +214,27 @@ export function TripWizard({ mountains, camps }: { mountains: MountainData[]; ca
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <Card className="overflow-hidden p-0">
-        <div className="grid gap-px bg-mountain-border lg:grid-cols-[1fr_auto]">
-          <div className="bg-mountain-surface p-5">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-mountain-muted">
-              <Compass className="h-4 w-4 text-mountain-primary" />
-              Создание поездки
-            </div>
-            <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-mountain-text">{stepLabels[step - 1]}</h1>
-                <p className="mt-1 text-sm text-mountain-muted">
-                  {step === 1 && 'Выбери район, лагерь или вершину. Остальное подстроится под этот выбор.'}
-                  {step === 2 && 'Добавь маршруты в план поездки или оставь выбор на месте.'}
-                  {step === 3 && 'Свяжи поездку с отделением. Снаряжение будет готовиться уже там.'}
-                </p>
-              </div>
-              <div className="min-w-48">
-                <div className="mb-2 flex items-center justify-between text-xs text-mountain-muted">
-                  <span>Шаг {step} из {TOTAL_STEPS}</span>
-                  <span>{progressPercent}%</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-mountain-bg">
-                  <div className="h-full rounded-full bg-mountain-primary transition-all" style={{ width: `${progressPercent}%` }} />
-                </div>
-              </div>
-            </div>
+      <Card className="p-5">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-mountain-muted">
+          <Compass className="h-4 w-4 text-mountain-primary" />
+          Создание поездки
+        </div>
+        <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-mountain-text">{stepLabels[step - 1]}</h1>
+            <p className="mt-1 text-sm text-mountain-muted">
+              {step === 1 && 'Выбери район, лагерь или вершину. Остальное подстроится под этот выбор.'}
+              {step === 2 && 'Добавь маршруты в план поездки или оставь выбор на месте.'}
+              {step === 3 && 'Свяжи поездку с отделением. Снаряжение будет готовиться уже там.'}
+            </p>
           </div>
-
-          <div className="bg-mountain-surface p-4 lg:w-80">
-            <div className="grid grid-cols-3 gap-1">
-              {stepLabels.map((label, index) => {
-                const s = index + 1
-                return (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => s < step && setStep(s)}
-                    disabled={s > step}
-                    className={`rounded-lg px-2 py-2 text-center text-xs transition-colors ${
-                      s === step
-                        ? 'bg-mountain-primary text-white'
-                        : s < step
-                          ? 'bg-mountain-primary/10 text-mountain-primary hover:bg-mountain-primary/15'
-                          : 'bg-mountain-bg text-mountain-muted'
-                    }`}
-                  >
-                    <span className="mx-auto mb-1 flex h-5 w-5 items-center justify-center rounded-full bg-current/10 text-[11px] font-bold">
-                      {s < step ? <CheckCircle2 className="h-3.5 w-3.5" /> : s}
-                    </span>
-                    <span className="hidden sm:inline lg:hidden xl:inline">{label}</span>
-                  </button>
-                )
-              })}
+          <div className="min-w-48 md:w-64">
+            <div className="mb-2 flex items-center justify-between text-xs text-mountain-muted">
+              <span>Шаг {step} из {TOTAL_STEPS}</span>
+              <span>{progressPercent}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-mountain-bg">
+              <div className="h-full rounded-full bg-mountain-primary transition-all" style={{ width: `${progressPercent}%` }} />
             </div>
           </div>
         </div>
