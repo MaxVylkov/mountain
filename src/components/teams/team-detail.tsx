@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { ArrowLeft, Users, Wrench, UtensilsCrossed, CheckSquare, Crown, Edit2, Check, X, Send, UserPlus, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Users, Wrench, UtensilsCrossed, CheckSquare, Crown, Edit2, Check, X, Send, UserPlus, Trash2, AlertTriangle, CheckCircle2, ClipboardCheck, CalendarDays, Mountain, ExternalLink } from 'lucide-react'
 import { InviteFriendsModal } from '@/components/teams/invite-friends-modal'
 import { Card } from '@/components/ui/card'
 import { TeamMembers } from '@/components/teams/team-members'
@@ -23,15 +23,17 @@ interface TeamDetailProps {
     leader_id: string
     invite_token: string
     telegram_link: string | null
+    ration_template_id?: string | null
     mountain: { name: string } | null
     route: { name: string } | null
   }
   currentUserId: string
 }
 
-type Tab = 'members' | 'gear' | 'rations' | 'readiness'
+type Tab = 'launch' | 'members' | 'gear' | 'rations' | 'readiness'
 
 const tabs: { key: Tab; label: string; icon: typeof Users }[] = [
+  { key: 'launch', label: 'К выходу', icon: ClipboardCheck },
   { key: 'members', label: 'Участники', icon: Users },
   { key: 'gear', label: 'Снаряжение', icon: Wrench },
   { key: 'rations', label: 'Раскладка', icon: UtensilsCrossed },
@@ -58,6 +60,7 @@ interface PrepSummaryProps {
 
 interface RequiredGearRow {
   id: string
+  name?: string
   norm_per_person: number | null
   norm_per_team: number | null
 }
@@ -68,6 +71,7 @@ interface MemberGearRow {
 }
 
 interface ReadinessRow {
+  user_id?: string
   checked: boolean
 }
 
@@ -222,9 +226,271 @@ function TeamPrepSummary({ teamId, members, onOpenTab, refreshKey }: PrepSummary
   )
 }
 
+interface LaunchPlanProps {
+  teamId: string
+  team: TeamDetailProps['team']
+  members: { user_id: string; display_name: string }[]
+  onOpenTab: (tab: Tab) => void
+  refreshKey: number
+}
+
+function TeamLaunchPlan({ teamId, team, members, onOpenTab, refreshKey }: LaunchPlanProps) {
+  const [loading, setLoading] = useState(true)
+  const [requiredGear, setRequiredGear] = useState<RequiredGearRow[]>([])
+  const [memberGear, setMemberGear] = useState<MemberGearRow[]>([])
+  const [readinessRows, setReadinessRows] = useState<ReadinessRow[]>([])
+  const [rationTemplateId, setRationTemplateId] = useState<string | null>(team.ration_template_id ?? null)
+
+  useEffect(() => {
+    setLoading(true)
+    const supabase = createClient()
+    Promise.all([
+      supabase.from('team_required_gear').select('id, name, norm_per_person, norm_per_team').eq('team_id', teamId),
+      supabase.from('team_member_gear').select('required_gear_id, quantity').eq('team_id', teamId),
+      supabase.from('team_readiness').select('user_id, checked').eq('team_id', teamId),
+      supabase.from('teams').select('ration_template_id').eq('id', teamId).single(),
+    ]).then(([gearRes, memberGearRes, readinessRes, teamRes]) => {
+      setRequiredGear((gearRes.data ?? []) as RequiredGearRow[])
+      setMemberGear((memberGearRes.data ?? []) as MemberGearRow[])
+      setReadinessRows((readinessRes.data ?? []) as ReadinessRow[])
+      setRationTemplateId((teamRes.data?.ration_template_id as string | null | undefined) ?? null)
+      setLoading(false)
+    })
+  }, [teamId, members.length, refreshKey])
+
+  const memberCount = members.length
+  const gearStatus = requiredGear.map(item => {
+    const total = memberGear
+      .filter(row => row.required_gear_id === item.id)
+      .reduce((sum, row) => sum + row.quantity, 0)
+    const required =
+      item.norm_per_person != null
+        ? item.norm_per_person * memberCount
+        : item.norm_per_team
+    const deficit = required == null ? 0 : Math.max(required - total, 0)
+    const needsAttention = required == null ? total === 0 : deficit > 0
+
+    return {
+      id: item.id,
+      name: item.name || 'Снаряжение',
+      total,
+      required,
+      deficit,
+      needsAttention,
+    }
+  })
+  const missingGear = gearStatus.filter(item => item.needsAttention)
+  const readinessByMember = members.map(member => {
+    const checked = readinessRows.filter(row => row.user_id === member.user_id && row.checked).length
+    const percent = Math.round((checked / READINESS_ITEMS_COUNT) * 100)
+
+    return { ...member, checked, percent }
+  })
+  const readinessPercent = readinessByMember.length > 0
+    ? Math.round(readinessByMember.reduce((sum, member) => sum + member.percent, 0) / readinessByMember.length)
+    : 0
+  const gearPercent = requiredGear.length > 0
+    ? Math.round(((requiredGear.length - missingGear.length) / requiredGear.length) * 100)
+    : 0
+  const launchReady = memberCount > 0 && requiredGear.length > 0 && missingGear.length === 0 && readinessPercent === 100
+  const checks = [
+    {
+      label: 'Состав отделения',
+      detail: memberCount > 0 ? `${memberCount} участников` : 'Добавьте людей в отделение',
+      done: memberCount > 0,
+      tab: 'members' as Tab,
+    },
+    {
+      label: 'Снаряжение',
+      detail: requiredGear.length === 0
+        ? 'Задайте список под маршрут'
+        : missingGear.length > 0
+          ? `Нужно закрыть ${missingGear.length} позиций`
+          : 'Все позиции закрыты',
+      done: requiredGear.length > 0 && missingGear.length === 0,
+      tab: 'gear' as Tab,
+    },
+    {
+      label: 'Раскладка',
+      detail: rationTemplateId ? 'Рацион сохранен для отделения' : 'Сохраните рацион и список покупок',
+      done: Boolean(rationTemplateId),
+      tab: 'rations' as Tab,
+    },
+    {
+      label: 'Личная готовность',
+      detail: memberCount === 0 ? 'Нет участников' : `${readinessPercent}% отметок закрыто`,
+      done: memberCount > 0 && readinessPercent === 100,
+      tab: 'readiness' as Tab,
+    },
+  ]
+
+  return (
+    <div className="space-y-4">
+      <Card className="overflow-hidden p-0">
+        <div className={`p-5 ${launchReady ? 'bg-mountain-success/10' : 'bg-mountain-primary/10'}`}>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-mountain-muted">Финальная сверка</p>
+              <h3 className="mt-1 text-2xl font-bold text-mountain-text">Лист выхода на маршрут</h3>
+              <p className="mt-2 max-w-2xl text-sm text-mountain-muted">
+                {loading
+                  ? 'Собираю состояние отделения.'
+                  : launchReady
+                    ? 'Состав, снаряжение и готовность закрыты. Осталось финально сверить раскладку.'
+                    : 'Здесь видно, что мешает спокойно выпускать отделение на маршрут.'}
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-xl border border-mountain-border bg-mountain-card/80 px-3 py-2">
+                <p className="text-xs text-mountain-muted">Люди</p>
+                <p className="text-lg font-bold text-mountain-text">{loading ? '…' : memberCount}</p>
+              </div>
+              <div className="rounded-xl border border-mountain-border bg-mountain-card/80 px-3 py-2">
+                <p className="text-xs text-mountain-muted">Снаряжение</p>
+                <p className="text-lg font-bold text-mountain-text">{loading ? '…' : `${gearPercent}%`}</p>
+              </div>
+              <div className="rounded-xl border border-mountain-border bg-mountain-card/80 px-3 py-2">
+                <p className="text-xs text-mountain-muted">Готовность</p>
+                <p className="text-lg font-bold text-mountain-text">{loading ? '…' : `${readinessPercent}%`}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-px bg-mountain-border md:grid-cols-3">
+          <div className="bg-mountain-card p-4">
+            <div className="flex items-center gap-2 text-xs font-medium text-mountain-muted">
+              <Mountain className="h-4 w-4" />
+              Маршрут
+            </div>
+            <p className="mt-2 font-semibold text-mountain-text">{team.route?.name || 'Маршрут не задан'}</p>
+            <p className="mt-1 text-sm text-mountain-muted">{team.mountain?.name || 'Гора не задана'}</p>
+          </div>
+          <div className="bg-mountain-card p-4">
+            <div className="flex items-center gap-2 text-xs font-medium text-mountain-muted">
+              <CalendarDays className="h-4 w-4" />
+              Даты
+            </div>
+            <p className="mt-2 font-semibold text-mountain-text">{formatDate(team.start_date)} — {formatDate(team.end_date)}</p>
+            <p className="mt-1 text-sm text-mountain-muted">Окно выхода отделения</p>
+          </div>
+          <div className="bg-mountain-card p-4">
+            <div className="flex items-center gap-2 text-xs font-medium text-mountain-muted">
+              <Send className="h-4 w-4" />
+              Связь
+            </div>
+            {team.telegram_link ? (
+              <a
+                href={team.telegram_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-[#229ED9] hover:text-[#229ED9]/80"
+              >
+                Открыть Telegram
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            ) : (
+              <p className="mt-2 text-sm text-mountain-muted">Беседа не добавлена</p>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <Card>
+          <h4 className="font-semibold text-mountain-text">Что закрыть перед выходом</h4>
+          <div className="mt-4 space-y-3">
+            {checks.map(item => (
+              <button
+                key={item.label}
+                onClick={() => onOpenTab(item.tab)}
+                className="flex w-full items-center justify-between gap-4 rounded-xl border border-mountain-border p-3 text-left transition-colors hover:border-mountain-primary/60 hover:bg-mountain-primary/5"
+              >
+                <span className="flex items-start gap-3">
+                  {item.done ? (
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 text-mountain-success" />
+                  ) : (
+                    <AlertTriangle className="mt-0.5 h-5 w-5 text-mountain-accent" />
+                  )}
+                  <span>
+                    <span className="block text-sm font-medium text-mountain-text">{item.label}</span>
+                    <span className="block text-xs text-mountain-muted">{item.detail}</span>
+                  </span>
+                </span>
+                <span className="text-xs font-medium text-mountain-primary">Открыть</span>
+              </button>
+            ))}
+          </div>
+        </Card>
+
+        <Card>
+          <h4 className="font-semibold text-mountain-text">Готовность участников</h4>
+          <div className="mt-4 space-y-3">
+            {members.length === 0 && (
+              <p className="text-sm text-mountain-muted">Добавьте участников, чтобы видеть личную готовность.</p>
+            )}
+            {readinessByMember.map(member => (
+              <div key={member.user_id}>
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="font-medium text-mountain-text">{member.display_name}</span>
+                  <span className={member.percent === 100 ? 'text-mountain-success' : 'text-mountain-muted'}>
+                    {member.checked}/{READINESS_ITEMS_COUNT}
+                  </span>
+                </div>
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-mountain-bg">
+                  <div
+                    className={`h-full rounded-full ${member.percent === 100 ? 'bg-mountain-success' : 'bg-mountain-primary'}`}
+                    style={{ width: `${member.percent}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      <Card>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h4 className="font-semibold text-mountain-text">Нехватка снаряжения</h4>
+            <p className="mt-1 text-sm text-mountain-muted">
+              {requiredGear.length === 0
+                ? 'Список снаряжения ещё не задан.'
+                : missingGear.length === 0
+                  ? 'По снаряжению явных дыр нет.'
+                  : 'Позиции, которые нужно добрать или распределить.'}
+            </p>
+          </div>
+          <button
+            onClick={() => onOpenTab('gear')}
+            className="inline-flex items-center justify-center rounded-xl border border-mountain-border px-4 py-2 text-sm font-medium text-mountain-text transition-colors hover:border-mountain-primary hover:text-mountain-primary"
+          >
+            Открыть снаряжение
+          </button>
+        </div>
+
+        {missingGear.length > 0 && (
+          <div className="mt-4 divide-y divide-mountain-border overflow-hidden rounded-xl border border-mountain-border">
+            {missingGear.map(item => (
+              <div key={item.id} className="grid gap-2 bg-mountain-bg/40 p-3 text-sm sm:grid-cols-[1fr_auto] sm:items-center">
+                <span className="font-medium text-mountain-text">{item.name}</span>
+                <span className="text-mountain-muted">
+                  {item.required == null
+                    ? 'нет распределения'
+                    : `нужно ${item.required} / есть ${item.total} / добрать ${item.deficit}`}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  )
+}
+
 export function TeamDetail({ teamId, team, currentUserId }: TeamDetailProps) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<Tab>('members')
+  const [activeTab, setActiveTab] = useState<Tab>('launch')
   const [members, setMembers] = useState<{ user_id: string; display_name: string }[]>([])
   const [prepRefreshKey, setPrepRefreshKey] = useState(0)
   const [isEditing, setIsEditing] = useState(false)
@@ -498,6 +764,15 @@ export function TeamDetail({ teamId, team, currentUserId }: TeamDetailProps) {
 
       {/* Tab content */}
       <div>
+        {activeTab === 'launch' && (
+          <TeamLaunchPlan
+            teamId={teamId}
+            team={team}
+            members={members}
+            onOpenTab={setActiveTab}
+            refreshKey={prepRefreshKey}
+          />
+        )}
         {activeTab === 'members' && (
           <TeamMembers
             teamId={teamId}
@@ -516,7 +791,13 @@ export function TeamDetail({ teamId, team, currentUserId }: TeamDetailProps) {
           />
         )}
         {activeTab === 'rations' && (
-          <TeamRations teamId={teamId} memberCount={members.length} startDate={team.start_date} endDate={team.end_date} />
+          <TeamRations
+            teamId={teamId}
+            memberCount={members.length}
+            startDate={team.start_date}
+            endDate={team.end_date}
+            onPreparationChange={() => setPrepRefreshKey(key => key + 1)}
+          />
         )}
         {activeTab === 'readiness' && (
           <TeamReadiness

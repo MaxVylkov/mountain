@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeft, Map, Package, CheckSquare, Phone, Navigation, Users,
-  Plus, Check, X, Weight, Mountain, Flag, ChevronDown, ChevronUp,
+  Plus, X, Mountain, Flag, ChevronDown, ChevronUp,
   Backpack, AlertTriangle, Trash2
 } from 'lucide-react'
 
@@ -34,6 +34,7 @@ export function TripDetail({ trip }: { trip: any }) {
   const [tab, setTab] = useState<'routes' | 'gear' | 'checklist' | 'emergency' | 'team'>('routes')
   const [tripRoutes, setTripRoutes] = useState<any[]>([])
   const [packingItems, setPackingItems] = useState<any[]>([])
+  const [teamPrep, setTeamPrep] = useState<{ members: number; gearPercent: number; readinessPercent: number } | null>(null)
   const [availableRoutes, setAvailableRoutes] = useState<any[]>([])
   const [showAddRoutes, setShowAddRoutes] = useState(false)
   const [expandedRoute, setExpandedRoute] = useState<string | null>(null)
@@ -87,6 +88,38 @@ export function TripDetail({ trip }: { trip: any }) {
         .select('*, gear(id, name, weight, category)')
         .eq('packing_set_id', trip.packing_set_id)
         .then(({ data }) => { if (data) setPackingItems(data as any) })
+    }
+
+    if (trip.teams?.id) {
+      Promise.all([
+        supabase.from('team_members').select('user_id').eq('team_id', trip.teams.id),
+        supabase.from('team_required_gear').select('id, norm_per_person, norm_per_team').eq('team_id', trip.teams.id),
+        supabase.from('team_member_gear').select('required_gear_id, quantity').eq('team_id', trip.teams.id),
+        supabase.from('team_readiness').select('checked').eq('team_id', trip.teams.id),
+      ]).then(([membersRes, requiredGearRes, memberGearRes, readinessRes]) => {
+        const members = membersRes.data ?? []
+        const requiredGear = requiredGearRes.data ?? []
+        const memberGear = memberGearRes.data ?? []
+        const readiness = readinessRes.data ?? []
+        const readyGear = requiredGear.filter(item => {
+          const total = memberGear
+            .filter(row => row.required_gear_id === item.id)
+            .reduce((sum, row) => sum + (row.quantity || 0), 0)
+          const required = item.norm_per_person != null
+            ? item.norm_per_person * members.length
+            : item.norm_per_team
+
+          return required == null ? total > 0 : total >= required
+        }).length
+
+        setTeamPrep({
+          members: members.length,
+          gearPercent: requiredGear.length > 0 ? Math.round((readyGear / requiredGear.length) * 100) : 0,
+          readinessPercent: members.length > 0
+            ? Math.round((readiness.filter(row => row.checked).length / (members.length * 6)) * 100)
+            : 0,
+        })
+      })
     }
   }, [trip, loadTripRoutes])
 
@@ -238,7 +271,35 @@ export function TripDetail({ trip }: { trip: any }) {
           <p className="text-xs text-mountain-muted">Общее снаряжение</p>
           <p className="text-xl font-bold font-mono">{(totalWeight / 1000).toFixed(1)} кг</p>
         </Card>
+        {trip.teams && (
+          <Card className="flex-1 p-3">
+            <p className="text-xs text-mountain-muted">Отделение</p>
+            <p className="text-xl font-bold font-mono">{teamPrep ? `${teamPrep.readinessPercent}%` : '—'}</p>
+          </Card>
+        )}
       </div>
+
+      {trip.teams && (
+        <Card className="border-mountain-primary/30 bg-mountain-primary/5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-mountain-muted">Поездка связана с отделением</p>
+              <h2 className="mt-1 text-xl font-bold text-mountain-text">{trip.teams.name}</h2>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-mountain-muted">
+                <span className="rounded-lg bg-mountain-card px-2.5 py-1">{teamPrep ? `${teamPrep.members} участников` : 'участники загружаются'}</span>
+                <span className="rounded-lg bg-mountain-card px-2.5 py-1">снаряжение {teamPrep ? `${teamPrep.gearPercent}%` : '—'}</span>
+                <span className="rounded-lg bg-mountain-card px-2.5 py-1">готовность {teamPrep ? `${teamPrep.readinessPercent}%` : '—'}</span>
+              </div>
+            </div>
+            <Link
+              href={`/teams/${trip.teams.id}`}
+              className="inline-flex items-center justify-center rounded-xl bg-mountain-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-mountain-primary/80"
+            >
+              Открыть лист выхода
+            </Link>
+          </div>
+        </Card>
+      )}
 
       {/* Tabs */}
       <div className="flex border-b border-mountain-border overflow-x-auto">

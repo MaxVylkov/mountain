@@ -65,6 +65,15 @@ const CONDITION_LABELS: Record<string, string> = {
   needs_repair: 'Нужен ремонт',
 }
 
+const STATUS_TAG_LABELS: Record<string, string> = {
+  'на маршруте': 'На маршруте',
+  'в ремонте': 'В ремонте',
+  'одолжено': 'Одолжено',
+  'продано': 'Продано',
+  'готово к выходу': 'Готово к выходу',
+  'проверить': 'Проверить',
+}
+
 export const POPULAR_BRANDS = [
   'Petzl', 'Black Diamond', 'La Sportiva', 'Scarpa', 'Mammut',
   'Salewa', 'Camp', 'Grivel', 'Edelrid', 'Beal',
@@ -413,12 +422,19 @@ export function GearInventory({ catalog, userId }: { catalog: GearItem[]; userId
                             {item.gear.weight} г
                           </span>
                         )}
-                        {item.tags && item.tags.length > 0 && (
-                          <span className="text-xs text-mountain-primary/60">
-                            +{item.tags.length} тег{item.tags.length > 1 ? (item.tags.length < 5 ? 'а' : 'ов') : ''}
-                          </span>
-                        )}
                       </div>
+                      {item.tags && item.tags.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {item.tags.slice(0, 2).map(tag => (
+                            <span key={tag} className="rounded bg-mountain-primary/10 px-1.5 py-0.5 text-[10px] text-mountain-primary">
+                              {STATUS_TAG_LABELS[tag] || `#${tag}`}
+                            </span>
+                          ))}
+                          {item.tags.length > 2 && (
+                            <span className="text-[10px] text-mountain-muted">+{item.tags.length - 2}</span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </Card>
                 )

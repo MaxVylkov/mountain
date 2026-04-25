@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Coffee, Sun, Moon, ChevronDown, ChevronUp, Download, Users, Calendar, Weight, Flame } from 'lucide-react'
+import { ArrowLeft, Coffee, Sun, Moon, ChevronDown, ChevronUp, Download, Users, Calendar, Weight, Flame, Save, CheckCircle2 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import templates from '@/lib/data/ration-templates.json'
 
@@ -34,13 +35,17 @@ interface TeamRationsProps {
   memberCount: number
   startDate: string | null
   endDate: string | null
+  onPreparationChange?: () => void
 }
 
-export function TeamRations({ teamId, memberCount, startDate, endDate }: TeamRationsProps) {
+export function TeamRations({ teamId, memberCount, startDate, endDate, onPreparationChange }: TeamRationsProps) {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
   const [people, setPeople] = useState(memberCount)
   const [activeTab, setActiveTab] = useState<'menu' | 'shopping'>('menu')
   const [expandedMeals, setExpandedMeals] = useState<Set<string>>(new Set())
+  const [savedTemplateId, setSavedTemplateId] = useState<string | null>(null)
+  const [savingPlan, setSavingPlan] = useState(false)
+  const [savedPlan, setSavedPlan] = useState(false)
 
   const autoDays = useMemo(() => {
     if (!startDate || !endDate) return null
@@ -52,6 +57,24 @@ export function TeamRations({ teamId, memberCount, startDate, endDate }: TeamRat
 
   const [manualDays, setManualDays] = useState<number>(autoDays ?? 3)
   const days = autoDays ?? manualDays
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase
+      .from('teams')
+      .select('ration_template_id, ration_people, ration_days')
+      .eq('id', teamId)
+      .single()
+      .then(({ data }) => {
+        if (!data) return
+        if (data.ration_template_id) {
+          setSelectedTemplateId(data.ration_template_id)
+          setSavedTemplateId(data.ration_template_id)
+        }
+        if (data.ration_people) setPeople(data.ration_people)
+        if (data.ration_days && !autoDays) setManualDays(data.ration_days)
+      })
+  }, [teamId, autoDays])
 
   const selectedTemplate = useMemo(() => {
     if (!selectedTemplateId) return null
@@ -112,6 +135,25 @@ export function TeamRations({ teamId, memberCount, startDate, endDate }: TeamRat
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Список покупок')
     XLSX.writeFile(wb, `раскладка_${selectedTemplate.id}_${people}чел_${days}дн.xlsx`)
+  }
+
+  async function saveRationPlan() {
+    if (!selectedTemplate) return
+    setSavingPlan(true)
+    const supabase = createClient()
+    await supabase
+      .from('teams')
+      .update({
+        ration_template_id: selectedTemplate.id,
+        ration_people: people,
+        ration_days: days,
+      })
+      .eq('id', teamId)
+    setSavingPlan(false)
+    setSavedTemplateId(selectedTemplate.id)
+    setSavedPlan(true)
+    onPreparationChange?.()
+    setTimeout(() => setSavedPlan(false), 1600)
   }
 
   const mealIcon = (type: 'breakfast' | 'lunch' | 'dinner') => {
@@ -178,6 +220,12 @@ export function TeamRations({ teamId, memberCount, startDate, endDate }: TeamRat
               className="flex flex-col gap-2"
             >
               <h3 className="font-semibold text-mountain-text">{t.name}</h3>
+              {savedTemplateId === t.id && (
+                <span className="inline-flex w-fit items-center gap-1 rounded-lg bg-mountain-success/10 px-2 py-0.5 text-xs text-mountain-success">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Сохранено для отделения
+                </span>
+              )}
               <p className="text-sm text-mountain-muted">{t.description}</p>
               <div className="flex items-center gap-4 mt-auto pt-2 text-xs text-mountain-muted">
                 <span className="flex items-center gap-1">
@@ -212,6 +260,14 @@ export function TeamRations({ teamId, memberCount, startDate, endDate }: TeamRat
           Назад
         </Button>
         <h3 className="font-semibold text-mountain-text text-lg">{selectedTemplate.name}</h3>
+        <Button onClick={saveRationPlan} disabled={savingPlan} variant={savedTemplateId === selectedTemplate.id ? 'outline' : 'primary'}>
+          {savedPlan ? (
+            <CheckCircle2 className="w-4 h-4 mr-2" />
+          ) : (
+            <Save className="w-4 h-4 mr-2" />
+          )}
+          {savingPlan ? 'Сохраняю...' : savedPlan ? 'Сохранено' : 'Сохранить для отделения'}
+        </Button>
       </div>
 
       {/* Stats row */}

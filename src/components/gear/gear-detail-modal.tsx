@@ -55,6 +55,15 @@ const CATEGORY_COLORS: Record<string, string> = {
   other: 'bg-mountain-muted/15 text-mountain-muted',
 }
 
+const QUICK_TAGS = [
+  { value: 'на маршруте', label: 'На маршруте' },
+  { value: 'в ремонте', label: 'В ремонте' },
+  { value: 'одолжено', label: 'Одолжено' },
+  { value: 'продано', label: 'Продано' },
+  { value: 'готово к выходу', label: 'Готово к выходу' },
+  { value: 'проверить', label: 'Проверить' },
+]
+
 interface GearDetailModalProps {
   item: UserGearItem
   onClose: () => void
@@ -106,6 +115,10 @@ export function GearDetailModal({ item, onClose, onUpdate, onRemove, onSaleListi
 
   function removeTag(tag: string) {
     setTags(tags.filter(t => t !== tag))
+  }
+
+  function toggleQuickTag(tag: string) {
+    setTags(current => current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag])
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -256,6 +269,25 @@ export function GearDetailModal({ item, onClose, onUpdate, onRemove, onSaleListi
             <Tag size={14} />
             Теги
           </label>
+          <div className="flex flex-wrap gap-1.5">
+            {QUICK_TAGS.map(tag => {
+              const active = tags.includes(tag.value)
+              return (
+                <button
+                  key={tag.value}
+                  type="button"
+                  onClick={() => toggleQuickTag(tag.value)}
+                  className={`rounded-lg border px-2 py-1 text-xs transition-colors ${
+                    active
+                      ? 'border-mountain-primary bg-mountain-primary/10 text-mountain-primary'
+                      : 'border-mountain-border bg-mountain-surface text-mountain-muted hover:text-mountain-text'
+                  }`}
+                >
+                  {tag.label}
+                </button>
+              )
+            })}
+          </div>
           <div className="flex flex-wrap gap-1.5">
             {tags.map(tag => (
               <span
