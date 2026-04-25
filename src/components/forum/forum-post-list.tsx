@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Plus, MessageSquare, Search, X } from 'lucide-react'
 import { ForumPost, ForumCategory } from './forum-types'
@@ -18,8 +18,20 @@ interface Props {
 export function ForumPostList({ posts, category, currentUserId }: Props) {
   const searchParams = useSearchParams()
   const sort = searchParams.get('sort') ?? 'new'
+  const routeQuery = searchParams.get('route') ?? ''
+  const shouldCreate = searchParams.get('create') === '1'
+  const preAttachedRouteId = searchParams.get('route_id')
+  const preAttachedRouteLabel = searchParams.get('route_label')
   const [showModal, setShowModal] = useState(false)
-  const [routeFilter, setRouteFilter] = useState('')
+  const [routeFilter, setRouteFilter] = useState(routeQuery)
+
+  useEffect(() => {
+    setRouteFilter(routeQuery)
+  }, [routeQuery])
+
+  useEffect(() => {
+    if (shouldCreate && currentUserId) setShowModal(true)
+  }, [shouldCreate, currentUserId])
 
   const filteredPosts = routeFilter.trim()
     ? posts.filter(p => {
@@ -111,6 +123,11 @@ export function ForumPostList({ posts, category, currentUserId }: Props) {
         <CreatePostModal
           category={category}
           currentUserId={currentUserId}
+          preAttached={preAttachedRouteId && preAttachedRouteLabel ? {
+            type: 'route',
+            ref_id: preAttachedRouteId,
+            label: preAttachedRouteLabel,
+          } : undefined}
           onClose={() => setShowModal(false)}
         />
       )}

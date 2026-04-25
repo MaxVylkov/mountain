@@ -10,7 +10,7 @@ import { AttachmentGearChips } from './attachment-gear-chips'
 import { AttachmentRationCard } from './attachment-ration-card'
 import { AttachmentWorkoutCard } from './attachment-workout-card'
 import { ForumReplyList } from './forum-reply-list'
-import { ThumbsUp, ArrowLeft, MapPin, Pencil, X, Check, Package, ChefHat, File, Download } from 'lucide-react'
+import { ThumbsUp, ArrowLeft, MapPin, Pencil, X, Check, Package, ChefHat, File, Download, BookmarkPlus, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
 import templates from '@/lib/data/ration-templates.json'
 import { storageUrl } from '@/lib/storage-url'
@@ -54,6 +54,7 @@ export function ForumPostDetail({ post, replies, routeData, packingData, gearChi
 
   const isAuthor = !!(currentUserId && currentUserId === post.author_id)
   const [localFileAttachments, setLocalFileAttachments] = useState(fileAttachments)
+  const [savedRouteNotes, setSavedRouteNotes] = useState<Set<string>>(new Set())
 
   const enterEditMode = async () => {
     setEditTitle(title)
@@ -131,6 +132,29 @@ export function ForumPostDetail({ post, replies, routeData, packingData, gearChi
       setLikeCount(c => c + 1)
     }
     setLiked(v => !v)
+  }
+
+  async function savePostToRouteNotes(route: RouteData) {
+    if (!currentUserId) {
+      router.push('/login')
+      return
+    }
+    if (savedRouteNotes.has(route.routeId)) return
+
+    const text = body.trim()
+      ? `${title}\n\n${body.trim()}`
+      : title
+    const supabase = createClient()
+    const { error } = await supabase.from('adopted_descriptions').insert({
+      route_id: route.routeId,
+      source_post_id: post.id,
+      adopted_by: currentUserId,
+      author_id: post.author_id,
+      text,
+    })
+    if (!error) {
+      setSavedRouteNotes(prev => new Set(prev).add(route.routeId))
+    }
   }
 
   return (
@@ -349,7 +373,25 @@ export function ForumPostDetail({ post, replies, routeData, packingData, gearChi
             )}
 
             {routeData.map(r => (
-              <AttachmentRouteCard key={r.routeId} data={r} currentUserId={currentUserId} />
+              <div key={r.routeId} className="space-y-2">
+                <AttachmentRouteCard data={r} currentUserId={currentUserId} />
+                <button
+                  type="button"
+                  onClick={() => savePostToRouteNotes(r)}
+                  className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    savedRouteNotes.has(r.routeId)
+                      ? 'border-mountain-success/40 bg-mountain-success/10 text-mountain-success'
+                      : 'border-mountain-border text-mountain-muted hover:border-mountain-primary hover:text-mountain-text'
+                  }`}
+                >
+                  {savedRouteNotes.has(r.routeId) ? (
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  ) : (
+                    <BookmarkPlus className="h-3.5 w-3.5" />
+                  )}
+                  {savedRouteNotes.has(r.routeId) ? 'Сохранено в заметки маршрута' : 'Сохранить в мои заметки к маршруту'}
+                </button>
+              </div>
             ))}
             {packingData.map(p => (
               <AttachmentPackingCard key={p.setId} data={p} currentUserId={currentUserId} />

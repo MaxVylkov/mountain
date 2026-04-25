@@ -48,7 +48,7 @@ export function CreatePostModal({ category, currentUserId, preAttached, onClose 
   const [error, setError] = useState<string | null>(null)
 
   // Attachments accordion
-  const [showAttachments, setShowAttachments] = useState(false)
+  const [showAttachments, setShowAttachments] = useState(Boolean(preAttached))
 
   // Route picker state
   const [routeMode, setRouteMode] = useState<'search' | 'custom'>('search')

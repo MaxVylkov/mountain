@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { createClient } from '@/lib/supabase/client'
 import { Heart, Check, Target, ChevronDown, ChevronUp, Search, LogIn, ExternalLink } from 'lucide-react'
-import { RouteComments } from './route-comments'
+import { RouteForumPanel } from './route-forum-panel'
 
 interface Route {
   id: string
@@ -74,12 +74,13 @@ export function RouteList({ routes }: { routes: Route[]; mountainId?: string }) 
   }, [])
 
   async function loadAdoptedDescriptions(routeId: string) {
-    if (adoptedDescs[routeId]) return
+    if (!userId || adoptedDescs[routeId]) return
     const supabase = createClient()
     const { data } = await supabase
       .from('adopted_descriptions')
       .select('*, author:profiles!adopted_descriptions_author_id_fkey(display_name)')
       .eq('route_id', routeId)
+      .eq('adopted_by', userId)
       .order('created_at', { ascending: false })
     if (data) {
       setAdoptedDescs(prev => ({ ...prev, [routeId]: data }))
@@ -383,12 +384,12 @@ export function RouteList({ routes }: { routes: Route[]; mountainId?: string }) 
                   )}
                   {adoptedDescs[route.id]?.map((ad: any) => (
                     <div key={ad.id} className="mt-4 p-3 bg-mountain-accent/5 border border-mountain-accent/20 rounded-lg">
-                      <p className="text-xs text-mountain-accent font-medium mb-1">Альтернативное описание</p>
+                      <p className="text-xs text-mountain-accent font-medium mb-1">Моя заметка из обсуждений</p>
                       <p className="text-sm text-mountain-text whitespace-pre-wrap">{ad.text}</p>
                       <p className="text-xs text-mountain-muted mt-2">— {ad.author?.display_name || 'Аноним'}</p>
                     </div>
                   ))}
-                  <RouteComments routeId={route.id} currentUserId={userId} />
+                  <RouteForumPanel routeId={route.id} routeName={route.name} />
                 </div>
               )}
             </Card>

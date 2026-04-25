@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { createClient } from '@/lib/supabase/client'
 import { Heart, Check, Target, ChevronDown, ChevronUp, Search, LogIn, ExternalLink } from 'lucide-react'
-import { RouteComments } from './route-comments'
+import { RouteForumPanel } from './route-forum-panel'
 
 interface Mountain {
   id: string
@@ -337,7 +337,7 @@ export function RegionRouteList({ mountains, routes }: { mountains: Mountain[]; 
                       Описание на сайте ФАР
                     </a>
                   )}
-                  <RouteComments routeId={route.id} currentUserId={userId} />
+                  <RouteForumPanel routeId={route.id} routeName={route.name} mountainName={mountain?.name} />
                 </div>
               )}
             </Card>
