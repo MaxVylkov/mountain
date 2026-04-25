@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation'
 import {
   ArrowLeft, Map, Package, CheckSquare, Phone, Navigation, Users,
   Plus, X, Mountain, Flag, ChevronDown, ChevronUp,
-  Backpack, AlertTriangle, Trash2
+  Backpack, AlertTriangle, Trash2, CalendarDays, CheckCircle2
 } from 'lucide-react'
 
 const TEMPLATE_LABELS: Record<string, string> = {
@@ -208,6 +208,36 @@ export function TripDetail({ trip }: { trip: any }) {
     { key: 'emergency' as const, label: 'Экстренное', icon: Phone },
     ...(trip.teams ? [{ key: 'team' as const, label: 'Отделение', icon: Users }] : []),
   ]
+  const packedCount = packingItems.filter((item: any) => item.packed).length
+  const packingPercent = packingItems.length > 0 ? Math.round((packedCount / packingItems.length) * 100) : 0
+  const teamReady = teamPrep ? teamPrep.members > 0 && teamPrep.gearPercent === 100 && teamPrep.readinessPercent === 100 : false
+  const tripStages = [
+    {
+      label: 'План',
+      detail: tripRoutes.length > 0 ? `${tripRoutes.length} маршрутов` : 'добавить маршрут',
+      done: tripRoutes.length > 0,
+      tab: 'routes' as const,
+    },
+    {
+      label: 'Сборы',
+      detail: packingItems.length > 0 ? `${packingPercent}% собрано` : 'список пуст',
+      done: packingItems.length > 0 && packingPercent === 100,
+      tab: 'gear' as const,
+    },
+    {
+      label: 'Отделение',
+      detail: trip.teams ? (teamPrep ? `${teamPrep.readinessPercent}% готовность` : 'загрузка') : 'не привязано',
+      done: Boolean(trip.teams && teamReady),
+      tab: trip.teams ? 'team' as const : 'checklist' as const,
+    },
+    {
+      label: 'Выход',
+      detail: trip.status === 'active' ? 'на маршруте' : trip.status === 'completed' ? 'закрыто' : 'финальная проверка',
+      done: trip.status === 'active' || trip.status === 'completed',
+      tab: 'checklist' as const,
+    },
+  ]
+  const nextStage = tripStages.find(stage => !stage.done) ?? tripStages[tripStages.length - 1]
 
   return (
     <div className="space-y-6">
@@ -215,69 +245,108 @@ export function TripDetail({ trip }: { trip: any }) {
         <ArrowLeft size={16} /> Мои поездки
       </Link>
 
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{trip.name}</h1>
-          <div className="flex items-center gap-3 mt-2 text-sm text-mountain-muted flex-wrap">
-            {trip.region && <span>{trip.region}</span>}
-            {trip.alpine_camps && <span>· {trip.alpine_camps.name}</span>}
-            {!trip.region && trip.mountains && <span>{trip.mountains.name}, {trip.mountains.region}</span>}
-            {trip.template && <span className="px-2 py-0.5 rounded bg-mountain-surface">{TEMPLATE_LABELS[trip.template]}</span>}
-            <span className="px-2 py-0.5 rounded bg-mountain-primary/20 text-mountain-primary">{STATUS_LABELS[trip.status]}</span>
+      <Card className="overflow-hidden p-0">
+        <div className="grid lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="p-5 sm:p-6">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-mountain-muted">
+              <Navigation className="h-4 w-4 text-mountain-primary" />
+              Подготовка поездки
+            </div>
+            <div className="mt-3 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-mountain-text">{trip.name}</h1>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-mountain-muted">
+                  {trip.region && <span>{trip.region}</span>}
+                  {trip.alpine_camps && <span>· {trip.alpine_camps.name}</span>}
+                  {!trip.region && trip.mountains && <span>{trip.mountains.name}, {trip.mountains.region}</span>}
+                  {trip.template && <span className="rounded bg-mountain-bg px-2 py-0.5 text-xs">{TEMPLATE_LABELS[trip.template]}</span>}
+                  <span className="rounded bg-mountain-primary/15 px-2 py-0.5 text-xs text-mountain-primary">{STATUS_LABELS[trip.status]}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button onClick={() => setTab(nextStage.tab)}>
+                  <CheckCircle2 size={16} className="mr-2" />
+                  {nextStage.label}
+                </Button>
+                {trip.status !== 'completed' && (
+                  <Button variant="outline" onClick={() => updateTripStatus('completed')}>
+                    <Flag size={16} className="mr-2" /> Завершить
+                  </Button>
+                )}
+                {confirmDelete ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-mountain-danger">Удалить?</span>
+                    <Button variant="outline" onClick={deleteTrip} className="border-mountain-danger text-mountain-danger hover:bg-mountain-danger/10">
+                      Да
+                    </Button>
+                    <Button variant="outline" onClick={() => setConfirmDelete(false)}>
+                      Нет
+                    </Button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmDelete(true)}
+                    className="p-2 rounded-lg text-mountain-muted hover:text-mountain-danger hover:bg-mountain-danger/10 transition-colors"
+                    aria-label="Удалить поездку"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-2 sm:grid-cols-4">
+              {tripStages.map((stage, index) => (
+                <button
+                  key={stage.label}
+                  onClick={() => setTab(stage.tab)}
+                  className={`rounded-lg border p-3 text-left transition-colors ${
+                    stage.done
+                      ? 'border-mountain-success/30 bg-mountain-success/10'
+                      : stage === nextStage
+                        ? 'border-mountain-primary/50 bg-mountain-primary/10'
+                        : 'border-mountain-border bg-mountain-bg/40 hover:border-mountain-primary/40'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-mountain-muted">0{index + 1}</span>
+                    {stage.done ? (
+                      <CheckCircle2 className="h-4 w-4 text-mountain-success" />
+                    ) : (
+                      <span className="h-2 w-2 rounded-full bg-mountain-border" />
+                    )}
+                  </div>
+                  <p className="mt-2 text-sm font-semibold text-mountain-text">{stage.label}</p>
+                  <p className="mt-0.5 text-xs text-mountain-muted">{stage.detail}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 border-t border-mountain-border lg:border-l lg:border-t-0">
+            <div className="border-r border-b border-mountain-border p-4">
+              <Map className="h-4 w-4 text-mountain-primary" />
+              <p className="mt-3 text-2xl font-bold text-mountain-text">{tripRoutes.length}</p>
+              <p className="text-xs text-mountain-muted">маршрутов</p>
+            </div>
+            <div className="border-b border-mountain-border p-4">
+              <Mountain className="h-4 w-4 text-mountain-success" />
+              <p className="mt-3 text-2xl font-bold text-mountain-text">{tripRoutes.filter(r => r.summit_reached).length}/{tripRoutes.length}</p>
+              <p className="text-xs text-mountain-muted">вершин</p>
+            </div>
+            <div className="border-r border-mountain-border p-4">
+              <Backpack className="h-4 w-4 text-mountain-accent" />
+              <p className="mt-3 text-2xl font-bold text-mountain-text">{(totalWeight / 1000).toFixed(1)} кг</p>
+              <p className="text-xs text-mountain-muted">в снаряжении</p>
+            </div>
+            <div className="p-4">
+              <CalendarDays className="h-4 w-4 text-mountain-primary" />
+              <p className="mt-3 text-2xl font-bold text-mountain-text">{teamPrep ? `${teamPrep.readinessPercent}%` : trip.teams ? '—' : 'нет'}</p>
+              <p className="text-xs text-mountain-muted">отделение</p>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {trip.status !== 'completed' && (
-            <Button variant="outline" onClick={() => updateTripStatus('completed')}>
-              <Flag size={16} className="mr-2" /> Закончить мероприятие
-            </Button>
-          )}
-          {confirmDelete ? (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-mountain-danger">Удалить поездку?</span>
-              <Button variant="outline" onClick={deleteTrip} className="border-mountain-danger text-mountain-danger hover:bg-mountain-danger/10">
-                Да
-              </Button>
-              <Button variant="outline" onClick={() => setConfirmDelete(false)}>
-                Нет
-              </Button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setConfirmDelete(true)}
-              className="p-2 rounded-lg text-mountain-muted hover:text-mountain-danger hover:bg-mountain-danger/10 transition-colors"
-              aria-label="Удалить поездку"
-            >
-              <Trash2 size={18} />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="flex gap-4">
-        <Card className="flex-1 p-3">
-          <p className="text-xs text-mountain-muted">Маршрутов</p>
-          <p className="text-xl font-bold font-mono">{tripRoutes.length}</p>
-        </Card>
-        <Card className="flex-1 p-3">
-          <p className="text-xs text-mountain-muted">Вершин достигнуто</p>
-          <p className="text-xl font-bold font-mono text-mountain-success">
-            {tripRoutes.filter(r => r.summit_reached).length}/{tripRoutes.length}
-          </p>
-        </Card>
-        <Card className="flex-1 p-3">
-          <p className="text-xs text-mountain-muted">Общее снаряжение</p>
-          <p className="text-xl font-bold font-mono">{(totalWeight / 1000).toFixed(1)} кг</p>
-        </Card>
-        {trip.teams && (
-          <Card className="flex-1 p-3">
-            <p className="text-xs text-mountain-muted">Отделение</p>
-            <p className="text-xl font-bold font-mono">{teamPrep ? `${teamPrep.readinessPercent}%` : '—'}</p>
-          </Card>
-        )}
-      </div>
+      </Card>
 
       {trip.teams && (
         <Card className="border-mountain-primary/30 bg-mountain-primary/5">

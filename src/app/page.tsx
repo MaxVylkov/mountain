@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, ChevronRight } from 'lucide-react'
+import { ArrowRight, ChevronRight, ClipboardCheck, Map, PackageCheck, Route } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { OnboardingGuide } from '@/components/onboarding-guide'
 import { ResumeCard } from '@/components/dashboard/resume-card'
@@ -203,34 +203,83 @@ export default async function HomePage() {
     const lastActivity = await fetchLastActivity(supabase, user.id, kgStats, knotStats)
     const nextSteps = computeNextSteps(kgStats, knotStats, gearCount, activeTrip, completedRoutes, experienceLevel)
     const primaryNextStep = nextSteps[0] ?? null
+    const commandHref = primaryNextStep?.href ?? (activeTrip ? `/trips/${activeTrip.id}` : '/mountains')
 
     const firstName = getFirstName(profile?.display_name ?? null)
     const levelLabel = getLevelLabel(experienceLevel)
 
     return (
       <div className="min-h-[calc(100vh-4rem)]">
-        {/* Hero — compact greeting */}
-        <section
-          aria-label="Приветствие"
-          className="pt-14 pb-8"
-        >
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-mountain-text mb-1">
-            {firstName ? `Привет, ${firstName}` : 'Добро пожаловать'}
-          </h1>
-          <div className="flex items-center gap-3 flex-wrap">
-            {(levelLabel || completedRoutes > 0) && (
-              <p className="text-sm text-mountain-muted">
-                {levelLabel}
-                {levelLabel && completedRoutes > 0 && ' · '}
-                {completedRoutes > 0 && `${completedRoutes} восхождений`}
-              </p>
-            )}
-            <StreakCard streak={streak} />
+        {/* Command center */}
+        <section aria-label="Командный центр" className="pt-10 pb-8">
+          <div className="rounded-lg border border-mountain-border bg-mountain-surface overflow-hidden">
+            <div className="grid lg:grid-cols-[1.2fr_0.8fr]">
+              <div className="p-5 sm:p-6">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-mountain-muted">
+                    Командный центр
+                  </p>
+                  <StreakCard streak={streak} />
+                </div>
+                <h1 className="mt-3 text-3xl sm:text-4xl font-bold tracking-tight text-mountain-text">
+                  {firstName ? `${firstName}, следующий шаг уже виден` : 'Следующий шаг уже виден'}
+                </h1>
+                <p className="mt-2 max-w-2xl text-sm text-mountain-muted">
+                  {primaryNextStep
+                    ? primaryNextStep.description
+                    : 'Выбери маршрут, собери снаряжение или продолжи подготовку из последней активности.'}
+                </p>
+
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <Link
+                    href={commandHref}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-mountain-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-mountain-primary/90"
+                  >
+                    {primaryNextStep?.title || (activeTrip ? 'Открыть поездку' : 'Выбрать маршрут')}
+                    <ArrowRight size={15} />
+                  </Link>
+                  {(levelLabel || completedRoutes > 0) && (
+                    <p className="text-sm text-mountain-muted">
+                      {levelLabel}
+                      {levelLabel && completedRoutes > 0 && ' · '}
+                      {completedRoutes > 0 && `${completedRoutes} восхождений`}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 border-t border-mountain-border lg:border-l lg:border-t-0">
+                <div className="border-r border-b border-mountain-border p-4">
+                  <Map className="h-4 w-4 text-mountain-primary" />
+                  <p className="mt-3 text-2xl font-bold text-mountain-text">{completedRoutes}</p>
+                  <p className="text-xs text-mountain-muted">пройдено маршрутов</p>
+                </div>
+                <div className="border-b border-mountain-border p-4">
+                  <PackageCheck className="h-4 w-4 text-mountain-accent" />
+                  <p className="mt-3 text-2xl font-bold text-mountain-text">{gearCount}</p>
+                  <p className="text-xs text-mountain-muted">вещей в кладовке</p>
+                </div>
+                <div className="border-r border-mountain-border p-4">
+                  <ClipboardCheck className="h-4 w-4 text-mountain-success" />
+                  <p className="mt-3 text-2xl font-bold text-mountain-text">
+                    {kgStats.total > 0 ? Math.round((kgStats.studied / kgStats.total) * 100) : 0}%
+                  </p>
+                  <p className="text-xs text-mountain-muted">теории изучено</p>
+                </div>
+                <div className="p-4">
+                  <Route className="h-4 w-4 text-mountain-primary" />
+                  <p className="mt-3 text-2xl font-bold text-mountain-text">
+                    {activeTrip ? activeTrip.packingPercent : '—'}
+                    {activeTrip && '%'}
+                  </p>
+                  <p className="text-xs text-mountain-muted">сборы поездки</p>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* Primary action row — Resume gets more weight */}
-        <section aria-label="Быстрый доступ">
+        <section aria-label="Рабочая зона">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
             <div className="md:col-span-3">
               <ResumeCard activity={lastActivity} nextStep={primaryNextStep} />
