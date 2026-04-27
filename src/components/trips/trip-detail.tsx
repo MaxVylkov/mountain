@@ -203,10 +203,10 @@ export function TripDetail({ trip }: { trip: any }) {
 
   const tabs = [
     { key: 'routes' as const, label: 'Маршруты', icon: Map },
-    { key: 'gear' as const, label: 'Общее снаряжение', icon: Package },
+    ...(trip.teams ? [] : [{ key: 'gear' as const, label: 'Общее снаряжение', icon: Package }]),
+    ...(trip.teams ? [{ key: 'team' as const, label: 'Отделение', icon: Users }] : []),
     { key: 'checklist' as const, label: 'Чеклист', icon: CheckSquare },
     { key: 'emergency' as const, label: 'Экстренное', icon: Phone },
-    ...(trip.teams ? [{ key: 'team' as const, label: 'Отделение', icon: Users }] : []),
   ]
   const packedCount = packingItems.filter((item: any) => item.packed).length
   const packingPercent = packingItems.length > 0 ? Math.round((packedCount / packingItems.length) * 100) : 0
@@ -219,10 +219,14 @@ export function TripDetail({ trip }: { trip: any }) {
       tab: 'routes' as const,
     },
     {
-      label: 'Сборы',
-      detail: packingItems.length > 0 ? `${packingPercent}% собрано` : 'список пуст',
-      done: packingItems.length > 0 && packingPercent === 100,
-      tab: 'gear' as const,
+      label: 'Снаряжение',
+      detail: trip.teams
+        ? (teamPrep ? `${teamPrep.gearPercent}% в отделении` : 'загрузка')
+        : packingItems.length > 0 ? `${packingPercent}% собрано` : 'список пуст',
+      done: trip.teams
+        ? Boolean(teamPrep && teamPrep.gearPercent === 100)
+        : packingItems.length > 0 && packingPercent === 100,
+      tab: trip.teams ? 'team' as const : 'gear' as const,
     },
     {
       label: 'Отделение',
@@ -336,8 +340,12 @@ export function TripDetail({ trip }: { trip: any }) {
             </div>
             <div className="border-r border-mountain-border p-4">
               <Backpack className="h-4 w-4 text-mountain-accent" />
-              <p className="mt-3 text-2xl font-bold text-mountain-text">{(totalWeight / 1000).toFixed(1)} кг</p>
-              <p className="text-xs text-mountain-muted">в снаряжении</p>
+              <p className="mt-3 text-2xl font-bold text-mountain-text">
+                {trip.teams ? (teamPrep ? `${teamPrep.gearPercent}%` : '—') : `${(totalWeight / 1000).toFixed(1)} кг`}
+              </p>
+              <p className="text-xs text-mountain-muted">
+                {trip.teams ? 'снаряжение отделения' : 'в снаряжении'}
+              </p>
             </div>
             <div className="p-4">
               <CalendarDays className="h-4 w-4 text-mountain-primary" />

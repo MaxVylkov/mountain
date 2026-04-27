@@ -9,6 +9,7 @@ const criticalFallbackCss = `
     color-scheme: dark;
     --bg: #0F1923;
     --surface: #1A2735;
+    --card: #162230;
     --primary: #3B82F6;
     --accent: #F59E0B;
     --success: #10B981;
@@ -81,6 +82,7 @@ const criticalFallbackCss = `
   .text-mountain-accent { color: var(--accent); }
   .text-mountain-success { color: var(--success); }
   .bg-mountain-surface { background: var(--surface); }
+  .bg-mountain-card { background: var(--card); }
   .bg-mountain-bg { background: var(--bg); }
   .border-mountain-border { border-color: var(--border); }
   .bg-mountain-primary { background: var(--primary); }

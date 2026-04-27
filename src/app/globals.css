@@ -6,6 +6,7 @@
 
   --bg:      #0F1923;
   --surface: #1A2735;
+  --card:    #162230;
   --primary: #3B82F6;
   --accent:  #F59E0B;
   --success: #10B981;
@@ -20,6 +21,7 @@
   :root {
     --bg:      #F8F6F2;
     --surface: #FFFFFF;
+    --card:    #F1F5F9;
     --primary: #3B82F6;
     --accent:  #D97706;
     --success: #059669;
@@ -35,6 +37,7 @@
   color-scheme: dark;
   --bg:      #0F1923;
   --surface: #1A2735;
+  --card:    #162230;
   --primary: #3B82F6;
   --accent:  #F59E0B;
   --success: #10B981;
@@ -48,6 +51,7 @@
   color-scheme: light;
   --bg:      #F8F6F2;
   --surface: #FFFFFF;
+  --card:    #F1F5F9;
   --primary: #3B82F6;
   --accent:  #D97706;
   --success: #059669;
@@ -61,6 +65,7 @@
 @theme inline {
   --color-mountain-bg:      var(--bg);
   --color-mountain-surface: var(--surface);
+  --color-mountain-card:    var(--card);
   --color-mountain-primary: var(--primary);
   --color-mountain-accent:  var(--accent);
   --color-mountain-success: var(--success);
